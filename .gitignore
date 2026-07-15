@@ -1,0 +1,29 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.sln.docstates
+*.userosscache
+*.nupkg
+**/[Rr]elease/
+**/[Dd]ebug/
+*.log
+*.manifest
+*.cache
+**/packages/
+*.nupkg
+
+## Visual Studio
+.vs/
+*.sln.ide/
+*.VC.db
+*.opendb
+
+## Node / npm (if any)
+node_modules/
+
+## Temp files
+*.tmp
+*.swp
+*~

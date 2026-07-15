@@ -1,0 +1,42 @@
+.stat-card.ingresos .icon-circle { background: linear-gradient(135deg, #5B6ABF, #7B8AD9); color: #fff; }
+.stat-card.pasajeros .icon-circle { background: linear-gradient(135deg, #F0A5C8, #F7C5DC); color: #fff; }
+.stat-card.conductores .icon-circle { background: linear-gradient(135deg, #6CC4A1, #8FD9BD); color: #fff; }
+.stat-card.viajes .icon-circle { background: linear-gradient(135deg, #F6AD55, #FBD38D); color: #fff; }
+
+.chart-container {
+    position: relative;
+    height: 280px;
+    width: 100%;
+}
+
+.stat-card .stat-icon-bg {
+    position: absolute;
+    right: -10px;
+    bottom: -10px;
+    font-size: 5rem;
+    opacity: 0.04;
+    color: var(--text-dark);
+    pointer-events: none;
+}
+
+.timeline-item .content .fa-circle-check { color: var(--accent); }
+.timeline-item .content .fa-circle-xmark { color: #F56565; }
+.timeline-item .content .fa-circle-info { color: var(--primary-light); }
+
+.table-custom .accion-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--bg-body);
+    color: var(--text-muted);
+}
+.table-custom .accion-btn:hover {
+    background: var(--primary);
+    color: #fff;
+}

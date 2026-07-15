@@ -1,0 +1,4 @@
+<Solution Name="vaia_viajes_v2">
+  <Project Path="apis_v2/apis_v2.csproj" />
+  <Project Path="portal_web/portal_web.csproj" />
+</Solution>
