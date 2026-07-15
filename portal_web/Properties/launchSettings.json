@@ -12,7 +12,15 @@
       "commandName": "IISExpress",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNET_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "portal_web": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:5100",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     }
   }
