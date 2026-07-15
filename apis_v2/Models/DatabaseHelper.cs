@@ -1,13 +1,18 @@
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 using Dapper;
+using Microsoft.Extensions.Configuration;
 
 public static class DatabaseHelper
 {
-    private static string ConnString = ConfigurationManager.ConnectionStrings["VaiaViajes"].ConnectionString;
+    private static string ConnString;
+
+    public static void Configure(IConfiguration config)
+    {
+        ConnString = config.GetConnectionString("VaiaViajes");
+    }
 
     public static async Task<IEnumerable<T>> QueryAsync<T>(string spName, object parameters = null)
     {
