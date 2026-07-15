@@ -1,0 +1,243 @@
+@{
+    ViewBag.Title = "Zonas";
+}
+
+@section Styles {
+    <link href="~/Content/css/admin.css" rel="stylesheet" />
+    <style>
+        .comision-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-body); border-radius: var(--radius-sm); margin-bottom: 6px; }
+        .comision-item .comision-label { font-weight: 500; font-size: 0.85rem; }
+        .comision-item .comision-val { font-size: 0.85rem; color: var(--text-muted); }
+    </style>
+}
+
+<div id="dvZonas">
+    <div class="section-header">
+        <h4><i class="fas fa-map-marked-alt"></i> Zonas de Cobertura</h4>
+        <button class="btn-soft primary" onclick="Zonas.nuevo()"><i class="fas fa-plus"></i> Nueva Zona</button>
+    </div>
+
+    <div class="card-custom">
+        <div class="card-body-custom">
+            <div class="filters-row">
+                <select class="input-soft" id="selActivo">
+                    <option value="">Todas</option>
+                    <option value="1">Activas</option>
+                    <option value="0">Inactivas</option>
+                </select>
+                <button class="btn-soft primary" onclick="Zonas.filtrar()"><i class="fas fa-search"></i> Buscar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-custom mt-3">
+        <div class="card-body-custom p-0">
+            <div class="table-wrap">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Descripcion</th>
+                            <th>Latitud</th>
+                            <th>Longitud</th>
+                            <th>Radio</th>
+                            <th>Comision</th>
+                            <th>Activo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbZonas"></tbody>
+                </table>
+            </div>
+            <div class="pagination-wrap" id="dvPaginador"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade modal-soft" id="modalZona" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-map-marked-alt me-2" style="color:var(--primary);"></i><span id="lblZonaTitulo">Nueva Zona</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="txtZonaId" />
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" class="input-soft" id="txtZonaNombre" name="nombre" />
+                    </div>
+                    <div class="form-group">
+                        <label>Descripcion</label>
+                        <textarea class="input-soft" id="txtZonaDescripcion" name="descripcion" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Latitud (centro)</label>
+                        <input type="number" step="any" class="input-soft" id="txtZonaLat" name="latitudcentro" />
+                    </div>
+                    <div class="form-group">
+                        <label>Longitud (centro)</label>
+                        <input type="number" step="any" class="input-soft" id="txtZonaLng" name="longitudcentro" />
+                    </div>
+                    <div class="form-group">
+                        <label>Radio (km)</label>
+                        <input type="number" step="any" class="input-soft" id="txtZonaRadio" name="radio_km" />
+                    </div>
+                    <div class="form-group">
+                        <label>Activo</label>
+                        <select class="input-soft" id="selZonaActivo" name="activo">
+                            <option value="1">Si</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Poligono (GeoJSON)</label>
+                        <textarea class="input-soft" id="txtZonaPoligono" name="poligono" rows="4" placeholder='{"type":"Polygon","coordinates":[[...]]}'></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-soft outline" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn-soft primary" onclick="Zonas.guardar()"><i class="fas fa-save"></i> Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade modal-soft" id="modalComision" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-percentage me-2" style="color:var(--primary);"></i>Comision de Zona</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="txtComisionZonaId" />
+                <div class="form-group mb-3">
+                    <label>Porcentaje (%)</label>
+                    <input type="number" step="0.01" class="input-soft" id="txtComisionPorcentaje" name="porcentaje" />
+                </div>
+                <div class="form-group mb-3">
+                    <label>Comision Minima</label>
+                    <input type="number" step="0.01" class="input-soft" id="txtComisionMinima" name="comisionminima" />
+                </div>
+                <div class="form-group mb-3">
+                    <label>Comision Maxima</label>
+                    <input type="number" step="0.01" class="input-soft" id="txtComisionMaxima" name="comisionmaxima" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-soft outline" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn-soft primary" onclick="Zonas.guardarComision()"><i class="fas fa-save"></i> Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Scripts/admin.js"></script>
+    <script>
+        var Zonas = (function () {
+            var state = { pagina: 1, tamano: 20 };
+
+            function cargar() {
+                var activo = $('#selActivo').val();
+                AdminApp.ajax('admin/ListarZonasCobertura', 'GET', { activo: activo || '', pagina: state.pagina, tamano: state.tamano }, function (res) {
+                    var data = Array.isArray(res) ? res : (res.data || []);
+                    var total = res.totalregistros || res.total || data.length;
+                    renderTabla(data);
+                    $('#dvPaginador').html(AdminApp.paginador(total, state.pagina, state.tamano, function (p) { state.pagina = p; cargar(); }));
+                });
+            }
+
+            function renderTabla(data) {
+                var h = '';
+                if (!data.length) { h = '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-map-marked-alt"></i><p>No hay zonas</p></div></td></tr>'; }
+                else { data.forEach(function (r) {
+                    var activo = r.activo === true || r.activo === 1 || r.activo === 'true';
+                    h += '<tr><td>' + AdminApp.getVal(r, 'id') + '</td><td>' + AdminApp.getVal(r, 'nombre') + '</td><td>' + AdminApp.getVal(r, 'descripcion') + '</td><td>' + AdminApp.getVal(r, 'latitudcentro') + '</td><td>' + AdminApp.getVal(r, 'longitudcentro') + '</td><td>' + AdminApp.getVal(r, 'radio_km') + '</td><td>' + AdminApp.getVal(r, 'comision_porcentaje') + '%</td><td>' + AdminApp.badge(activo) + '</td><td class="accion-cell"><button class="view" title="Comision" onclick="Zonas.comision(' + AdminApp.getVal(r, 'id') + ')"><i class="fas fa-percentage"></i></button><button class="edit" title="Editar" onclick="Zonas.editar(' + AdminApp.getVal(r, 'id') + ')"><i class="fas fa-edit"></i></button><button class="del" title="Eliminar" onclick="Zonas.eliminar(' + AdminApp.getVal(r, 'id') + ')"><i class="fas fa-trash"></i></button></td></tr>';
+                }); }
+                $('#tbZonas').html(h);
+            }
+
+            function nuevo() {
+                $('#lblZonaTitulo').text('Nueva Zona');
+                $('#txtZonaId').val('');
+                $('#modalZona [name]').val('');
+                $('#selZonaActivo').val('1');
+                AdminApp.openModal('modalZona');
+            }
+
+            function editar(id) {
+                $('#lblZonaTitulo').text('Editar Zona');
+                AdminApp.ajax('admin/ListarZonasCobertura', 'GET', { pagina: 1, tamano: 500 }, function (res) {
+                    var data = Array.isArray(res) ? res : (res.data || []);
+                    var item = data.find(function (x) { return (x.id || x.idZona) == id; });
+                    if (!item) { Toast.error('Zona no encontrada'); return; }
+                    $('#txtZonaId').val(item.id || item.idZona);
+                    $('#txtZonaNombre').val(AdminApp.getVal(item, 'nombre'));
+                    $('#txtZonaDescripcion').val(AdminApp.getVal(item, 'descripcion'));
+                    $('#txtZonaLat').val(AdminApp.getVal(item, 'latitudcentro'));
+                    $('#txtZonaLng').val(AdminApp.getVal(item, 'longitudcentro'));
+                    $('#txtZonaRadio').val(AdminApp.getVal(item, 'radio_km'));
+                    $('#txtZonaPoligono').val(AdminApp.getVal(item, 'poligono'));
+                    $('#selZonaActivo').val(activoVal(item));
+                    AdminApp.openModal('modalZona');
+                });
+            }
+
+            function activoVal(r) { return (r.activo === true || r.activo === 1 || r.activo === 'true') ? '1' : '0'; }
+
+            function guardar() {
+                var id = $('#txtZonaId').val();
+                var data = AdminApp.formToObj('modalZona');
+                if (!data.nombre) { Toast.warning('El nombre es requerido'); return; }
+                var url = id ? 'admin/EditarZonaCobertura' : 'admin/AgregarZonaCobertura';
+                if (id) data.id = id;
+                AdminApp.ajax(url, 'POST', data, function () {
+                    Toast.success(id ? 'Zona actualizada' : 'Zona creada');
+                    AdminApp.closeModal('modalZona');
+                    cargar();
+                });
+            }
+
+            function eliminar(id) {
+                if (!confirm('Eliminar esta zona?')) return;
+                AdminApp.ajax('admin/EliminarZonaCobertura', 'POST', { id: id }, function () {
+                    Toast.success('Zona eliminada');
+                    cargar();
+                });
+            }
+
+            function comision(id) {
+                $('#txtComisionZonaId').val(id);
+                AdminApp.ajax('admin/ObtenerComisionesZona', 'GET', { idZona: id }, function (res) {
+                    var d = Array.isArray(res) ? res[0] : res;
+                    $('#txtComisionPorcentaje').val(AdminApp.getVal(d, 'porcentaje'));
+                    $('#txtComisionMinima').val(AdminApp.getVal(d, 'comisionminima'));
+                    $('#txtComisionMaxima').val(AdminApp.getVal(d, 'comisionmaxima'));
+                    AdminApp.openModal('modalComision');
+                });
+            }
+
+            function guardarComision() {
+                var idZona = $('#txtComisionZonaId').val();
+                var data = { idZona: idZona, porcentaje: $('#txtComisionPorcentaje').val(), comisionminima: $('#txtComisionMinima').val(), comisionmaxima: $('#txtComisionMaxima').val() };
+                AdminApp.ajax('admin/ActualizarComisionZona', 'POST', data, function () {
+                    Toast.success('Comision actualizada');
+                    AdminApp.closeModal('modalComision');
+                    cargar();
+                });
+            }
+
+            function filtrar() { state.pagina = 1; cargar(); }
+
+            function init() { cargar(); }
+
+            return { init: init, cargar: cargar, filtrar: filtrar, nuevo: nuevo, editar: editar, guardar: guardar, eliminar: eliminar, comision: comision, guardarComision: guardarComision };
+        })();
+        $(document).ready(function () { Zonas.init(); });
+    </script>
+}

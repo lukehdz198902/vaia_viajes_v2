@@ -1,0 +1,79 @@
+@{
+    ViewBag.Title = "Cortes Semanales";
+}
+
+@section Styles {
+    <link href="~/Scripts/Views/Home/Cortes/style.css" rel="stylesheet" />
+}
+
+<div id="dvCortes">
+    <div class="section-header d-flex justify-content-between align-items-center mb-4">
+        <h5 class="m-0 fw-bold"><i class="fas fa-calendar-week me-2" style="color: var(--primary);"></i>Cortes Semanales</h5>
+        <div class="d-flex gap-2 align-items-center">
+            <div class="search-box" style="width: 260px;">
+                <i class="fas fa-search"></i>
+                <input type="text" class="input-soft" id="txtBuscarConductor" placeholder="Buscar conductor..." />
+            </div>
+            <button class="btn-soft primary" onclick="CortesApp.abrirProcesar()"><i class="fas fa-play me-1"></i>Procesar</button>
+        </div>
+    </div>
+
+    <div class="card-custom">
+        <div class="card-body-custom p-0">
+            <div id="dvTablaCortes">
+                <div class="loader" style="margin: 40px auto;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade modal-soft" id="mdlDetalleCorte" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title"><i class="fas fa-info-circle me-2" style="color: var(--primary);"></i>Detalle de Corte</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="dvDetalleCorteBody">
+                <div class="loader" style="margin: 20px auto;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-soft outline" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Procesar Modal -->
+<div class="modal fade modal-soft" id="mdlProcesar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title"><i class="fas fa-play me-2" style="color: var(--primary);"></i>Procesar Corte Semanal</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="frmProcesar">
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium text-muted">Conductor <small class="text-muted">(opcional, dejar vacio para todos)</small></label>
+                        <select class="form-select input-soft" id="selConductorProcesar" name="idConductor">
+                            <option value="">-- Todos los conductores --</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-soft outline" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn-soft primary" onclick="CortesApp.procesar()"><i class="fas fa-play me-1"></i>Procesar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Scripts/admin.js"></script>
+    <script src="~/Scripts/Views/Home/Cortes/fn.js"></script>
+    <script src="~/Scripts/Views/Home/Cortes/jnAjax.js"></script>
+    <script src="~/Scripts/Views/Home/Cortes/Initscript.js"></script>
+}

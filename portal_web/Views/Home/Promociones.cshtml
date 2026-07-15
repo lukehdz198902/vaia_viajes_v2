@@ -1,0 +1,184 @@
+@{
+    ViewBag.Title = "Promociones";
+}
+
+@section Styles {
+    <link href="~/Content/css/admin.css" rel="stylesheet" />
+    <style>
+        .codigo-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-body); border-radius: var(--radius-sm); margin-bottom: 6px; font-size: 0.85rem; }
+        .codigo-item .code { font-family: monospace; font-weight: 600; color: var(--primary); }
+        .preview-img { max-width: 120px; max-height: 80px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-top: 4px; }
+    </style>
+}
+
+<div id="dvPromociones">
+    <div class="section-header">
+        <h4><i class="fas fa-tags"></i> Promociones</h4>
+        <button class="btn-soft primary" onclick="Promociones.nuevo()"><i class="fas fa-plus"></i> Nueva Promocion</button>
+    </div>
+
+    <div class="card-custom">
+        <div class="card-body-custom">
+            <div class="filters-row">
+                <select class="input-soft" id="selActivo">
+                    <option value="">Todas</option>
+                    <option value="1">Activas</option>
+                    <option value="0">Inactivas</option>
+                </select>
+                <button class="btn-soft primary" onclick="Promociones.filtrar()"><i class="fas fa-search"></i> Buscar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-custom mt-3">
+        <div class="card-body-custom p-0">
+            <div class="table-wrap">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titulo</th>
+                            <th>Inicio Vigencia</th>
+                            <th>Fin Vigencia</th>
+                            <th>Activo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbPromociones"></tbody>
+                </table>
+            </div>
+            <div class="pagination-wrap" id="dvPaginador"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade modal-soft" id="modalPromocion" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-tags me-2" style="color:var(--primary);"></i><span id="lblPromoTitulo">Nueva Promocion</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="txtPromoId" />
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Titulo</label>
+                        <input type="text" class="input-soft" id="txtPromoTitulo" name="titulo" />
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha Inicio</label>
+                        <input type="datetime-local" class="input-soft" id="txtPromoInicio" name="inicio" />
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha Fin</label>
+                        <input type="datetime-local" class="input-soft" id="txtPromoFin" name="fin" />
+                    </div>
+                    <div class="form-group">
+                        <label>Asunto</label>
+                        <textarea class="input-soft" id="txtPromoAsunto" name="asunto" rows="3"></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Imagen (Base64)</label>
+                        <textarea class="input-soft" id="txtPromoImg" name="img" rows="3" placeholder="data:image/..."></textarea>
+                        <img class="preview-img" id="imgPreview" style="display:none;" />
+                    </div>
+                </div>
+
+                <hr />
+                <h6 class="mb-3"><i class="fas fa-qrcode me-2" style="color:var(--primary);"></i>Codigos Promocionales</h6>
+                <div id="dvCodigosPromo" class="mb-3">
+                    <p class="text-muted">Sin codigos registrados</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-soft outline" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn-soft primary" onclick="Promociones.guardar()"><i class="fas fa-save"></i> Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Scripts/admin.js"></script>
+    <script>
+        var Promociones = (function () {
+            var state = { pagina: 1, tamano: 20 };
+
+            function cargar() {
+                var activo = $('#selActivo').val();
+                AdminApp.ajax('admin/ListarPromociones', 'GET', { activo: activo || '', pagina: state.pagina, tamano: state.tamano }, function (res) {
+                    var data = Array.isArray(res) ? res : (res.data || []);
+                    var total = res.totalregistros || res.total || data.length;
+                    renderTabla(data);
+                    $('#dvPaginador').html(AdminApp.paginador(total, state.pagina, state.tamano, function (p) { state.pagina = p; cargar(); }));
+                });
+            }
+
+            function renderTabla(data) {
+                var h = '';
+                if (!data.length) { h = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-tags"></i><p>No hay promociones</p></div></td></tr>'; }
+                else { data.forEach(function (r) {
+                    var activo = r.activo === true || r.activo === 1 || r.activo === 'true';
+                    h += '<tr><td>' + AdminApp.getVal(r, 'id') + '</td><td>' + AdminApp.getVal(r, 'titulo') + '</td><td>' + AdminApp.fmtFecha(r.inicio) + '</td><td>' + AdminApp.fmtFecha(r.fin) + '</td><td>' + AdminApp.badge(activo) + '</td><td class="accion-cell"><button class="edit" title="Editar" onclick="Promociones.editar(' + AdminApp.getVal(r, 'id') + ')"><i class="fas fa-edit"></i></button><button class="del" title="Eliminar" onclick="Promociones.eliminar(' + AdminApp.getVal(r, 'id') + ')"><i class="fas fa-trash"></i></button></td></tr>';
+                }); }
+                $('#tbPromociones').html(h);
+            }
+
+            function nuevo() {
+                $('#lblPromoTitulo').text('Nueva Promocion');
+                $('#txtPromoId').val('');
+                $('#modalPromocion [name]').val('');
+                $('#imgPreview').hide();
+                $('#dvCodigosPromo').html('<p class="text-muted">Sin codigos registrados</p>');
+                AdminApp.openModal('modalPromocion');
+            }
+
+            function editar(id) {
+                $('#lblPromoTitulo').text('Editar Promocion');
+                AdminApp.ajax('admin/ListarPromociones', 'GET', { pagina: 1, tamano: 500 }, function (res) {
+                    var data = Array.isArray(res) ? res : (res.data || []);
+                    var item = data.find(function (x) { return (x.id || x.idPromocion) == id; });
+                    if (!item) { Toast.error('Promocion no encontrada'); return; }
+                    $('#txtPromoId').val(item.id || item.idPromocion);
+                    $('#txtPromoTitulo').val(AdminApp.getVal(item, 'titulo'));
+                    $('#txtPromoInicio').val(AdminApp.formatDateTimeLocal(item.inicio));
+                    $('#txtPromoFin').val(AdminApp.formatDateTimeLocal(item.fin));
+                    $('#txtPromoAsunto').val(AdminApp.getVal(item, 'asunto'));
+                    var img = AdminApp.getVal(item, 'img');
+                    if (img) { $('#txtPromoImg').val(img); $('#imgPreview').attr('src', img).show(); } else { $('#txtPromoImg').val(''); $('#imgPreview').hide(); }
+                    $('#dvCodigosPromo').html('<p class="text-muted">Codigos disponibles al guardar la promocion</p>');
+                    AdminApp.openModal('modalPromocion');
+                });
+            }
+
+            function guardar() {
+                var id = $('#txtPromoId').val();
+                var data = AdminApp.formToObj('modalPromocion');
+                if (!data.titulo) { Toast.warning('El titulo es requerido'); return; }
+                var url = id ? 'admin/EditarPromocion' : 'admin/CrearPromocion';
+                if (id) data.id = id;
+                AdminApp.ajax(url, 'POST', data, function () {
+                    Toast.success(id ? 'Promocion actualizada' : 'Promocion creada');
+                    AdminApp.closeModal('modalPromocion');
+                    cargar();
+                });
+            }
+
+            function eliminar(id) {
+                if (!confirm('Eliminar esta promocion?')) return;
+                AdminApp.ajax('admin/EliminarPromocion', 'POST', { id: id }, function () {
+                    Toast.success('Promocion eliminada');
+                    cargar();
+                });
+            }
+
+            function filtrar() { state.pagina = 1; cargar(); }
+
+            function init() { cargar(); }
+
+            return { init: init, cargar: cargar, filtrar: filtrar, nuevo: nuevo, editar: editar, guardar: guardar, eliminar: eliminar };
+        })();
+        $(document).ready(function () { Promociones.init(); });
+    </script>
+}

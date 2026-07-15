@@ -1,0 +1,156 @@
+@{
+    ViewBag.Title = "Configuracion";
+}
+
+@section Styles {
+    <link href="~/Content/css/admin.css" rel="stylesheet" />
+    <style>
+        .config-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+        .config-item:last-child { border-bottom: none; }
+        .config-item .config-label { min-width: 180px; font-weight: 500; font-size: 0.88rem; color: var(--text-dark); text-transform: capitalize; }
+        .config-item .config-input { flex: 1; }
+        .config-item .config-input .input-soft { width: 100%; }
+        .config-item .config-action { min-width: 80px; }
+        .cost-form { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        .cost-form .form-group { margin-bottom: 0; }
+    </style>
+}
+
+<div id="dvConfiguracion">
+    <div class="section-header">
+        <h4><i class="fas fa-cog"></i> Configuracion del Sistema</h4>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <h6><i class="fas fa-sliders-h me-2" style="color:var(--primary);"></i>Configuracion General</h6>
+                    <button class="btn-soft primary btn-sm" onclick="Configuracion.guardarGeneral()"><i class="fas fa-save"></i> Guardar Todo</button>
+                </div>
+                <div class="card-body-custom" id="dvConfigGeneral">
+                    <div class="loader"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <h6><i class="fas fa-road me-2" style="color:var(--primary);"></i>Costos por Km</h6>
+                </div>
+                <div class="card-body-custom">
+                    <form id="frmCostos">
+                        <div class="cost-form">
+                            <div class="form-group">
+                                <label>Costo Minimo</label>
+                                <input type="number" step="0.01" class="input-soft" id="txtCostoMinimo" name="costominimo" />
+                            </div>
+                            <div class="form-group">
+                                <label>Costo por Km</label>
+                                <input type="number" step="0.01" class="input-soft" id="txtCostoPorKm" name="costoporkm" />
+                            </div>
+                            <div class="form-group">
+                                <label>Costo por Minuto</label>
+                                <input type="number" step="0.01" class="input-soft" id="txtCostoPorMinuto" name="costoporminuto" />
+                            </div>
+                        </div>
+                    </form>
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button class="btn-soft outline" onclick="Configuracion.cancelarCostos()">Cancelar</button>
+                        <button class="btn-soft primary" onclick="Configuracion.guardarCostos()"><i class="fas fa-save"></i> Guardar Costos</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Scripts/admin.js"></script>
+    <script>
+        var Configuracion = (function () {
+            var configData = [];
+
+            function cargarGeneral() {
+                AdminApp.ajax('admin/ObtenerConfiguracion', 'GET', null, function (res) {
+                    var data = Array.isArray(res) ? res : (res.data || []);
+                    configData = data;
+                    renderGeneral(data);
+                });
+            }
+
+            function renderGeneral(data) {
+                var h = '';
+                if (!data.length) { h = '<p class="text-muted">Sin configuraciones</p>'; }
+                else { data.forEach(function (r, i) {
+                    var clave = r.clave || r.Clave;
+                    var valor = r.valor !== undefined && r.valor !== null ? r.valor : (r.Valor || '');
+                    h += '<div class="config-item" data-index="' + i + '">';
+                    h += '<div class="config-label">' + clave + '</div>';
+                    h += '<div class="config-input"><input type="text" class="input-soft" id="cfg_' + i + '" value="' + $('<span>').text(valor).html() + '" /></div>';
+                    h += '<div class="config-action"><button class="btn-soft primary btn-sm" onclick="Configuracion.guardarItem(' + i + ')"><i class="fas fa-check"></i></button></div>';
+                    h += '</div>';
+                }); }
+                $('#dvConfigGeneral').html(h);
+            }
+
+            function guardarItem(i) {
+                var item = configData[i];
+                if (!item) return;
+                var clave = item.clave || item.Clave;
+                var valor = $('#cfg_' + i).val();
+                AdminApp.ajax('admin/GuardarConfiguracion', 'POST', { clave: clave, valor: valor }, function () {
+                    Toast.success(clave + ' actualizado');
+                    item.valor = valor;
+                });
+            }
+
+            function guardarGeneral() {
+                var items = [];
+                configData.forEach(function (item, i) {
+                    var clave = item.clave || item.Clave;
+                    var valor = $('#cfg_' + i).val();
+                    items.push({ clave: clave, valor: valor });
+                });
+                AdminApp.ajax('admin/GuardarConfiguracion', 'POST', { items: items }, function () {
+                    Toast.success('Configuracion general guardada');
+                }, function () {
+                    items.forEach(function (item) { AdminApp.ajax('admin/GuardarConfiguracion', 'POST', item, null, null); });
+                    Toast.success('Configuracion general guardada');
+                });
+            }
+
+            function cargarCostos() {
+                AdminApp.ajax('admin/ObtenerConfiguracion', 'GET', null, function (res) {
+                    var data = Array.isArray(res) ? res : (res.data || []);
+                    var findVal = function (clave) {
+                        var item = data.find(function (x) { return (x.clave || x.Clave) === clave; });
+                        return item ? (item.valor !== undefined ? item.valor : item.Valor) : '';
+                    };
+                    $('#txtCostoMinimo').val(findVal('costominimo'));
+                    $('#txtCostoPorKm').val(findVal('costoporkm'));
+                    $('#txtCostoPorMinuto').val(findVal('costoporminuto'));
+                });
+            }
+
+            function guardarCostos() {
+                var data = {
+                    costominimo: $('#txtCostoMinimo').val(),
+                    costoporkm: $('#txtCostoPorKm').val(),
+                    costoporminuto: $('#txtCostoPorMinuto').val()
+                };
+                AdminApp.ajax('admin/ActualizarConfiguracionCosto', 'POST', data, function () {
+                    Toast.success('Costos actualizados');
+                });
+            }
+
+            function cancelarCostos() { cargarCostos(); }
+
+            function init() { cargarGeneral(); cargarCostos(); }
+
+            return { init: init, cargarGeneral: cargarGeneral, guardarItem: guardarItem, guardarGeneral: guardarGeneral, cargarCostos: cargarCostos, guardarCostos: guardarCostos, cancelarCostos: cancelarCostos };
+        })();
+        $(document).ready(function () { Configuracion.init(); });
+    </script>
+}

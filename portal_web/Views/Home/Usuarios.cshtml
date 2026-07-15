@@ -1,0 +1,206 @@
+@{
+    ViewBag.Title = "Usuarios";
+}
+
+@section Styles {
+    <link href="~/Content/section.css" rel="stylesheet" />
+}
+
+<div id="dvUsuarios">
+    <div class="section-header">
+        <h4><i class="fas fa-users me-2" style="color: var(--primary);"></i>Usuarios</h4>
+        <button class="btn-soft" onclick="abrirModal()"><i class="fas fa-plus me-1"></i>Nuevo</button>
+    </div>
+
+    <div class="filters" id="dvFiltros">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" class="input-soft" id="txtBuscar" placeholder="Buscar usuario..." />
+        </div>
+        <select class="input-soft" id="selFiltroRol"><option value="">Todos los roles</option></select>
+        <select class="input-soft" id="selFiltroActivo"><option value="">Todos</option><option value="true">Activos</option><option value="false">Inactivos</option></select>
+        <button class="btn-soft outline" onclick="cargar()"><i class="fas fa-search me-1"></i>Buscar</button>
+    </div>
+
+    <div class="table-wrap" id="dvTabla"></div>
+
+    <div class="pagination" id="dvPaginacion"></div>
+</div>
+
+<div class="modal fade" id="modalUsuario" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user me-2" style="color:var(--primary);"></i><span id="lblModalTitulo">Nuevo Usuario</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="frmUsuario">
+                    <input type="hidden" name="idUsuario" id="hdnIdUsuario" value="0" />
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>Nombre</label>
+                            <input type="text" class="input-soft" name="nombre" id="txtNombre" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Apellido Paterno</label>
+                            <input type="text" class="input-soft" name="appaterno" id="txtAppaterno" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Apellido Materno</label>
+                            <input type="text" class="input-soft" name="apmaterno" id="txtApmaterno" />
+                        </div>
+                        <div class="form-group">
+                            <label>Correo</label>
+                            <input type="email" class="input-soft" name="correo" id="txtCorreo" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input type="text" class="input-soft" name="telefono" id="txtTelefono" />
+                        </div>
+                        <div class="form-group">
+                            <label>Account</label>
+                            <input type="text" class="input-soft" name="account" id="txtAccount" required />
+                        </div>
+                        <div class="form-group" id="dvPass">
+                            <label>Contraseña</label>
+                            <input type="password" class="input-soft" name="pass" id="txtPass" />
+                            <small class="text-muted" id="lblPassHelp">Dejar vacío para mantener la actual</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Sexo</label>
+                            <select class="input-soft" name="sexo" id="selSexo">
+                                <option value="">-- Seleccionar --</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Rol</label>
+                            <select class="input-soft" name="idRol" id="selRol" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="activo" id="chkActivo" checked />
+                                <span>Activo</span>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-soft outline" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn-soft" onclick="guardar()"><i class="fas fa-save me-1"></i>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Scripts/admin.js"></script>
+    <script>
+        $(function () {
+            cargar();
+            AdminApp.loadSelect('admin/ListarRoles', 'selRol', 'idRol', 'nombre');
+            AdminApp.loadSelect('admin/ListarRoles', 'selFiltroRol', 'idRol', 'nombre');
+            $('#txtBuscar').on('keyup', function (e) { if (e.key === 'Enter') cargar(); });
+        });
+
+        function cargar() {
+            var data = {
+                pagina: AdminApp.state.pagina,
+                tamano: AdminApp.state.tamano,
+                busqueda: $('#txtBuscar').val(),
+                idRol: $('#selFiltroRol').val(),
+                activo: $('#selFiltroActivo').val()
+            };
+            AdminApp.ajax('admin/ListarUsuarios', 'GET', data, function (res) {
+                var dataArr = Array.isArray(res) ? res : (res.data || []);
+                renderTable(dataArr);
+                renderPaginacion(res.totalRegistros || dataArr.length);
+            });
+        }
+
+        function renderTable(data) {
+            var h = '<table class="table-custom"><thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Account</th><th>Rol</th><th>Activo</th><th class="col-acciones">Acciones</th></tr></thead><tbody>';
+            if (!data || data.length === 0) {
+                h += '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-users"></i><h5>No hay usuarios</h5></div></td></tr>';
+            } else {
+                data.forEach(function (u) {
+                    var id = u.IdUsuario || u.idUsuario || 0;
+                    var nom = u.Nombre || u.nombre || '';
+                    var ap = u.ApellidoPaterno || u.appaterno || '';
+                    var am = u.ApellidoMaterno || u.apmaterno || '';
+                    var nombreCompleto = nom + ' ' + ap + (am ? ' ' + am : '');
+                    var correo = u.Correo || u.correo || '--';
+                    var account = u.Account || u.account || '--';
+                    var rol = u.Rol || u.rol || u.NombreRol || u.nombreRol || '--';
+                    var activo = u.Activo !== undefined ? u.Activo : (u.activo !== undefined ? u.activo : true);
+                    h += '<tr>';
+                    h += '<td><strong>#' + id + '</strong></td>';
+                    h += '<td>' + AdminApp.getVal({ v: nombreCompleto }, 'v') + '</td>';
+                    h += '<td>' + correo + '</td>';
+                    h += '<td>' + account + '</td>';
+                    h += '<td>' + rol + '</td>';
+                    h += '<td>' + AdminApp.badge(activo) + '</td>';
+                    h += '<td class="col-acciones">';
+                    h += '<button class="accion-btn" onclick="abrirModal(' + id + ')" title="Editar"><i class="fas fa-edit"></i></button>';
+                    h += '<button class="accion-btn" onclick="eliminar(' + id + ')" title="Eliminar"><i class="fas fa-trash"></i></button>';
+                    h += '</td></tr>';
+                });
+            }
+            h += '</tbody></table>';
+            $('#dvTabla').html(h);
+        }
+
+        function renderPaginacion(total) {
+            var h = AdminApp.paginador(total, AdminApp.state.pagina, AdminApp.state.tamano, null);
+            $('#dvPaginacion').html(h);
+            $('#dvPaginacion .pages button').on('click', function () {
+                AdminApp.state.pagina = parseInt($(this).data('p'));
+                cargar();
+            });
+        }
+
+        function abrirModal(id) {
+            AdminApp.closeModal('modalUsuario');
+            $('#hdnIdUsuario').val(0);
+            $('#lblModalTitulo').text('Nuevo Usuario');
+            $('#frmUsuario')[0].reset();
+            $('#chkActivo').prop('checked', true);
+            $('#dvPass').show();
+            $('#lblPassHelp').hide();
+            $('#txtPass').prop('required', true);
+            if (id) {
+                $('#lblModalTitulo').text('Editar Usuario');
+                AdminApp.ajax('admin/ObtenerUsuario', 'GET', { idUsuario: id }, function (u) {
+                    $('#hdnIdUsuario').val(u.IdUsuario || u.idUsuario);
+                    AdminApp.objToForm('frmUsuario', u);
+                    $('#dvPass').show();
+                    $('#lblPassHelp').show();
+                    $('#txtPass').prop('required', false);
+                });
+            }
+            AdminApp.openModal('modalUsuario');
+        }
+
+        function guardar() {
+            var obj = AdminApp.formToObj('frmUsuario');
+            var id = parseInt($('#hdnIdUsuario').val());
+            var metodo = id > 0 ? 'admin/EditarUsuario' : 'admin/CrearUsuario';
+            AdminApp.ajax(metodo, 'POST', obj, function (res) {
+                AdminApp.closeModal('modalUsuario');
+                AdminApp.Toast.success(id > 0 ? 'Usuario actualizado' : 'Usuario creado');
+                cargar();
+            });
+        }
+
+        function eliminar(id) {
+            if (!confirm('¿Eliminar este usuario?')) return;
+            AdminApp.ajax('admin/EliminarUsuario', 'POST', { idUsuario: id, idActualiza: 1 }, function (res) {
+                AdminApp.Toast.success('Usuario eliminado');
+                cargar();
+            });
+        }
+    </script>
+}

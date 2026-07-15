@@ -1,0 +1,276 @@
+@{
+    ViewBag.Title = "Conductores";
+}
+
+@section Styles {
+    <link href="~/Content/section.css" rel="stylesheet" />
+}
+
+<div id="dvConductores">
+    <div class="section-header">
+        <h4><i class="fas fa-id-card me-2" style="color: var(--primary);"></i>Conductores</h4>
+        <button class="btn-soft" onclick="abrirModal()"><i class="fas fa-plus me-1"></i>Nuevo</button>
+    </div>
+
+    <div class="filters" id="dvFiltros">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" class="input-soft" id="txtBuscar" placeholder="Buscar conductor..." />
+        </div>
+        <select class="input-soft" id="selFiltroEstatus"><option value="">Todos</option><option value="Pendiente">Pendiente</option><option value="Aprobado">Aprobado</option><option value="Rechazado">Rechazado</option></select>
+        <select class="input-soft" id="selFiltroBloqueado"><option value="">Todos</option><option value="true">Bloqueados</option><option value="false">Activos</option></select>
+        <button class="btn-soft outline" onclick="cargar()"><i class="fas fa-search me-1"></i>Buscar</button>
+    </div>
+
+    <div class="table-wrap" id="dvTabla"></div>
+
+    <div class="pagination" id="dvPaginacion"></div>
+</div>
+
+<div class="modal fade" id="modalConductor" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-id-card me-2" style="color:var(--primary);"></i><span id="lblModalTitulo">Nuevo Conductor</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="frmConductor">
+                    <input type="hidden" name="idConductor" id="hdnIdConductor" value="0" />
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>Nombre</label>
+                            <input type="text" class="input-soft" name="nombre" id="txtNombre" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Apellido Paterno</label>
+                            <input type="text" class="input-soft" name="appaterno" id="txtAppaterno" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Apellido Materno</label>
+                            <input type="text" class="input-soft" name="apmaterno" id="txtApmaterno" />
+                        </div>
+                        <div class="form-group">
+                            <label>Sexo</label>
+                            <select class="input-soft" name="sexo" id="selSexo">
+                                <option value="">-- Seleccionar --</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Correo</label>
+                            <input type="email" class="input-soft" name="correo" id="txtCorreo" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input type="text" class="input-soft" name="telefono" id="txtTelefono" />
+                        </div>
+                        <div class="form-group">
+                            <label>CURP</label>
+                            <input type="text" class="input-soft" name="curp" id="txtCurp" />
+                        </div>
+                        <div class="form-group">
+                            <label>RFC</label>
+                            <input type="text" class="input-soft" name="rfc" id="txtRfc" />
+                        </div>
+                        <div class="form-group">
+                            <label>Licencia de Conducir</label>
+                            <input type="text" class="input-soft" name="licenciaconducir" id="txtLicenciaconducir" />
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Vencimiento Licencia</label>
+                            <input type="date" class="input-soft" name="fechavencimientolicencia" id="txtFechavencimientolicencia" />
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de Licencia</label>
+                            <input type="text" class="input-soft" name="tipolicencia" id="txtTipolicencia" />
+                        </div>
+                        <div class="form-group">
+                            <label>Banco</label>
+                            <input type="text" class="input-soft" name="banco" id="txtBanco" />
+                        </div>
+                        <div class="form-group">
+                            <label>Nombre del Titular</label>
+                            <input type="text" class="input-soft" name="nombretitular" id="txtNombretitular" />
+                        </div>
+                        <div class="form-group">
+                            <label>CLABE Interbancaria</label>
+                            <input type="text" class="input-soft" name="clabeinterbancaria" id="txtClabeinterbancaria" />
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="activo" id="chkActivo" checked />
+                                <span>Activo</span>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-soft outline" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn-soft" onclick="guardar()"><i class="fas fa-save me-1"></i>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDocumentos" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-file me-2" style="color:var(--primary);"></i>Documentos del Conductor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="dvDocumentos"></div>
+            <div class="modal-footer">
+                <button class="btn-soft outline" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Scripts/admin.js"></script>
+    <script>
+        $(function () {
+            cargar();
+            $('#txtBuscar').on('keyup', function (e) { if (e.key === 'Enter') cargar(); });
+        });
+
+        var conductorActual = 0;
+
+        function cargar() {
+            var data = {
+                pagina: AdminApp.state.pagina,
+                tamano: AdminApp.state.tamano,
+                busqueda: $('#txtBuscar').val(),
+                estatus: $('#selFiltroEstatus').val(),
+                bloqueado: $('#selFiltroBloqueado').val()
+            };
+            AdminApp.ajax('admin/ListarConductores', 'GET', data, function (res) {
+                var dataArr = Array.isArray(res) ? res : (res.data || []);
+                renderTable(dataArr);
+                renderPaginacion(res.totalRegistros || dataArr.length);
+            });
+        }
+
+        function renderTable(data) {
+            var h = '<table class="table-custom"><thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estatus</th><th>Documentación</th><th>Calificación</th><th>Bloqueado</th><th class="col-acciones">Acciones</th></tr></thead><tbody>';
+            if (!data || data.length === 0) {
+                h += '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-id-card"></i><h5>No hay conductores</h5></div></td></tr>';
+            } else {
+                data.forEach(function (c) {
+                    var id = c.IdConductor || c.idConductor || 0;
+                    var nom = c.Nombre || c.nombre || '';
+                    var ap = c.ApellidoPaterno || c.appaterno || '';
+                    var am = c.ApellidoMaterno || c.apmaterno || '';
+                    var nombreCompleto = nom + ' ' + ap + (am ? ' ' + am : '');
+                    var correo = c.Correo || c.correo || '--';
+                    var telefono = c.Telefono || c.telefono || '--';
+                    var estatus = c.Estatus || c.estatus || 'Pendiente';
+                    var docs = c.Documentacion || c.documentacion || 'Incompleta';
+                    var calif = c.Calificacion || c.calificacion || 0;
+                    var bloqueado = c.Bloqueado !== undefined ? c.Bloqueado : (c.bloqueado !== undefined ? c.bloqueado : false);
+                    h += '<tr>';
+                    h += '<td><strong>#' + id + '</strong></td>';
+                    h += '<td>' + nombreCompleto + '</td>';
+                    h += '<td>' + correo + '</td>';
+                    h += '<td>' + telefono + '</td>';
+                    h += '<td>' + AdminApp.badge(estatus === 'Aprobado', estatus, estatus, 'active', 'pending') + '</td>';
+                    h += '<td><span class="status-badge ' + (docs === 'Completa' ? 'active' : 'inactive') + '">' + docs + '</span></td>';
+                    h += '<td>' + (calif ? calif.toFixed(1) : '--') + '</td>';
+                    h += '<td>' + AdminApp.badge(bloqueado, 'Bloqueado', 'Normal', 'inactive', 'active') + '</td>';
+                    h += '<td class="col-acciones">';
+                    h += '<button class="accion-btn" onclick="abrirModal(' + id + ')" title="Editar"><i class="fas fa-edit"></i></button>';
+                    h += '<button class="accion-btn" onclick="verDocumentos(' + id + ')" title="Documentos"><i class="fas fa-file"></i></button>';
+                    h += '<button class="accion-btn" onclick="toggleBloqueo(' + id + ',' + bloqueado + ')" title="' + (bloqueado ? 'Desbloquear' : 'Bloquear') + '"><i class="fas ' + (bloqueado ? 'fa-unlock' : 'fa-ban') + '"></i></button>';
+                    h += '</td></tr>';
+                });
+            }
+            h += '</tbody></table>';
+            $('#dvTabla').html(h);
+        }
+
+        function renderPaginacion(total) {
+            var h = AdminApp.paginador(total, AdminApp.state.pagina, AdminApp.state.tamano, null);
+            $('#dvPaginacion').html(h);
+            $('#dvPaginacion .pages button').on('click', function () {
+                AdminApp.state.pagina = parseInt($(this).data('p'));
+                cargar();
+            });
+        }
+
+        function abrirModal(id) {
+            AdminApp.closeModal('modalConductor');
+            $('#hdnIdConductor').val(0);
+            $('#lblModalTitulo').text('Nuevo Conductor');
+            $('#frmConductor')[0].reset();
+            $('#chkActivo').prop('checked', true);
+            if (id) {
+                $('#lblModalTitulo').text('Editar Conductor');
+                AdminApp.ajax('admin/ObtenerConductor', 'GET', { idConductor: id }, function (c) {
+                    $('#hdnIdConductor').val(c.IdConductor || c.idConductor);
+                    AdminApp.objToForm('frmConductor', c);
+                });
+            }
+            AdminApp.openModal('modalConductor');
+        }
+
+        function guardar() {
+            var obj = AdminApp.formToObj('frmConductor');
+            var id = parseInt($('#hdnIdConductor').val());
+            AdminApp.ajax('admin/ActualizarConductor', 'POST', obj, function (res) {
+                AdminApp.closeModal('modalConductor');
+                AdminApp.Toast.success('Conductor actualizado');
+                cargar();
+            });
+        }
+
+        function toggleBloqueo(id, estadoActual) {
+            var nuevoEstado = !estadoActual;
+            var msg = nuevoEstado ? '¿Bloquear este conductor?' : '¿Desbloquear este conductor?';
+            if (!confirm(msg)) return;
+            AdminApp.ajax('admin/SuspenderConductor', 'POST', { idConductor: id, bloqueado: nuevoEstado }, function (res) {
+                AdminApp.Toast.success(nuevoEstado ? 'Conductor bloqueado' : 'Conductor desbloqueado');
+                cargar();
+            });
+        }
+
+        function verDocumentos(id) {
+            conductorActual = id;
+            AdminApp.ajax('admin/ListarDocumentosConductor', 'GET', { idConductor: id }, function (res) {
+                var dataArr = Array.isArray(res) ? res : (res.data || []);
+                var h = '<table class="table-custom"><thead><tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Estatus</th><th>Acciones</th></tr></thead><tbody>';
+                if (!dataArr || dataArr.length === 0) {
+                    h += '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-file"></i><h5>Sin documentos</h5></div></td></tr>';
+                } else {
+                    dataArr.forEach(function (d) {
+                        var did = d.IdDocumento || d.idDocumento || 0;
+                        var dnom = d.Nombre || d.nombre || '--';
+                        var dtipo = d.Tipo || d.tipo || '--';
+                        var dval = d.Validado !== undefined ? d.Validado : (d.validado !== undefined ? d.validado : false);
+                        var durl = d.Url || d.url || '';
+                        h += '<tr><td>#' + did + '</td><td>' + dnom + '</td><td>' + dtipo + '</td>';
+                        h += '<td>' + AdminApp.badge(dval, 'Validado', 'Pendiente', 'active', 'pending') + '</td>';
+                        h += '<td>';
+                        if (durl) h += '<button class="accion-btn" onclick="window.open(\'' + durl + '\',\'_blank\')" title="Ver"><i class="fas fa-eye"></i></button> ';
+                        if (!dval) h += '<button class="accion-btn" onclick="validarDocumento(' + did + ')" title="Validar"><i class="fas fa-check" style="color:var(--success)"></i></button>';
+                        h += '</td></tr>';
+                    });
+                }
+                h += '</tbody></table>';
+                $('#dvDocumentos').html(h);
+                AdminApp.openModal('modalDocumentos');
+            });
+        }
+
+        function validarDocumento(idDocumento) {
+            if (!confirm('¿Validar este documento?')) return;
+            AdminApp.ajax('admin/ValidarDocumento', 'POST', { idDocumento: idDocumento, idConductor: conductorActual }, function (res) {
+                AdminApp.Toast.success('Documento validado');
+                verDocumentos(conductorActual);
+            });
+        }
+    </script>
+}

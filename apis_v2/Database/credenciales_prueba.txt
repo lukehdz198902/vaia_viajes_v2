@@ -1,0 +1,33 @@
+======================================================================
+  VAIA VIAJES - CREDENCIALES DE PRUEBA (PORTAL ADMIN WEB)
+  Base de datos: (local) | BD: vaia_viajes
+  Todos los passwords: admin | Hash SHA256: 8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+======================================================================
+
+ID  NOMBRE                 ACCOUNT        PASS     ROL                    CORREO
+--  ---------------------  -------------  -------  ---------------------  ----------------------------
+ 1  Super Admin Vaia       superadmin     admin    Super Administrador    superadmin@vaiaviajes.com
+ 2  Admin Vaia Viajes      admin          admin    Administrador          admin@vaiaviajes.com
+ 3  Soporte Vaia Viajes    soporte        admin    Soporte                soporte@vaiaviajes.com
+ 4  Contabilidad Vaia      contabilidad   admin    Contabilidad           contabilidad@vaiaviajes.com
+ 5  Marketing Vaia Viajes  marketing      admin    Marketing              marketing@vaiaviajes.com
+
+======================================================================
+  ENDPOINTS DE PRUEBA
+======================================================================
+
+API BASE: http://localhost:5000/api/
+
+Iniciar sesion:
+  POST /api/admin/IniciarSesion
+  {"account":"admin","pass":"admin"}
+
+  POST /api/pasajero/IniciarSesion
+  {"account":"...","pass":"..."}
+
+  POST /api/conductor/IniciarSesion
+  {"account":"...","pass":"..."}
+
+NOTA: No hay registros de pasajeros ni conductores en la base de datos actualmente.
+      Los passwords estan almacenados como hash SHA256 en hexadecimal (64 caracteres).
+      Hash('admin') = 8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918

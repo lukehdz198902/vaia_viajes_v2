@@ -1,0 +1,197 @@
+@{
+    ViewBag.Title = "Reportes";
+}
+
+@section Styles {
+    <link href="~/Content/section.css" rel="stylesheet" />
+}
+
+<div id="dvReportes">
+    <div class="section-header">
+        <h4><i class="fas fa-chart-bar me-2" style="color: var(--primary);"></i>Reportes</h4>
+    </div>
+
+    <div class="filters" id="dvFiltros">
+        <div class="form-group" style="margin-bottom:0;min-width:140px;">
+            <label style="font-size:0.75rem;color:#718096;margin-bottom:2px;">Fecha Inicio</label>
+            <input type="date" class="input-soft" id="txtFi" />
+        </div>
+        <div class="form-group" style="margin-bottom:0;min-width:140px;">
+            <label style="font-size:0.75rem;color:#718096;margin-bottom:2px;">Fecha Fin</label>
+            <input type="date" class="input-soft" id="txtFf" />
+        </div>
+        <button class="btn-soft" onclick="generar()"><i class="fas fa-sync me-1"></i>Generar</button>
+    </div>
+
+    <div class="row g-4 mb-4" id="dvStatsCards"></div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <h6><i class="fas fa-chart-line me-2" style="color: var(--primary);"></i>Ingresos Diarios</h6>
+                </div>
+                <div class="card-body-custom">
+                    <canvas id="chartIngresosDiarios" height="280"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <h6><i class="fas fa-list me-2" style="color: var(--primary);"></i>Servicios por Periodo</h6>
+                </div>
+                <div class="card-body-custom p-0">
+                    <div class="table-wrap" id="dvTablaServicios"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <h6><i class="fas fa-map-marker-alt me-2" style="color: var(--primary);"></i>Comisiones por Zona</h6>
+                </div>
+                <div class="card-body-custom p-0">
+                    <div class="table-wrap" id="dvTablaComisiones"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/Scripts/admin.js"></script>
+    <script>
+        $(function () {
+            var today = new Date().toISOString().split('T')[0];
+            var monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+            $('#txtFi').val(monthAgo);
+            $('#txtFf').val(today);
+            generar();
+        });
+
+        var chartIngresos = null;
+
+        function generar() {
+            var fi = $('#txtFi').val();
+            var ff = $('#txtFf').val();
+            cargarStats(fi, ff);
+            cargarIngresosDiarios(fi, ff);
+            cargarServiciosPeriodo(fi, ff);
+            cargarComisionesZona(fi, ff);
+        }
+
+        function cargarStats(fi, ff) {
+            AdminApp.ajax('admin/ReporteIngresos', 'GET', { fi: fi, ff: ff }, function (res) {
+                var d = res || {};
+                var cards = [
+                    { label: 'Total Ingresos', valor: AdminApp.fmtMoneda(d.TotalIngresos || d.totalIngresos || 0), icono: 'fa-dollar-sign', clase: 'ingresos' },
+                    { label: 'Total Viajes', valor: d.TotalViajes || d.totalViajes || 0, icono: 'fa-route', clase: 'viajes' },
+                    { label: 'Comisiones', valor: AdminApp.fmtMoneda(d.Comisiones || d.comisiones || 0), icono: 'fa-percentage', clase: 'pasajeros' },
+                    { label: 'Utilidad', valor: AdminApp.fmtMoneda(d.Utilidad || d.utilidad || 0), icono: 'fa-chart-pie', clase: 'conductores' }
+                ];
+                var h = '';
+                cards.forEach(function (c) {
+                    h += '<div class="col-md-6 col-xl-3 fade-in">';
+                    h += '  <div class="stat-card ' + c.clase + '">';
+                    h += '    <i class="fas ' + c.icono + ' stat-icon-bg"></i>';
+                    h += '    <div class="icon-circle"><i class="fas ' + c.icono + '"></i></div>';
+                    h += '    <div class="stat-label">' + c.label + '</div>';
+                    h += '    <div class="stat-value">' + c.valor + '</div>';
+                    h += '  </div>';
+                    h += '</div>';
+                });
+                $('#dvStatsCards').html(h);
+            });
+        }
+
+        function cargarIngresosDiarios(fi, ff) {
+            AdminApp.ajax('admin/ReporteUtilidadDiaria', 'GET', { fi: fi, ff: ff }, function (res) {
+                var data = Array.isArray(res) ? res : (res.data || []);
+                var labels = data.map(function (d) { var dt = d.Fecha || d.fecha; return dt ? AdminApp.fmtFecha(dt) : '--'; });
+                var valores = data.map(function (d) { return d.Total || d.total || d.Ingreso || d.ingreso || 0; });
+                var ctx = document.getElementById('chartIngresosDiarios');
+                if (!ctx) return;
+                if (window.chartIngresos) { window.chartIngresos.destroy(); }
+                window.chartIngresos = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels.length ? labels : ['Sin datos'],
+                        datasets: [{
+                            label: 'Ingresos',
+                            data: valores.length ? valores : [0],
+                            borderColor: '#5B6ABF',
+                            backgroundColor: 'rgba(91, 106, 191, 0.08)',
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#5B6ABF',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: true, position: 'top', labels: { usePointStyle: true, padding: 16, font: { size: 12 } } },
+                            tooltip: { backgroundColor: '#2D3748', titleFont: { size: 12 }, bodyFont: { size: 13 }, padding: 12, cornerRadius: 8 }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }, ticks: { font: { size: 11 }, color: '#718096' } },
+                            x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#718096' } }
+                        }
+                    }
+                });
+            });
+        }
+
+        function cargarServiciosPeriodo(fi, ff) {
+            AdminApp.ajax('admin/ReporteServicios', 'GET', { fi: fi, ff: ff }, function (res) {
+                var data = Array.isArray(res) ? res : (res.data || []);
+                var h = '<table class="table-custom"><thead><tr><th>ID</th><th>Pasajero</th><th>Conductor</th><th>Monto</th><th>Estatus</th><th>Fecha</th></tr></thead><tbody>';
+                if (!data || data.length === 0) {
+                    h += '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-route"></i><h5>Sin servicios</h5></div></td></tr>';
+                } else {
+                    data.forEach(function (s) {
+                        var sid = s.IdServicio || s.idServicio || 0;
+                        var pasajero = s.NombrePasajero || s.pasajero || s.Pasajero || '--';
+                        var conductor = s.NombreConductor || s.conductor || s.Conductor || '--';
+                        var monto = s.MontoTotal || s.monto || s.Monto || 0;
+                        var estatus = s.EstatusViaje || s.estatus || s.Estatus || '--';
+                        var fecha = s.FechaServicio || s.fecha || s.Fecha || null;
+                        h += '<tr><td>#' + sid + '</td><td>' + pasajero + '</td><td>' + conductor + '</td><td>' + AdminApp.fmtMoneda(monto) + '</td><td>' + AdminApp.badge(true, estatus) + '</td><td>' + AdminApp.fmtFecha(fecha) + '</td></tr>';
+                    });
+                }
+                h += '</tbody></table>';
+                $('#dvTablaServicios').html(h);
+            });
+        }
+
+        function cargarComisionesZona(fi, ff) {
+            AdminApp.ajax('admin/ReporteComisiones', 'GET', { fi: fi, ff: ff }, function (res) {
+                var data = Array.isArray(res) ? res : (res.data || []);
+                var h = '<table class="table-custom"><thead><tr><th>Zona</th><th>Comisiones</th><th>Viajes</th><th>Promedio</th></tr></thead><tbody>';
+                if (!data || data.length === 0) {
+                    h += '<tr><td colspan="4"><div class="empty-state"><i class="fas fa-map-marker-alt"></i><h5>Sin datos</h5></div></td></tr>';
+                } else {
+                    data.forEach(function (z) {
+                        var zona = z.Zona || z.zona || '--';
+                        var com = z.Comisiones || z.comisiones || z.TotalComision || z.totalComision || 0;
+                        var viajes = z.Viajes || z.viajes || z.TotalViajes || z.totalViajes || 0;
+                        var prom = viajes > 0 ? com / viajes : 0;
+                        h += '<tr><td>' + zona + '</td><td>' + AdminApp.fmtMoneda(com) + '</td><td>' + viajes + '</td><td>' + AdminApp.fmtMoneda(prom) + '</td></tr>';
+                    });
+                }
+                h += '</tbody></table>';
+                $('#dvTablaComisiones').html(h);
+            });
+        }
+    </script>
+}

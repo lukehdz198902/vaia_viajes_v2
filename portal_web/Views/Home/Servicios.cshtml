@@ -1,0 +1,172 @@
+@{
+    ViewBag.Title = "Servicios";
+}
+
+@section Styles {
+    <link href="~/Content/section.css" rel="stylesheet" />
+}
+
+<div id="dvServicios">
+    <div class="section-header">
+        <h4><i class="fas fa-route me-2" style="color: var(--primary);"></i>Servicios</h4>
+    </div>
+
+    <div class="filters" id="dvFiltros">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" class="input-soft" id="txtBuscar" placeholder="Buscar servicio..." />
+        </div>
+        <div class="form-group" style="margin-bottom:0;min-width:140px;">
+            <label style="font-size:0.75rem;color:#718096;margin-bottom:2px;">Fecha Inicio</label>
+            <input type="date" class="input-soft" id="txtFi" />
+        </div>
+        <div class="form-group" style="margin-bottom:0;min-width:140px;">
+            <label style="font-size:0.75rem;color:#718096;margin-bottom:2px;">Fecha Fin</label>
+            <input type="date" class="input-soft" id="txtFf" />
+        </div>
+        <select class="input-soft" id="selFiltroEstatus"><option value="">Todos los estatus</option></select>
+        <button class="btn-soft outline" onclick="cargar()"><i class="fas fa-search me-1"></i>Buscar</button>
+    </div>
+
+    <div class="table-wrap" id="dvTabla"></div>
+
+    <div class="pagination" id="dvPaginacion"></div>
+</div>
+
+<div class="modal fade" id="modalDetalleServicio" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-route me-2" style="color:var(--primary);"></i>Detalle del Servicio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="dvDetalleServicio"></div>
+            <div class="modal-footer">
+                <button class="btn-soft outline" data-bs-dismiss="modal">Cerrar</button>
+                <button class="btn-soft danger" id="btnCancelarServicio" onclick="cancelarServicio()" style="display:none;"><i class="fas fa-times me-1"></i>Cancelar Servicio</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Scripts/admin.js"></script>
+    <script>
+        $(function () {
+            AdminApp.loadSelect('admin/ListarEstatusServicio', 'selFiltroEstatus', function (r) { return r.IdEstatus || r.idEstatus || r.Estatus || r.estatus || r; }, function (r) { return r.Estatus || r.estatus || r; });
+            cargar();
+            var today = new Date().toISOString().split('T')[0];
+            var weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+            $('#txtFi').val(weekAgo);
+            $('#txtFf').val(today);
+            $('#txtBuscar').on('keyup', function (e) { if (e.key === 'Enter') cargar(); });
+        });
+
+        var servicioActualId = 0;
+
+        function cargar() {
+            var data = {
+                pagina: AdminApp.state.pagina,
+                tamano: AdminApp.state.tamano,
+                busqueda: $('#txtBuscar').val(),
+                fi: $('#txtFi').val(),
+                ff: $('#txtFf').val(),
+                estatus: $('#selFiltroEstatus').val()
+            };
+            AdminApp.ajax('admin/ListarServicios', 'GET', data, function (res) {
+                var dataArr = Array.isArray(res) ? res : (res.data || []);
+                renderTable(dataArr);
+                renderPaginacion(res.totalRegistros || dataArr.length);
+            });
+        }
+
+        function renderTable(data) {
+            var h = '<table class="table-custom"><thead><tr><th>ID</th><th>Pasajero</th><th>Conductor</th><th>Origen</th><th>Destino</th><th>Monto</th><th>Estatus</th><th>Fecha</th><th class="col-acciones">Acciones</th></tr></thead><tbody>';
+            if (!data || data.length === 0) {
+                h += '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-route"></i><h5>No hay servicios</h5></div></td></tr>';
+            } else {
+                data.forEach(function (s) {
+                    var id = s.IdServicio || s.idServicio || 0;
+                    var pasajero = s.NombrePasajero || s.pasajero || s.Pasajero || '--';
+                    var conductor = s.NombreConductor || s.conductor || s.Conductor || '--';
+                    var origen = s.DirOrigen || s.origen || s.Origen || '--';
+                    var destino = s.DirDestino || s.destino || s.Destino || '--';
+                    var monto = s.MontoTotal || s.monto || s.Monto || 0;
+                    var estatus = s.EstatusViaje || s.estatus || s.Estatus || '--';
+                    var fecha = s.FechaServicio || s.fecha || s.Fecha || null;
+                    var statusClass = estatus === 'Completado' ? 'active' : estatus === 'Cancelado' ? 'inactive' : estatus === 'En Proceso' ? 'info' : 'pending';
+                    h += '<tr>';
+                    h += '<td><strong>#' + id + '</strong></td>';
+                    h += '<td>' + pasajero + '</td>';
+                    h += '<td>' + conductor + '</td>';
+                    h += '<td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + origen + '</td>';
+                    h += '<td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + destino + '</td>';
+                    h += '<td><strong>' + AdminApp.fmtMoneda(monto) + '</strong></td>';
+                    h += '<td><span class="status-badge ' + statusClass + '">' + estatus + '</span></td>';
+                    h += '<td>' + AdminApp.fmtFecha(fecha) + '</td>';
+                    h += '<td class="col-acciones"><button class="accion-btn" onclick="verDetalle(' + id + ')" title="Ver detalle"><i class="fas fa-eye"></i></button></td>';
+                    h += '</tr>';
+                });
+            }
+            h += '</tbody></table>';
+            $('#dvTabla').html(h);
+        }
+
+        function renderPaginacion(total) {
+            var h = AdminApp.paginador(total, AdminApp.state.pagina, AdminApp.state.tamano, null);
+            $('#dvPaginacion').html(h);
+            $('#dvPaginacion .pages button').on('click', function () {
+                AdminApp.state.pagina = parseInt($(this).data('p'));
+                cargar();
+            });
+        }
+
+        function verDetalle(id) {
+            servicioActualId = id;
+            AdminApp.ajax('admin/DetalleServicio', 'GET', { idServicio: id }, function (s) {
+                var pasajero = s.Pasajero || s.pasajero || {};
+                var conductor = s.Conductor || s.conductor || {};
+                var h = '';
+                h += '<div class="detail-section"><h6><i class="fas fa-user me-2"></i>Pasajero</h6>';
+                h += '<div class="detail-row"><span class="label">Nombre</span><span>' + (pasajero.Nombre || pasajero.nombre || '--') + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Correo</span><span>' + (pasajero.Correo || pasajero.correo || '--') + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Teléfono</span><span>' + (pasajero.Telefono || pasajero.telefono || '--') + '</span></div>';
+                h += '</div>';
+                h += '<div class="detail-section"><h6><i class="fas fa-id-card me-2"></i>Conductor</h6>';
+                h += '<div class="detail-row"><span class="label">Nombre</span><span>' + (conductor.Nombre || conductor.nombre || '--') + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Correo</span><span>' + (conductor.Correo || conductor.correo || '--') + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Teléfono</span><span>' + (conductor.Telefono || conductor.telefono || '--') + '</span></div>';
+                h += '</div>';
+                h += '<div class="detail-section"><h6><i class="fas fa-map-marker-alt me-2"></i>Ruta</h6>';
+                h += '<div class="detail-row"><span class="label">Origen</span><span>' + (s.DirOrigen || s.origen || s.Origen || '--') + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Destino</span><span>' + (s.DirDestino || s.destino || s.Destino || '--') + '</span></div>';
+                h += '</div>';
+                h += '<div class="detail-section"><h6><i class="fas fa-dollar-sign me-2"></i>Financiero</h6>';
+                h += '<div class="detail-row"><span class="label">Costo Total</span><span>' + AdminApp.fmtMoneda(s.MontoTotal || s.monto || s.Monto || s.Costo || s.costo || 0) + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Ganancia Conductor</span><span>' + AdminApp.fmtMoneda(s.GananciaConductor || s.gananciaConductor || 0) + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Comisión</span><span>' + AdminApp.fmtMoneda(s.Comision || s.comision || 0) + '</span></div>';
+                h += '</div>';
+                h += '<div class="detail-section"><h6><i class="fas fa-clock me-2"></i>Estatus</h6>';
+                h += '<div class="detail-row"><span class="label">Actual</span><span>' + AdminApp.badge(true, s.EstatusViaje || s.estatus || s.Estatus || '--') + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Fecha</span><span>' + AdminApp.fmtFecha(s.FechaServicio || s.fecha || s.Fecha) + '</span></div>';
+                if (s.EstatusViaje || s.estatus || s.Estatus) {
+                    h += '<div class="timeline mt-3" id="dvTimelineEstatus"></div>';
+                }
+                h += '</div>';
+                $('#dvDetalleServicio').html(h);
+                var estatus = (s.EstatusViaje || s.estatus || s.Estatus || '').toLowerCase();
+                $('#btnCancelarServicio').toggle(estatus !== 'completado' && estatus !== 'cancelado');
+                AdminApp.openModal('modalDetalleServicio');
+            });
+        }
+
+        function cancelarServicio() {
+            if (!confirm('¿Cancelar este servicio?')) return;
+            AdminApp.ajax('admin/GestionarServicio', 'POST', { idServicio: servicioActualId, accion: 'cancelar' }, function (res) {
+                AdminApp.closeModal('modalDetalleServicio');
+                AdminApp.Toast.success('Servicio cancelado');
+                cargar();
+            });
+        }
+    </script>
+}

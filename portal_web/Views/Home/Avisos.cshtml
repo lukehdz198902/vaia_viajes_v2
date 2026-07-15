@@ -1,0 +1,98 @@
+@{
+    ViewBag.Title = "Avisos en App";
+}
+
+@section Styles {
+    <link href="~/Scripts/Views/Home/Avisos/style.css" rel="stylesheet" />
+}
+
+<div id="dvAvisos">
+    <div class="section-header d-flex justify-content-between align-items-center mb-4">
+        <h5 class="m-0 fw-bold"><i class="fas fa-exclamation-triangle me-2" style="color: var(--primary);"></i>Avisos en App</h5>
+        <div>
+            <button class="btn-soft primary" onclick="AvisosApp.abrirNuevo()"><i class="fas fa-plus me-1"></i>Nuevo</button>
+        </div>
+    </div>
+
+    <div class="card-custom">
+        <div class="card-body-custom p-0">
+            <div id="dvTablaAvisos">
+                <div class="loader" style="margin: 40px auto;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade modal-soft" id="mdlDetalleAviso" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title"><i class="fas fa-info-circle me-2" style="color: var(--primary);"></i>Detalle de Aviso</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="dvDetalleAvisoBody">
+                <div class="loader" style="margin: 20px auto;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-soft outline" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div class="modal fade modal-soft" id="mdlEditarAviso" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="lblTituloModalAviso"><i class="fas fa-edit me-2" style="color: var(--primary);"></i>Nuevo Aviso</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="frmAviso">
+                    <input type="hidden" name="id" id="hdnAvisoId" value="0" />
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium text-muted">Titulo</label>
+                        <input type="text" class="input-soft" id="txtTituloAviso" name="tituloaviso" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium text-muted">Descripcion</label>
+                        <textarea class="input-soft" id="txtDescripcionAviso" name="descripcionaviso" rows="3" required></textarea>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="chkEsAvisoPasajero" name="esavisopasajero" />
+                                <label class="form-check-label small" for="chkEsAvisoPasajero">Visible para Pasajeros</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="chkEsAvisoConductor" name="esavisoconductor" />
+                                <label class="form-check-label small" for="chkEsAvisoConductor">Visible para Conductores</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="chkActivo" name="activo" checked />
+                                <label class="form-check-label small" for="chkActivo">Activo</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-soft outline" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn-soft primary" onclick="AvisosApp.guardar()"><i class="fas fa-save me-1"></i>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Scripts/admin.js"></script>
+    <script src="~/Scripts/Views/Home/Avisos/fn.js"></script>
+    <script src="~/Scripts/Views/Home/Avisos/jnAjax.js"></script>
+    <script src="~/Scripts/Views/Home/Avisos/Initscript.js"></script>
+}

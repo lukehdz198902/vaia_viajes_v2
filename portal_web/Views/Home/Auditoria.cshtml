@@ -1,0 +1,102 @@
+@{
+    ViewBag.Title = "Auditoria y Logs";
+}
+
+@section Styles {
+    <link href="~/Scripts/Views/Home/Auditoria/style.css" rel="stylesheet" />
+}
+
+<div id="dvAuditoria">
+    <div class="section-header d-flex justify-content-between align-items-center mb-4">
+        <h5 class="m-0 fw-bold"><i class="fas fa-history me-2" style="color: var(--primary);"></i>Auditoria y Logs</h5>
+    </div>
+
+    <div class="card-custom">
+        <div class="card-header-custom">
+            <ul class="nav nav-tabs card-header-tabs border-0" id="tabAuditoria" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tab-auditoria" data-bs-toggle="tab" data-bs-target="#pane-auditoria" type="button" role="tab" aria-selected="true">
+                        <i class="fas fa-clipboard-list me-1"></i>Auditoria
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-logs" data-bs-toggle="tab" data-bs-target="#pane-logs" type="button" role="tab" aria-selected="false">
+                        <i class="fas fa-bug me-1"></i>Logs
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body-custom p-0">
+            <div class="tab-content">
+                <!-- Tab Auditoria -->
+                <div class="tab-pane fade show active" id="pane-auditoria" role="tabpanel">
+                    <div class="p-3 border-bottom">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-medium text-muted">Fecha Inicio</label>
+                                <input type="date" class="input-soft" id="txtAudFi" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-medium text-muted">Fecha Fin</label>
+                                <input type="date" class="input-soft" id="txtAudFf" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-medium text-muted">Tabla</label>
+                                <input type="text" class="input-soft" id="txtAudTabla" placeholder="Filtrar tabla..." />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-medium text-muted">Accion</label>
+                                <select class="form-select input-soft" id="selAudAccion">
+                                    <option value="">Todas</option>
+                                    <option value="INSERT">INSERT</option>
+                                    <option value="UPDATE">UPDATE</option>
+                                    <option value="DELETE">DELETE</option>
+                                    <option value="ELIMINAR">ELIMINAR</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn-soft primary w-100" onclick="AuditoriaApp.filtrarAuditoria()"><i class="fas fa-search me-1"></i>Buscar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="dvTablaAuditoria">
+                        <div class="loader" style="margin: 40px auto;"></div>
+                    </div>
+                </div>
+
+                <!-- Tab Logs -->
+                <div class="tab-pane fade" id="pane-logs" role="tabpanel">
+                    <div class="p-3 border-bottom">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-medium text-muted">Fecha Inicio</label>
+                                <input type="date" class="input-soft" id="txtLogFi" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-medium text-muted">Fecha Fin</label>
+                                <input type="date" class="input-soft" id="txtLogFf" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-medium text-muted">Modulo</label>
+                                <input type="text" class="input-soft" id="txtLogModulo" placeholder="Filtrar modulo..." />
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn-soft primary w-100" onclick="AuditoriaApp.filtrarLogs()"><i class="fas fa-search me-1"></i>Buscar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="dvTablaLogs">
+                        <div class="loader" style="margin: 40px auto;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Scripts/admin.js"></script>
+    <script src="~/Scripts/Views/Home/Auditoria/fn.js"></script>
+    <script src="~/Scripts/Views/Home/Auditoria/jnAjax.js"></script>
+    <script src="~/Scripts/Views/Home/Auditoria/Initscript.js"></script>
+}

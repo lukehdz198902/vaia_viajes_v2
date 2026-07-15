@@ -1,0 +1,100 @@
+@{
+    ViewBag.Title = "Notificaciones Push";
+}
+
+@section Styles {
+    <link href="~/Scripts/Views/Home/Notificaciones/style.css" rel="stylesheet" />
+}
+
+<div id="dvNotificaciones">
+    <div class="section-header d-flex justify-content-between align-items-center mb-4">
+        <h5 class="m-0 fw-bold"><i class="fas fa-bell me-2" style="color: var(--primary);"></i>Notificaciones Push</h5>
+        <div>
+            <button class="btn-soft primary" onclick="NotifApp.abrirEnviar()"><i class="fas fa-plus me-1"></i>Nueva</button>
+        </div>
+    </div>
+
+    <div class="card-custom">
+        <div class="card-body-custom p-0">
+            <div id="dvTablaNotificaciones">
+                <div class="loader" style="margin: 40px auto;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade modal-soft" id="mdlDetalleNotif" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title"><i class="fas fa-info-circle me-2" style="color: var(--primary);"></i>Detalle de Notificacion</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="dvDetalleNotifBody">
+                <div class="loader" style="margin: 20px auto;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-soft outline" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Send/Create Modal -->
+<div class="modal fade modal-soft" id="mdlEnviarNotif" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title"><i class="fas fa-paper-plane me-2" style="color: var(--primary);"></i>Enviar Notificacion</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="frmNotificacion">
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium text-muted">Titulo</label>
+                        <input type="text" class="input-soft" id="txtTitulo" name="titulo" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium text-muted">Mensaje</label>
+                        <textarea class="input-soft" id="txtMensaje" name="mensaje" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium text-muted">Tipo de Audiencia</label>
+                        <select class="form-select input-soft" id="selTipoAudiencia" name="tipoaudiencia">
+                            <option value="TODOS">TODOS</option>
+                            <option value="PASAJEROS">PASAJEROS</option>
+                            <option value="CONDUCTORES">CONDUCTORES</option>
+                            <option value="INDIVIDUAL">INDIVIDUAL</option>
+                        </select>
+                    </div>
+                    <div class="row g-3" id="dvCamposIndividual" style="display:none;">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium text-muted">ID Pasajero</label>
+                            <input type="number" class="input-soft" id="txtIdPasajero" name="idPasajero" min="0" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium text-muted">ID Conductor</label>
+                            <input type="number" class="input-soft" id="txtIdConductor" name="idConductor" min="0" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium text-muted">Fecha Programada <small class="text-muted">(opcional)</small></label>
+                        <input type="datetime-local" class="input-soft" id="txtFechaProgramada" name="fechaprogramada" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-soft outline" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn-soft primary" onclick="NotifApp.enviar()"><i class="fas fa-paper-plane me-1"></i>Enviar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Scripts/admin.js"></script>
+    <script src="~/Scripts/Views/Home/Notificaciones/fn.js"></script>
+    <script src="~/Scripts/Views/Home/Notificaciones/jnAjax.js"></script>
+    <script src="~/Scripts/Views/Home/Notificaciones/Initscript.js"></script>
+}
