@@ -4,6 +4,7 @@ using System.Data.SqlClient;
 using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json.Linq;
 
 public static class DatabaseHelper
 {
@@ -14,11 +15,23 @@ public static class DatabaseHelper
         ConnString = config.GetConnectionString("VaiaViajes");
     }
 
+    private static object NormalizeParams(object parameters)
+    {
+        if (parameters is JObject jobj)
+        {
+            var dict = new Dictionary<string, object>();
+            foreach (var prop in jobj.Properties())
+                dict[prop.Name] = prop.Value?.Type == JTokenType.Null ? null : ((JValue)prop.Value)?.Value ?? prop.Value;
+            return dict;
+        }
+        return parameters;
+    }
+
     public static async Task<IEnumerable<T>> QueryAsync<T>(string spName, object parameters = null)
     {
         using (var conn = new SqlConnection(ConnString))
         {
-            return await conn.QueryAsync<T>(spName, parameters, commandType: CommandType.StoredProcedure);
+            return await conn.QueryAsync<T>(spName, NormalizeParams(parameters), commandType: CommandType.StoredProcedure);
         }
     }
 
@@ -26,7 +39,7 @@ public static class DatabaseHelper
     {
         using (var conn = new SqlConnection(ConnString))
         {
-            return await conn.QuerySingleOrDefaultAsync<T>(spName, parameters, commandType: CommandType.StoredProcedure);
+            return await conn.QuerySingleOrDefaultAsync<T>(spName, NormalizeParams(parameters), commandType: CommandType.StoredProcedure);
         }
     }
 
@@ -34,7 +47,7 @@ public static class DatabaseHelper
     {
         using (var conn = new SqlConnection(ConnString))
         {
-            return await conn.ExecuteAsync(spName, parameters, commandType: CommandType.StoredProcedure);
+            return await conn.ExecuteAsync(spName, NormalizeParams(parameters), commandType: CommandType.StoredProcedure);
         }
     }
 }

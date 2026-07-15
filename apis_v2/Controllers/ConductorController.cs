@@ -5,12 +5,12 @@ using Microsoft.AspNetCore.Mvc;
 [ApiController]
 public class ConductorController : ControllerBase
 {
-    [HttpPost("Registrar")] public async Task<IActionResult> Registrar([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_Registrar", p)); }
-    [HttpPost("IniciarSesion")] public async Task<IActionResult> IniciarSesion([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_IniciarSesion", p)); }
+    [HttpPost("Registrar")] public async Task<IActionResult> Registrar([FromBody] dynamic p) { var d = ParameterHelper.ToDictionary(p); d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]); return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_Registrar", d)); }
+    [HttpPost("IniciarSesion")] public async Task<IActionResult> IniciarSesion([FromBody] dynamic p) { var d = ParameterHelper.ToDictionary(p); d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]); return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_IniciarSesion", d)); }
     [HttpPost("CerrarSesion")] public async Task<IActionResult> CerrarSesion([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_CerrarSesion", p)); }
     [HttpGet("ObtenerPerfil")] public async Task<IActionResult> ObtenerPerfil(int idConductor) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_ObtenerPerfil", new { idConductor })); }
     [HttpPost("ActualizarPerfil")] public async Task<IActionResult> ActualizarPerfil([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_ActualizarPerfil", p)); }
-    [HttpPost("CambiarPassword")] public async Task<IActionResult> CambiarPassword([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_CambiarPassword", p)); }
+    [HttpPost("CambiarPassword")] public async Task<IActionResult> CambiarPassword([FromBody] dynamic p) { var d = ParameterHelper.ToDictionary(p); d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]); return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_CambiarPassword", d)); }
     [HttpPost("ActualizarUbicacion")] public async Task<IActionResult> ActualizarUbicacion([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_ActualizarUbicacion", p)); }
     [HttpPost("CambiarEstatus")] public async Task<IActionResult> CambiarEstatus([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_CambiarEstatus", p)); }
     [HttpPost("AceptarServicio")] public async Task<IActionResult> AceptarServicio([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_AceptarServicio", p)); }

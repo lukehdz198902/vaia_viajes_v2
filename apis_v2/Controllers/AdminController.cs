@@ -5,10 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 [ApiController]
 public class AdminController : ControllerBase
 {
-    [HttpPost("IniciarSesion")] public async Task<IActionResult> IniciarSesion([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_IniciarSesion", p)); }
+    [HttpPost("IniciarSesion")] public async Task<IActionResult> IniciarSesion([FromBody] dynamic p) { var d = ParameterHelper.ToDictionary(p); d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]); return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_IniciarSesion", d)); }
     [HttpPost("CerrarSesion")] public async Task<IActionResult> CerrarSesion([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_CerrarSesion", p)); }
-    [HttpPost("CrearUsuario")] public async Task<IActionResult> CrearUsuario([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_Crear", p)); }
-    [HttpPost("EditarUsuario")] public async Task<IActionResult> EditarUsuario([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_Actualizar", p)); }
+    [HttpPost("CrearUsuario")] public async Task<IActionResult> CrearUsuario([FromBody] dynamic p) { var d = ParameterHelper.ToDictionary(p); d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]); return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_Crear", d)); }
+    [HttpPost("EditarUsuario")] public async Task<IActionResult> EditarUsuario([FromBody] dynamic p) { var d = ParameterHelper.ToDictionary(p); if (d.ContainsKey("pass")) d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]); return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_Actualizar", d)); }
     [HttpPost("EliminarUsuario")] public async Task<IActionResult> EliminarUsuario([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_Eliminar", p)); }
     [HttpGet("ListarUsuarios")] public async Task<IActionResult> ListarUsuarios(int pagina = 1, int tamano = 50, int? idRol = null, bool? activo = null, string buscar = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_Listar", new { pagina, tamano, idRol, activo, search = buscar })); }
     [HttpGet("ObtenerUsuario")] public async Task<IActionResult> ObtenerUsuario(int idUsuario) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_Obtener", new { idUsuario })); }

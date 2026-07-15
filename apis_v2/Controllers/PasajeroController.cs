@@ -5,12 +5,12 @@ using Microsoft.AspNetCore.Mvc;
 [ApiController]
 public class PasajeroController : ControllerBase
 {
-    [HttpPost("Registrar")] public async Task<IActionResult> Registrar([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_Registrar", p)); }
-    [HttpPost("IniciarSesion")] public async Task<IActionResult> IniciarSesion([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_IniciarSesion", p)); }
+    [HttpPost("Registrar")] public async Task<IActionResult> Registrar([FromBody] dynamic p) { var d = ParameterHelper.ToDictionary(p); d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]); return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_Registrar", d)); }
+    [HttpPost("IniciarSesion")] public async Task<IActionResult> IniciarSesion([FromBody] dynamic p) { var d = ParameterHelper.ToDictionary(p); d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]); return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_IniciarSesion", d)); }
     [HttpPost("CerrarSesion")] public async Task<IActionResult> CerrarSesion([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_CerrarSesion", p)); }
     [HttpPost("ActualizarPerfil")] public async Task<IActionResult> ActualizarPerfil([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_ActualizarPerfil", p)); }
     [HttpGet("ObtenerPerfil")] public async Task<IActionResult> ObtenerPerfil(long idPasajero) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_ObtenerPerfil", new { idPasajero })); }
-    [HttpPost("CambiarPassword")] public async Task<IActionResult> CambiarPassword([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_CambiarPassword", p)); }
+    [HttpPost("CambiarPassword")] public async Task<IActionResult> CambiarPassword([FromBody] dynamic p) { var d = ParameterHelper.ToDictionary(p); d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]); return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_CambiarPassword", d)); }
     [HttpPost("EnviarCodigoVerificacion")] public async Task<IActionResult> EnviarCodigoVerificacion([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_EnviarCodigoVerificacion", p)); }
     [HttpPost("CambiarTelefono")] public async Task<IActionResult> CambiarTelefono([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_CambiarTelefono", p)); }
     [HttpPost("ValidarCodigoPromocional")] public async Task<IActionResult> ValidarCodigoPromocional([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_ValidarCodigoPromocional", p)); }
