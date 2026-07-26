@@ -1,0 +1,925 @@
+================================================================================
+  API PASAJERO - DOCUMENTACION DE ENDPOINTS
+  Proyecto: apis_v2 (ASP.NET Core 2.2)
+  Ruta base: https://vaia.com.mx/api_v2/api/Pasajero/
+================================================================================
+
+INDICE
+  1. Registrar
+  2. IniciarSesion
+  3. CerrarSesion
+  4. ActualizarPerfil
+  5. ObtenerPerfil
+  6. CambiarPassword
+  7. EnviarCodigoVerificacion
+  8. CambiarTelefono
+  9. ValidarCodigoPromocional
+  10. SolicitarServicio
+  11. ConductoresDisponibles
+  12. ObtenerEstadoServicio
+  13. CancelarServicio
+  14. CalificarViaje
+  15. ActivarAlarmaSOS
+  16. AgregarFavorito
+  17. ListarFavoritos
+  18. EliminarFavorito
+  19. HistorialViajes
+  20. DetalleViaje
+  21. ReportarIncidente
+  22. ObtenerConfiguracionCostos
+  23. ObtenerAvisos
+  24. ObtenerPromociones
+  25. ObtenerPropagandas
+  26. EnviarMensajeChat
+  27. ObtenerMensajesChat
+
+
+================================================================================
+1. POST /Registrar
+================================================================================
+Registra un nuevo pasajero en el sistema.
+
+REQUEST (JSON body)
+  idCompania         SMALLINT   Requerido   ID de la compania (ej: 1)
+  nombre             VARCHAR    Requerido   Nombre(s) del pasajero (max 50)
+  appaterno          VARCHAR    Requerido   Apellido paterno (max 50)
+  apmaterno          VARCHAR    Requerido   Apellido materno (max 50)
+  correo             VARCHAR    Requerido   Correo electronico (max 100)
+  codigopaistel      VARCHAR    Opcional    Prefijo telefonico (def: '+52', max 15)
+  telefono           VARCHAR    Requerido   Telefono a 10 digitos (max 30)
+  googlekey          VARCHAR    Requerido   Token FCM para notificaciones push
+  account            VARCHAR    Requerido   Nombre de cuenta de usuario (max 50)
+  pass               VARCHAR    Requerido   Contrasena en texto plano (se hashea SHA256)
+  idiomapreferido    SMALLINT   Opcional    ID del idioma (NULL)
+  fechanacimiento    DATE       Opcional    Fecha de nacimiento (YYYY-MM-DD, NULL)
+  genero             CHAR(1)    Opcional    Genero M/F/O (NULL)
+
+NOTAS:
+  - El campo 'pass' se convierte a SHA256 antes de almacenarse.
+  - El campo 'idCompania' y 'googlekey' son obligatorios en el SP.
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 5,              // BIGINT - Nuevo ID del pasajero creado (>0 = exito)
+      "mensaje": "Registro exitoso"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (id)
+   5           Registro exitoso (id > 0)
+  -1           La cuenta de usuario ya existe
+  -2           El correo ya esta registrado
+  -3           El telefono ya esta registrado
+  -99          Error interno del servidor (ver mensaje)
+
+
+================================================================================
+2. POST /IniciarSesion
+================================================================================
+Inicia sesion para un pasajero registrado.
+
+REQUEST (JSON body)
+  account            VARCHAR    Requerido   Usuario o correo electronico (max 50)
+  pass               VARCHAR    Requerido   Contrasena en texto plano (se hashea SHA256)
+  googlekey          VARCHAR    Opcional    Token FCM para notificaciones push (NULL)
+  googlekeyso        VARCHAR    Opcional    SO del dispositivo (android/ios, max 100)
+  dispositivoinfo    VARCHAR    Opcional    Info del dispositivo (max 500)
+  sistemaoperativo   VARCHAR    Opcional    SO (iOS/Android, max 100)
+  ipaddress          VARCHAR    Opcional    Direccion IP (max 50)
+  useragent          VARCHAR    Opcional    User agent (max 500)
+  esLoginGoogle      BIT        Opcional    Flag de login con Google (def: 0)
+  googleuserid       VARCHAR    Opcional    ID de usuario de Google (max 255)
+
+NOTAS:
+  - Si esLoginGoogle=1 y googleuserid no es NULL, busca por googleuserid.
+  - En caso contrario, busca por account (coincide con account O correo) y pass.
+  - Genera automaticamente un uuidsesion (NEWID()).
+  - Actualiza googlekey y googlekeyso en el registro del pasajero.
+  - Inserta en tbhistorialconexionespasajero y tbsesionusuario.
+
+RESPONSE (200 OK) - Exito
+  [
+    {
+      "id": 1,
+      "idcompania": 1,
+      "nombre": "Juan",
+      "appaterno": "Perez",
+      "apmaterno": "Lopez",
+      "correo": "juan@correo.com",
+      "correoconfirmado": false,
+      "codigopaistel": "+52",
+      "telefono": "5512345678",
+      "telefonoconfirmado": false,
+      "fotoperfil": "",
+      "account": "juanperez",
+      "requierefacturacion": false,
+      "bloqueado": false,
+      "eslogueadocongoogle": false,
+      "googleuserid": null,
+      "fotourlgoogle": null,
+      "metodopagopreferido": null,
+      "idiomapreferido": null,
+      "fechanacimiento": null,
+      "genero": null,
+      "metodopago": null,
+      "idioma": null,
+      "uuidsesion": "GUID-aqui",
+      "mensaje": "Inicio de sesion exitoso"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (id)
+  -1           Credenciales invalidas o cuenta bloqueada
+  -99          Error interno del servidor
+
+
+================================================================================
+3. POST /CerrarSesion
+================================================================================
+Cierra la sesion activa del pasajero.
+
+REQUEST (JSON body)
+  idPasajero         BIGINT     Requerido   ID del pasajero
+  uuidsesion         VARCHAR    Opcional    UUID de la sesion a cerrar (max 1500)
+
+NOTAS:
+  - Si no se proporciona uuidsesion, cierra TODAS las sesiones activas.
+  - Actualiza conectado=0 y ultimadesconexionusr.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Sesion cerrada"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+   1           Sesion cerrada
+  -99          Error interno
+
+
+================================================================================
+4. POST /ActualizarPerfil
+================================================================================
+Actualiza datos del perfil del pasajero. Solo envia los campos a modificar.
+
+REQUEST (JSON body)
+  idPasajero         BIGINT     Requerido   ID del pasajero
+  nombre             VARCHAR    Opcional    Nuevo nombre (max 50)
+  appaterno          VARCHAR    Opcional    Nuevo apellido paterno (max 50)
+  apmaterno          VARCHAR    Opcional    Nuevo apellido materno (max 50)
+  fotoperfil         VARCHAR    Opcional    Foto en base64 (max)
+  idiomapreferido    SMALLINT   Opcional    ID del idioma
+  fechanacimiento    DATE       Opcional    Fecha de nacimiento (YYYY-MM-DD)
+  genero             CHAR(1)    Opcional    Genero M/F/O
+  notasadicionales   VARCHAR    Opcional    Notas adicionales (max 500)
+
+NOTAS:
+  - Usa ISNULL en SQL, solo actualiza campos no NULL.
+  - Si el pasajero no existe (activo=1), devuelve error.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Perfil actualizado"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+  -1           Pasajero no encontrado
+   1           Perfil actualizado
+
+
+================================================================================
+5. GET /ObtenerPerfil?idPasajero={idPasajero}
+================================================================================
+Obtiene el perfil completo del pasajero.
+
+PARAMETROS QUERY
+  idPasajero         BIGINT     Requerido   ID del pasajero
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 1,                        // BIGINT
+      "idcompania": 1,                // SMALLINT
+      "fotoperfil": "",               // VARCHAR(MAX)
+      "nombre": "Juan",               // VARCHAR(50)
+      "appaterno": "Perez",           // VARCHAR(50)
+      "apmaterno": "Lopez",           // VARCHAR(50)
+      "correo": "juan@correo.com",    // VARCHAR(100)
+      "correoconfirmado": false,      // BIT
+      "codigopaistel": "+52",         // VARCHAR(15)
+      "telefono": "5512345678",       // VARCHAR(30)
+      "telefonoconfirmado": false,    // BIT
+      "googlekey": "...",             // VARCHAR(MAX)
+      "googlekeyso": null,            // VARCHAR(100)
+      "account": "juanperez",         // VARCHAR(50)
+      "pass": "...",                  // VARCHAR(8000) - hasheado
+      "activo": true,                 // BIT
+      "ultimaactualizacion": "2026-07-26T...", // DATETIME
+      "bloqueado": false,             // BIT
+      "requierefacturacion": false,   // BIT
+      "ultimalatconsultada": null,    // VARCHAR(100)
+      "ultimalngconsultada": null,    // VARCHAR(100)
+      "conectado": true,              // BIT
+      "ultimaconexionusr": "...",     // DATETIME
+      "ultimadesconexionusr": null,   // DATETIME
+      "correosuscrito": true,         // BIT
+      "fechacreacion": "...",         // DATETIME
+      "googleuserid": null,           // VARCHAR(255)
+      "fotourlgoogle": null,          // VARCHAR(1000)
+      "eslogueadocongoogle": false,   // BIT
+      "metodopagopreferido": null,    // SMALLINT
+      "idiomapreferido": null,        // SMALLINT
+      "fechanacimiento": null,        // DATE
+      "genero": null,                 // CHAR(1)
+      "notasadicionales": null,       // VARCHAR(500)
+      "metodopago": null,            // VARCHAR (JOIN tbmetodopago)
+      "idioma": "Espanol",           // VARCHAR (JOIN tbidioma)
+      "companianombre": "Vaia Viajes Mexico", // VARCHAR (JOIN tbcompania)
+      "totalfavoritos": 3             // INT (subquery COUNT)
+    }
+  ]
+
+NOTA: Usa SELECT p.*, por lo que devuelve TODAS las columnas de tbpasajero.
+
+
+================================================================================
+6. POST /CambiarPassword
+================================================================================
+Cambia la contrasena del pasajero.
+
+REQUEST (JSON body)
+  idPasajero         BIGINT     Requerido   ID del pasajero
+  passActual         VARCHAR    Requerido   Contrasena actual (se hashea SHA256)
+  pass               VARCHAR    Requerido   Nueva contrasena (se hashea SHA256)
+
+NOTAS:
+  - El campo 'passActual' se compara con el hash almacenado.
+  - El campo 'pass' es la nueva contrasena (se renombra a 'passNuevo' internamente).
+  - Ambos se convierten a SHA256 antes de procesar.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Contrasena actualizada"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+  -1           Contrasena actual incorrecta
+   1           Contrasena actualizada
+
+
+================================================================================
+7. POST /EnviarCodigoVerificacion
+================================================================================
+Envia un codigo de verificacion de 6 digitos al telefono del pasajero.
+
+REQUEST (JSON body)
+  codigopaistel      VARCHAR    Requerido   Prefijo telefonico (max 15)
+  telefono           VARCHAR    Requerido   Numero de telefono (max 30)
+
+NOTAS:
+  - Genera un codigo aleatorio de 6 digitos: CAST(100000+RAND()*899999 AS INT).
+  - El codigo expira a los 10 minutos (DATEADD(MINUTE,10,GETDATE())).
+  - Inactiva codigos previos del mismo telefono.
+  - Inserta en tbpasajerocodigos.
+  - En desarrollo/produccion, se debe enviar por SMS/WhatsApp.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Codigo enviado",
+      "codigoverificacion": "483729"   // Solo visible en desarrollo
+    }
+  ]
+
+NOTA: El campo 'codigoverificacion' en la respuesta solo debe usarse
+      en ambiente de desarrollo. En produccion NO debe exponerse.
+
+
+================================================================================
+8. POST /CambiarTelefono
+================================================================================
+Cambia el numero de telefono del pasajero usando un codigo de verificacion.
+
+REQUEST (JSON body)
+  idPasajero             BIGINT     Requerido   ID del pasajero
+  codigopaistel          VARCHAR    Requerido   Nuevo prefijo (max 15)
+  telefonoNuevo          VARCHAR    Requerido   Nuevo telefono (max 30)
+  codigoVerificacion     VARCHAR    Requerido   Codigo de 6 digitos (max 50)
+
+VALIDACIONES
+  - El nuevo telefono no debe estar en uso por otro pasajero activo.
+  - El codigo debe existir en tbpasajerocodigos, estar activo y no expirado.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Telefono actualizado"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+  -1           Telefono ya en uso
+  -2           Codigo invalido o expirado
+   1           Telefono actualizado
+
+
+================================================================================
+9. POST /ValidarCodigoPromocional
+================================================================================
+Valida un codigo promocional contra el pasajero y el monto del viaje.
+
+REQUEST (JSON body)
+  codigo             VARCHAR    Requerido   Codigo promocional (max 100)
+  idPasajero         BIGINT     Requerido   ID del pasajero
+  montoViaje         DECIMAL    Opcional    Monto del viaje (def: 0)
+
+VALIDACIONES (internas)
+  - Codigo existe y activo
+  - No expirado (vigentehasta)
+  - Vigente desde (validodesde)
+  - Limite de usos no alcanzado
+  - Usuario unico (si aplica)
+  - Monto minimo de viaje (si aplica)
+
+RESPONSE (200 OK)
+  [
+    {
+      "valido": true,
+      "mensaje": "Codigo valido",
+      "montodescuento": 25.00,
+      "esporcentaje": false,
+      "idcodigopromo": 1
+    }
+  ]
+
+CAMPOS DE RESPUESTA
+  valido             BIT             true = valido, false = invalido
+  mensaje            VARCHAR(500)    Descripcion del resultado
+  montodescuento     DECIMAL(18,2)   Monto del descuento calculado
+  esporcentaje       BIT             true = % descuento, false = monto fijo
+  idcodigopromo      INT             ID del codigo promo (NULL si invalido)
+
+
+================================================================================
+10. POST /SolicitarServicio
+================================================================================
+Solicita un nuevo servicio de viaje.
+
+REQUEST (JSON body)
+  idPasajero           BIGINT     Requerido   ID del pasajero
+  idCompania           SMALLINT   Requerido   ID de la compania (ej: 1)
+  dirOrigen            VARCHAR    Requerido   Direccion de origen (max 300)
+  latOrigen            VARCHAR    Requerido   Latitud de origen (max 50)
+  lngOrigen            VARCHAR    Requerido   Longitud de origen (max 50)
+  dirDestino           VARCHAR    Requerido   Direccion de destino (max 300)
+  latDestino           VARCHAR    Requerido   Latitud de destino (max 50)
+  lngDestino           VARCHAR    Requerido   Longitud de destino (max 50)
+  distanciaMetros      INT        Requerido   Distancia estimada en metros
+  idTipoPago           SMALLINT   Requerido   ID tipo de pago:
+                                                 1 = Efectivo
+                                                 2 = Tarjeta de Credito
+                                                 3 = Tarjeta de Debito
+                                                 4 = PayPal
+                                                 5 = Mercado Pago
+                                                 6 = Transferencia
+  codigoPromocional    VARCHAR    Opcional    Codigo promocional (max 100)
+  so                   VARCHAR    Opcional    SO del dispositivo (max 100)
+  tipoviaje            VARCHAR    Opcional    Tipo de viaje (def: 'URBANO')
+
+NOTAS:
+  - Calcula el costo usando fn_CalcularCostoViaje.
+  - Aplica descuento promocional si se proporciona codigo.
+  - La duracion estimada se calcula como distanciaMetros/250*60 (segundos).
+  - Inserta en tbservicios con estatus 'Solicitado'.
+  - Si el codigo promo es valido, incrementa usosactuales.
+
+RESPONSE (200 OK) - Exito
+  [
+    {
+      "idservicio": 15,            // BIGINT - ID del servicio creado
+      "costoestimado": 85.50,      // DECIMAL(18,2) - Costo final
+      "distanciametros": 5000,     // INT - Distancia en metros
+      "duracionsegundos": 1200,    // INT - Duracion estimada en segundos
+      "montodescuento": 0.00,      // DECIMAL(18,2) - Descuento aplicado
+      "mensaje": "Servicio solicitado"
+    }
+  ]
+
+RESPONSE - Error
+  [
+    {
+      "idservicio": -99,
+      "mensaje": "Mensaje de error del servidor"
+    }
+  ]
+
+
+================================================================================
+11. GET /ConductoresDisponibles?lat={lat}&lng={lng}&idZona={idZona}
+================================================================================
+Obtiene lista de conductores disponibles cercanos a una ubicacion.
+
+PARAMETROS QUERY
+  lat                VARCHAR    Requerido   Latitud de la ubicacion
+  lng                VARCHAR    Requerido   Longitud de la ubicacion
+  idZona             INT        Opcional    ID de zona de cobertura (NULL = todas)
+
+NOTAS:
+  - Filtra conductores con estatus 'Disponible', activos y no bloqueados.
+  - Calcula distancia usando fn_CalcularDistancia.
+  - Limita a 20 resultados, ordenados por distancia_km ASC.
+  - Usa el radio de kmsalaredondamascercanos de tbcompania.
+
+RESPONSE (200 OK) - Array de conductores
+  [
+    {
+      "id": 1,
+      "nombre": "Carlos",
+      "appaterno": "Martinez",
+      "apmaterno": "Gomez",
+      "fotoperfil": null,
+      "correo": "carlos@correo.com",
+      "telefono": "5511111111",
+      "googlekey": "...",
+      "lat": "19.4326",
+      "lng": "-99.1332",
+      "distancia_km": 1.5,
+      "idunidad": 3,
+      "unidad": "Versa 2023",
+      "alias": "Sedan Azul",
+      "colorhex": "#0000FF",
+      "colornombre": "Azul",
+      "numeroasientos": 4,
+      "placas": "ABC-1234",
+      "nombresubmarca": "Versa",
+      "nombremarca": "Nissan",
+      "conductorestatus": "Disponible"
+    }
+  ]
+
+
+================================================================================
+12. GET /ObtenerEstadoServicio?idServicio={idServicio}&idPasajero={idPasajero}
+================================================================================
+Obtiene el estado actual de un servicio de viaje.
+
+PARAMETROS QUERY
+  idServicio         BIGINT     Requerido   ID del servicio
+  idPasajero         BIGINT     Requerido   ID del pasajero
+
+CAMPOS DE RESPUESTA (seleccion)
+  s.id                        BIGINT          ID del servicio
+  s.idservicioestatus         SMALLINT        ID del estatus
+  se.estatus                  VARCHAR         estatus:
+                                                  Solicitado
+                                                  En Camino
+                                                  Llego al Origen
+                                                  En Viaje
+                                                  Finalizado
+                                                  Cancelado por Pasajero
+                                                  Cancelado por Conductor
+                                                  Cancelado por Admin
+  se.estatusdescription       VARCHAR         Descripcion del estatus
+  s.direccionorigen           VARCHAR(300)    Direccion de origen
+  s.latorigen                 VARCHAR(50)     Latitud de origen
+  s.lngorigen                 VARCHAR(50)     Longitud de origen
+  s.direcciondestination      VARCHAR(300)    Direccion de destino
+  s.latdestination            VARCHAR(50)     Latitud de destino
+  s.lngdestination            VARCHAR(50)     Longitud de destino
+  s.costoestimado             DECIMAL(18,2)   Costo estimado
+  s.distanciametros           INT             Distancia en metros
+  s.durationsegundos          INT             Duracion en segundos
+  s.montodescuento            DECIMAL(18,2)   Monto de descuento
+  s.servicioiniciado          BIT             Viaje iniciado?
+  s.llegoalorigen             BIT             Llego al origen?
+  s.llegoasudestino           BIT             Llego a destino?
+  s.fechacreacion             DATETIME        Fecha de creacion
+  s.fechaservicioiniciado     DATETIME        Fecha de inicio de viaje
+  s.fechallegoalorigen        DATETIME        Fecha de llegada al origen
+  s.fechallegoasudestino      DATETIME        Fecha de llegada a destino
+  s.alarmasospasajero         BIT             Alarma SOS pasajero
+  s.alarmasosconductor        BIT             Alarma SOS conductor
+  s.sesalioderuta             BIT             Se salio de ruta?
+  s.motivocancelacion         VARCHAR(MAX)    Motivo de cancelacion
+  s.canceladopor              VARCHAR(50)     Quien cancelo
+  s.fechacancelacion          DATETIME        Fecha de cancelacion
+  s.calificacion              TINYINT         Calificacion (1-5)
+  s.idconductor               INT             ID del conductor
+  conductor_nombre            VARCHAR(50)     Nombre del conductor
+  conductor_appaterno         VARCHAR(50)     Apellido paterno conductor
+  conductor_foto              VARCHAR(MAX)    Foto del conductor
+  conductor_telefono          VARCHAR(30)     Telefono del conductor
+  u.unidad                    VARCHAR(50)     Nombre de la unidad
+  u.colorhex                  VARCHAR(30)     Color hexadecimal
+  u.colornombre               VARCHAR(50)     Nombre del color
+  u.numeroasientos            TINYINT         Numero de asientos
+  u.placas                    VARCHAR(100)    Placas
+  sm.nombresubmarca           VARCHAR(50)     Nombre de submarca
+  m.nombremarca               VARCHAR(50)     Nombre de marca
+  g.lat                       VARCHAR(50)     Latitud actual del conductor
+  g.lng                       VARCHAR(50)     Longitud actual del conductor
+
+
+================================================================================
+13. POST /CancelarServicio
+================================================================================
+Cancela un servicio que este en estado 'Solicitado'.
+
+REQUEST (JSON body)
+  idServicio         BIGINT     Requerido   ID del servicio
+  idPasajero         BIGINT     Requerido   ID del pasajero
+  motivo             VARCHAR    Opcional    Motivo de cancelacion (MAX)
+
+VALIDACIONES
+  - El servicio debe pertenecer al pasajero.
+  - El servicio debe estar en estatus 'Solicitado'.
+  - Cambia estatus a 'Cancelado por Pasajero'.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Servicio cancelado"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+  -1           El servicio no puede cancelarse
+   1           Servicio cancelado
+
+
+================================================================================
+14. POST /CalificarViaje
+================================================================================
+Califica un servicio finalizado (1-5 estrellas).
+
+REQUEST (JSON body)
+  idServicio         BIGINT     Requerido   ID del servicio
+  idPasajero         BIGINT     Requerido   ID del pasajero
+  calificacion       TINYINT    Requerido   Calificacion (1 a 5)
+  comentarios        VARCHAR    Opcional    Comentarios sobre el viaje (max 500)
+
+VALIDACIONES
+  - La calificacion debe estar entre 1 y 5.
+  - El servicio debe estar en estatus 'Finalizado'.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Calificacion registrada"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+  -1           Rango 1-5
+  -2           Servicio no finalizado
+   1           Calificacion registrada
+
+
+================================================================================
+15. POST /ActivarAlarmaSOS
+================================================================================
+Activa la alarma de emergencia SOS en un servicio activo.
+
+REQUEST (JSON body)
+  idServicio         BIGINT     Requerido   ID del servicio
+  idPasajero         BIGINT     Requerido   ID del pasajero
+
+NOTAS:
+  - Establece alarmasospasajero=1 y fechaalarmasospasajero=GETDATE().
+  - No valida el estatus del servicio (se activa en cualquier estado).
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Alarma SOS activada"
+    }
+  ]
+
+
+================================================================================
+16. POST /AgregarFavorito
+================================================================================
+Agrega una direccion favorita para el pasajero.
+
+REQUEST (JSON body)
+  idPasajero         BIGINT     Requerido   ID del pasajero
+  nombre             VARCHAR    Requerido   Nombre del favorito (max 50)
+  dir                VARCHAR    Opcional    Direccion (max 350)
+  lat                VARCHAR    Requerido   Latitud (max 50)
+  lng                VARCHAR    Requerido   Longitud (max 50)
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 1,
+      "mensaje": "Favorito agregado"
+    }
+  ]
+
+
+================================================================================
+17. GET /ListarFavoritos?idPasajero={idPasajero}
+================================================================================
+Lista las direcciones favoritas del pasajero.
+
+PARAMETROS QUERY
+  idPasajero         BIGINT     Requerido   ID del pasajero
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 1,
+      "favoritonombre": "Casa",
+      "direccionfavorito": "Calle 123, Col. Centro",
+      "lat": "19.4326",
+      "lng": "-99.1332",
+      "fechacreacion": "2026-07-26T12:00:00"
+    }
+  ]
+
+
+================================================================================
+18. POST /EliminarFavorito
+================================================================================
+Elimina (desactiva) una direccion favorita.
+
+REQUEST (JSON body)
+  idFavorito         INT        Requerido   ID del favorito
+  idPasajero         BIGINT     Requerido   ID del pasajero
+
+NOTAS:
+  - No elimina fisicamente, establece activo=0.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Favorito eliminado"
+    }
+  ]
+
+
+================================================================================
+19. GET /HistorialViajes?idPasajero={idPasajero}&pagina={pagina}&tamano={tamano}&fi={fi}&ff={ff}
+================================================================================
+Obtiene el historial de viajes del pasajero con paginacion.
+
+PARAMETROS QUERY
+  idPasajero         BIGINT     Requerido   ID del pasajero
+  pagina             INT        Opcional    Numero de pagina (def: 1)
+  tamano             INT        Opcional    Viajes por pagina (def: 20)
+  fi                 DATETIME   Opcional    Fecha inicio (YYYY-MM-DD)
+  ff                 DATETIME   Opcional    Fecha fin (YYYY-MM-DD)
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 15,
+      "direccionorigen": "Calle 1, Col. Centro",
+      "direcciondestination": "Av. Principal 500",
+      "costoestimado": 85.50,
+      "distanciametros": 5000,
+      "durationsegundos": 1200,
+      "fechacreacion": "2026-07-26T12:00:00",
+      "fechaservicioiniciado": "2026-07-26T12:05:00",
+      "fechallegoasudestino": "2026-07-26T12:25:00",
+      "calificacion": 5,
+      "calificacionpasajero": null,
+      "estatus": "Finalizado",
+      "cond_nombre": "Carlos",
+      "cond_appaterno": "Martinez",
+      "cond_foto": null,
+      "unidad": "Versa 2023",
+      "nombresubmarca": "Versa",
+      "nombremarca": "Nissan",
+      "colorhex": "#0000FF",
+      "tipopago": "Efectivo",
+      "totalregistros": 42          // Total de registros (para paginacion)
+    }
+  ]
+
+
+================================================================================
+20. GET /DetalleViaje?idServicio={idServicio}&idPasajero={idPasajero}
+================================================================================
+Obtiene el detalle completo de un viaje especifico.
+
+PARAMETROS QUERY
+  idServicio         BIGINT     Requerido   ID del servicio
+  idPasajero         BIGINT     Requerido   ID del pasajero
+
+RESPONSE (200 OK) - Una fila
+  {
+    "id": 15,                          // BIGINT
+    "idservicioestatus": 5,            // SMALLINT
+    "estatus": "Finalizado",
+    "estatusdescription": "...",
+    "direccionorigen": "...",
+    "direcciondestination": "...",
+    "costoestimado": 85.50,
+    "distanciametros": 5000,
+    "durationsegundos": 1200,
+    // ... todas las columnas de tbservicios ...
+    "c_nombre": "Carlos",
+    "c_appaterno": "Martinez",
+    "c_apmaterno": "Gomez",
+    "c_foto": null,
+    "c_tel": "5511111111",
+    "c_email": "carlos@correo.com",
+    "unidad": "Versa 2023",
+    "alias": "Sedan",
+    "colorhex": "#0000FF",
+    "colornombre": "Azul",
+    "numeroasientos": 4,
+    "placas": "ABC-1234",
+    "modelo": 2023,
+    "nombresubmarca": "Versa",
+    "nombremarca": "Nissan",
+    "tipopago": "Efectivo",
+    "metodopago": null,
+    "codigopromocional": null,
+    "polylineruta": "...",            // VARCHAR(MAX) - Polyline de la ruta
+    "puntosruta": "...",              // VARCHAR(MAX) - Puntos de ruta
+    "rd_m": 5200,                     // Distancia real en metros
+    "rd_s": 1300                      // Duracion real en segundos
+  }
+
+
+================================================================================
+21. POST /ReportarIncidente
+================================================================================
+Reporta un incidente relacionado con un servicio.
+
+REQUEST (JSON body)
+  idServicio         BIGINT     Requerido   ID del servicio
+  idPasajero         BIGINT     Requerido   ID del pasajero
+  idTipo             INT        Requerido   ID del tipo de incidente:
+                                               1 = Problema con el Conductor
+                                               2 = Problema con el Pasajero
+                                               3 = Problema con la Unidad
+                                               4 = Problema de Pago
+                                               5 = Problema de Ruta
+                                               6 = Problema de Seguridad
+                                               7 = Queja General
+  desc               VARCHAR    Requerido   Descripcion del incidente (MAX)
+  so                 VARCHAR    Opcional    SO del dispositivo (max 100)
+
+VALIDACIONES
+  - El servicio debe pertenecer al pasajero.
+  - Crea el incidente con estatus 'Reportado'.
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 3,             // INT - ID del incidente creado
+      "mensaje": "Incidente reportado"
+    }
+  ]
+
+CODIGOS DE RESPUESTA
+  -1           Servicio no pertenece al pasajero
+
+
+================================================================================
+22. GET /ObtenerConfiguracionCostos?idCompania={idCompania}
+================================================================================
+Obtiene la configuracion de costos de viaje para la compania y dia actual.
+
+PARAMETROS QUERY
+  idCompania         SMALLINT   Requerido   ID de la compania (ej: 1)
+
+NOTAS:
+  - Filtra por el dia de la semana actual (DATEPART(WEEKDAY,GETDATE())).
+  - Ordenado por horainicio ASC.
+
+RESPONSE (200 OK)
+  [
+    {
+      "costominimo": 35.00,         // DECIMAL(18,2)
+      "costoporkm": 8.50,           // DECIMAL(18,2)
+      "costoporminuto": 1.50,       // DECIMAL(18,2)
+      "numdiasemana": 1,            // TINYINT (1=Domingo, 2=Lunes...)
+      "horainicio": "06:00:00",     // TIME
+      "horafin": "22:00:00"         // TIME
+    }
+  ]
+
+
+================================================================================
+23. GET /ObtenerAvisos?idCompania={idCompania}
+================================================================================
+Obtiene los avisos activos para pasajeros de una compania.
+
+PARAMETROS QUERY
+  idCompania         SMALLINT   Requerido   ID de la compania (ej: 1)
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 1,
+      "tituloaviso": "Mantenimiento programado",
+      "descripcionaviso": "La app estara en mantenimiento el sabado...",
+      "fechacreacion": "2026-07-25T10:00:00"
+    }
+  ]
+
+
+================================================================================
+24. GET /ObtenerPromociones
+================================================================================
+Obtiene las promociones activas vigentes (sin parametros).
+
+NOTAS:
+  - Filtra por activo=1 y GETDATE() BETWEEN iniciovigenciapromocion AND finvigenciapromocion.
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 1,
+      "titulopublicidad": "Descuento de bienvenida",
+      "imgbase64": "...",                  // VARCHAR(MAX) - Imagen en base64
+      "iniciovigenciapromocion": "2026-07-01T00:00:00",
+      "finvigenciapromocion": "2026-08-01T00:00:00"
+    }
+  ]
+
+
+================================================================================
+25. GET /ObtenerPropagandas
+================================================================================
+Obtiene las propagandas/publicidad activas (sin parametros).
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 1,
+      "titulopropaganda": "Viaja seguro con Vaia",
+      "imgbase64": "..."                   // VARCHAR(MAX) - Imagen en base64
+    }
+  ]
+
+
+================================================================================
+26. POST /EnviarMensajeChat
+================================================================================
+Envia un mensaje de chat desde el pasajero al conductor del servicio.
+
+REQUEST (JSON body)
+  idServicio         BIGINT     Requerido   ID del servicio
+  idPasajero         BIGINT     Requerido   ID del pasajero
+  mensaje            VARCHAR    Requerido   Contenido del mensaje (max 150)
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 10,            // BIGINT - ID del mensaje creado
+      "mensaje": "Mensaje enviado"
+    }
+  ]
+
+
+================================================================================
+27. GET /ObtenerMensajesChat?idServicio={idServicio}&idPasajero={idPasajero}
+================================================================================
+Obtiene el historial de mensajes del chat de un servicio.
+
+PARAMETROS QUERY
+  idServicio         BIGINT     Requerido   ID del servicio
+  idPasajero         BIGINT     Requerido   ID del pasajero
+
+RESPONSE (200 OK) - Ordenados por fechacreacion ASC
+  [
+    {
+      "id": 1,
+      "mensaje": "Hola, ya llegue",
+      "desdeapppasajero": false,
+      "desdeappconductor": true,
+      "fechacreacion": "2026-07-26T12:00:00"
+    },
+    {
+      "id": 2,
+      "mensaje": "Perfecto, ya salgo",
+      "desdeapppasajero": true,
+      "desdeappconductor": false,
+      "fechacreacion": "2026-07-26T12:01:00"
+    }
+  ]
+
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================
