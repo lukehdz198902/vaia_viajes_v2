@@ -3,17 +3,23 @@
 }
 
 @section Styles {
-    <link href="~/Content/css/admin.css" rel="stylesheet" />
+    <link href="~/css/admin.css" rel="stylesheet" />
     <style>
-        .company-form { max-width: 900px; }
-        .form-switch-custom { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
-        .form-switch-custom label { font-size: 0.88rem; font-weight: 500; color: var(--text-dark); cursor: pointer; }
-        .form-switch-custom .switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
-        .form-switch-custom .switch input { opacity: 0; width: 0; height: 0; }
-        .form-switch-custom .switch .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--border-color); border-radius: 24px; transition: var(--transition); }
-        .form-switch-custom .switch .slider:before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: var(--transition); }
-        .form-switch-custom .switch input:checked + .slider { background: var(--primary); }
-        .form-switch-custom .switch input:checked + .slider:before { transform: translateX(20px); }
+        .company-form { max-width:100%; }
+        .company-form .form-grid { grid-template-columns:repeat(3,1fr); gap:12px; }
+        .company-form .form-grid .form-group { margin-bottom:0; }
+        .company-form .form-grid .form-group label { font-size:0.78rem; margin-bottom:3px; }
+        .company-form .form-grid .form-group .input-soft { font-size:0.82rem; padding:6px 10px; min-height:auto; }
+        .company-form hr { margin:14px 0; }
+        .company-form .form-switch-custom { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+        .company-form .form-switch-custom label { font-size: 0.88rem; font-weight: 500; color: var(--text-dark); cursor: pointer; }
+        .company-form .form-switch-custom .switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+        .company-form .form-switch-custom .switch input { opacity: 0; width: 0; height: 0; }
+        .company-form .form-switch-custom .switch .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--border-color); border-radius: 24px; transition: var(--transition); }
+        .company-form .form-switch-custom .switch .slider:before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: var(--transition); }
+        .company-form .form-switch-custom .switch input:checked + .slider { background: var(--primary); }
+        .company-form .form-switch-custom .switch input:checked + .slider:before { transform: translateX(20px); }
+        .company-form .opts-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
     </style>
 }
 
@@ -68,7 +74,7 @@
 
             <hr />
             <h6 class="mb-3"><i class="fas fa-toggle-on me-2" style="color:var(--primary);"></i>Opciones</h6>
-            <div class="form-grid">
+            <div class="opts-grid">
                 <div class="form-switch-custom">
                     <label class="switch">
                         <input type="checkbox" id="chkPagoTarjeta" name="pagocontarjetaactivo" />
@@ -112,11 +118,24 @@
                     var item = data.length ? data[0] : null;
                     if (!item) { Toast.warning('No hay compania registrada'); return; }
                     $('#txtCompaniaId').val(item.id || item.idCompania);
-                    AdminApp.objToForm('dvCompania', item);
+                    $('#txtCompaniaNombre').val(item.companianombre||'');
+                    $('#txtKmRedonda').val(item.kmsalaredondamascercanos||'');
+                    $('#txtSegEsperaToma').val(item.segesperatomaservicio||'');
+                    $('#txtSegEsperaSalga').val(item.segesperasalgapasajero||'');
+                    $('#txtNoUnidades').val(item.nounidadesmascercanas||'');
+                    $('#txtMinPaypal').val(item.minsparapagopaypal||'');
+                    $('#txtMinMp').val(item.minsparapagomercadopago||'');
+                    $('#txtVersionPasajero').val(item.versionpasajeroandroid||'');
+                    $('#txtVersionConductor').val(item.versionconductorandroid||'');
+                    $('#chkPagoTarjeta').prop('checked',item.pagocontarjetaactivo===true||item.pagocontarjetaactivo===1);
+                    $('#chkSoloUnidad').prop('checked',item.sololaunidadmascercana===true||item.sololaunidadmascercana===1);
+                    $('#chkPaypal').prop('checked',item.paypalactivo===true||item.paypalactivo===1);
+                    $('#chkMercadoPago').prop('checked',item.mercadopagoactivo===true||item.mercadopagoactivo===1);
                 });
             }
 
             function guardar() {
+                if(!$('#dvCompania')[0].querySelector('[name]')){ return; }
                 var id = $('#txtCompaniaId').val();
                 if (!id) { Toast.warning('No hay compania para actualizar'); return; }
                 var data = AdminApp.formToObj('dvCompania');

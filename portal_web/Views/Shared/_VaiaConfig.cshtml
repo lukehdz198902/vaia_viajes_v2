@@ -1,0 +1,11 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    var apiBase = Configuration.GetSection("VaiaApi")["BaseUrl"];
+    var apiToken = Configuration.GetSection("VaiaApi")["AppToken"];
+}
+<script>
+    window.__VAIA_CONFIG__ = window.__VAIA_CONFIG__ || {};
+    window.__VAIA_CONFIG__.apiBase = '@(apiBase ?? "")';
+    window.__VAIA_CONFIG__.appToken = '@(apiToken ?? "")';
+    window.__VAIA_API_BASE__ = '@(apiBase ?? "")';
+</script>

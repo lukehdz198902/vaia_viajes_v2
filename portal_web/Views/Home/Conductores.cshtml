@@ -2,9 +2,7 @@
     ViewBag.Title = "Conductores";
 }
 
-@section Styles {
-    <link href="~/Content/section.css" rel="stylesheet" />
-}
+@section Styles {}
 
 <div id="dvConductores">
     <div class="section-header">
@@ -52,7 +50,7 @@
                         </div>
                         <div class="form-group">
                             <label>Sexo</label>
-                            <select class="input-soft" name="sexo" id="selSexo">
+                            <select class="input-soft" name="sexo" id="selSexo" required>
                                 <option value="">-- Seleccionar --</option>
                                 <option value="M">Masculino</option>
                                 <option value="F">Femenino</option>
@@ -64,15 +62,15 @@
                         </div>
                         <div class="form-group">
                             <label>Teléfono</label>
-                            <input type="text" class="input-soft" name="telefono" id="txtTelefono" />
+                            <input type="tel" class="input-soft" name="telefono" id="txtTelefono" pattern="[0-9]{10}" maxlength="10" title="10 digitos" oninput="this.value=this.value.replace(/\D/g,'')" />
                         </div>
                         <div class="form-group">
                             <label>CURP</label>
-                            <input type="text" class="input-soft" name="curp" id="txtCurp" />
+                            <input type="text" class="input-soft" name="curp" id="txtCurp" pattern="[A-Z]{4}\d{6}[HM][A-Z]{5}[0-9A-Z]\d" maxlength="18" title="18 caracteres, formato CURP" oninput="this.value=this.value.toUpperCase();this.setCustomValidity(validarCurp(this.value)?'':'CURP invalida')" />
                         </div>
                         <div class="form-group">
                             <label>RFC</label>
-                            <input type="text" class="input-soft" name="rfc" id="txtRfc" />
+                            <input type="text" class="input-soft" name="rfc" id="txtRfc" pattern="[A-ZÑ&]{3,4}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[A-Z0-9]{3}" maxlength="13" title="12 o 13 caracteres, formato RFC" oninput="this.value=this.value.toUpperCase();this.setCustomValidity(validarRfc(this.value)?'':'RFC invalido')" />
                         </div>
                         <div class="form-group">
                             <label>Licencia de Conducir</label>
@@ -133,143 +131,123 @@
 @section Scripts {
     <script src="~/Scripts/admin.js"></script>
     <script>
-        $(function () {
-            cargar();
-            $('#txtBuscar').on('keyup', function (e) { if (e.key === 'Enter') cargar(); });
-        });
+        function validarCurp(c){
+            if(!c||c.length!==18)return false;
+            return /^[A-Z]{4}\d{6}[HM][A-Z]{5}[0-9A-Z]\d$/.test(c);
+        }
+        function validarRfc(r){
+            if(!r)return false;
+            if(r.length===12)return /^[A-ZÑ&]{3}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[A-Z0-9]{3}$/.test(r);
+            if(r.length===13)return /^[A-ZÑ&]{4}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[A-Z0-9]{3}$/.test(r);
+            return false;
+        }
+        $(function () { cargar(); $('#txtBuscar').on('keyup',function(e){if(e.key==='Enter')cargar();}); });
+        var conductorActual=0;
 
-        var conductorActual = 0;
+        function fmtTel(t){if(!t||t.length!==10)return t||'--';return t.substring(0,3)+'-'+t.substring(3,6)+'-'+t.substring(6);}
 
-        function cargar() {
-            var data = {
-                pagina: AdminApp.state.pagina,
-                tamano: AdminApp.state.tamano,
-                busqueda: $('#txtBuscar').val(),
-                estatus: $('#selFiltroEstatus').val(),
-                bloqueado: $('#selFiltroBloqueado').val()
-            };
-            AdminApp.ajax('admin/ListarConductores', 'GET', data, function (res) {
-                var dataArr = Array.isArray(res) ? res : (res.data || []);
-                renderTable(dataArr);
-                renderPaginacion(res.totalRegistros || dataArr.length);
+        function cargar(){
+            AdminApp.ajax('admin/ListarConductores','GET',{
+                pagina:AdminApp.state.pagina,tamano:AdminApp.state.tamano,
+                busqueda:$('#txtBuscar').val(),estatus:$('#selFiltroEstatus').val(),bloqueado:$('#selFiltroBloqueado').val()
+            },function(r){var d=Array.isArray(r)?r:(r.data||[]);renderTable(d);renderPaginacion(r.totalRegistros||d.length);});
+        }
+
+        function renderTable(data){
+            var h='<table class="table-custom"><thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Telefono</th><th>Estatus</th><th>Documentacion</th><th>Calificacion</th><th>Bloqueado</th><th class="col-acciones">Acciones</th></tr></thead><tbody>';
+            if(!data||!data.length)h+='<tr><td colspan="9"><div class="empty-state"><i class="fas fa-id-card"></i><h5>No hay conductores</h5></div></td></tr>';
+            else data.forEach(function(c){
+                var id=AdminApp.getVal(c,'idConductor')||AdminApp.getVal(c,'id');
+                var nom=AdminApp.getVal(c,'Nombre'),ap=AdminApp.getVal(c,'appaterno'),am=AdminApp.getVal(c,'apmaterno');
+                var tel=fmtTel(AdminApp.getVal(c,'Telefono'));
+                var est=AdminApp.getVal(c,'Estatus','Pendiente');
+                var docs=AdminApp.getVal(c,'Documentacion','Incompleta');
+                var calif=AdminApp.safeNum(AdminApp.getVal(c,'Calificacion'));
+                var blq=c.Bloqueado===true||c.bloqueado===true||c.Bloqueado===1;
+                h+='<tr><td><strong>#'+id+'</strong></td><td>'+nom+' '+ap+(am?' '+am:'')+'</td><td>'+AdminApp.getVal(c,'Correo','--')+'</td><td>'+tel+'</td>'
+                +'<td>'+AdminApp.badge(est==='Aprobado',est,est,'active','pending')+'</td>'
+                +'<td><span class="status-badge '+(docs==='Completa'?'active':'inactive')+'">'+docs+'</span></td>'
+                +'<td>'+(calif?calif.toFixed(1):'--')+'</td><td>'+AdminApp.badge(blq,'Bloqueado','Normal','inactive','active')+'</td>'
+                +'<td class="col-acciones"><button class="accion-btn" onclick="abrirModal('+id+')" title="Editar"><i class="fas fa-edit"></i></button>'
+                +'<button class="accion-btn" onclick="verDocumentos('+id+')" title="Documentos"><i class="fas fa-file"></i></button>'
+                +'<button class="accion-btn" onclick="AdminApp.confirm(\''+(blq?'Desbloquear':'Bloquear')+' conductor\',\'Esta seguro de '+(blq?'desbloquear':'bloquear')+' este conductor?\',function(){toggleBloqueo('+id+','+blq+');})" title="'+(blq?'Desbloquear':'Bloquear')+'"><i class="fas '+(blq?'fa-unlock':'fa-ban')+'"></i></button></td></tr>';
             });
+            h+='</tbody></table>';$('#dvTabla').html(h);
         }
 
-        function renderTable(data) {
-            var h = '<table class="table-custom"><thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estatus</th><th>Documentación</th><th>Calificación</th><th>Bloqueado</th><th class="col-acciones">Acciones</th></tr></thead><tbody>';
-            if (!data || data.length === 0) {
-                h += '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-id-card"></i><h5>No hay conductores</h5></div></td></tr>';
-            } else {
-                data.forEach(function (c) {
-                    var id = c.IdConductor || c.idConductor || 0;
-                    var nom = c.Nombre || c.nombre || '';
-                    var ap = c.ApellidoPaterno || c.appaterno || '';
-                    var am = c.ApellidoMaterno || c.apmaterno || '';
-                    var nombreCompleto = nom + ' ' + ap + (am ? ' ' + am : '');
-                    var correo = c.Correo || c.correo || '--';
-                    var telefono = c.Telefono || c.telefono || '--';
-                    var estatus = c.Estatus || c.estatus || 'Pendiente';
-                    var docs = c.Documentacion || c.documentacion || 'Incompleta';
-                    var calif = c.Calificacion || c.calificacion || 0;
-                    var bloqueado = c.Bloqueado !== undefined ? c.Bloqueado : (c.bloqueado !== undefined ? c.bloqueado : false);
-                    h += '<tr>';
-                    h += '<td><strong>#' + id + '</strong></td>';
-                    h += '<td>' + nombreCompleto + '</td>';
-                    h += '<td>' + correo + '</td>';
-                    h += '<td>' + telefono + '</td>';
-                    h += '<td>' + AdminApp.badge(estatus === 'Aprobado', estatus, estatus, 'active', 'pending') + '</td>';
-                    h += '<td><span class="status-badge ' + (docs === 'Completa' ? 'active' : 'inactive') + '">' + docs + '</span></td>';
-                    h += '<td>' + (calif ? calif.toFixed(1) : '--') + '</td>';
-                    h += '<td>' + AdminApp.badge(bloqueado, 'Bloqueado', 'Normal', 'inactive', 'active') + '</td>';
-                    h += '<td class="col-acciones">';
-                    h += '<button class="accion-btn" onclick="abrirModal(' + id + ')" title="Editar"><i class="fas fa-edit"></i></button>';
-                    h += '<button class="accion-btn" onclick="verDocumentos(' + id + ')" title="Documentos"><i class="fas fa-file"></i></button>';
-                    h += '<button class="accion-btn" onclick="toggleBloqueo(' + id + ',' + bloqueado + ')" title="' + (bloqueado ? 'Desbloquear' : 'Bloquear') + '"><i class="fas ' + (bloqueado ? 'fa-unlock' : 'fa-ban') + '"></i></button>';
-                    h += '</td></tr>';
-                });
-            }
-            h += '</tbody></table>';
-            $('#dvTabla').html(h);
-        }
-
-        function renderPaginacion(total) {
-            var h = AdminApp.paginador(total, AdminApp.state.pagina, AdminApp.state.tamano, null);
+        function renderPaginacion(total){
+            var h=AdminApp.paginador(total,AdminApp.state.pagina,AdminApp.state.tamano,null);
             $('#dvPaginacion').html(h);
-            $('#dvPaginacion .pages button').on('click', function () {
-                AdminApp.state.pagina = parseInt($(this).data('p'));
-                cargar();
-            });
+            $('#dvPaginacion .pages button').on('click',function(){AdminApp.state.pagina=parseInt($(this).data('p'));cargar();});
         }
 
-        function abrirModal(id) {
-            AdminApp.closeModal('modalConductor');
-            $('#hdnIdConductor').val(0);
-            $('#lblModalTitulo').text('Nuevo Conductor');
-            $('#frmConductor')[0].reset();
-            $('#chkActivo').prop('checked', true);
-            if (id) {
+        function abrirModal(id){
+            AdminApp.closeModal('modalConductor');$('#hdnIdConductor').val(0);$('#lblModalTitulo').text('Nuevo Conductor');
+            $('#frmConductor')[0].reset();$('#chkActivo').prop('checked',true);
+            if(id){
                 $('#lblModalTitulo').text('Editar Conductor');
-                AdminApp.ajax('admin/ObtenerConductor', 'GET', { idConductor: id }, function (c) {
-                    $('#hdnIdConductor').val(c.IdConductor || c.idConductor);
-                    AdminApp.objToForm('frmConductor', c);
+                AdminApp.ajax('admin/ObtenerConductor','GET',{idConductor:id},function(c){
+                    if(Array.isArray(c)) c=c[0]||{};
+                    $('#hdnIdConductor').val(c.IdConductor||c.idConductor||id);
+                    $('#txtNombre').val(c.Nombre||c.nombre||'');
+                    $('#txtAppaterno').val(c.ApellidoPaterno||c.appaterno||'');
+                    $('#txtApmaterno').val(c.ApellidoMaterno||c.apmaterno||'');
+                    $('#selSexo').val(c.Sexo||c.sexo||'');
+                    $('#txtCorreo').val(c.Correo||c.correo||'');
+                    $('#txtTelefono').val(c.Telefono||c.telefono||'');
+                    $('#txtCurp').val(c.Curp||c.curp||'');
+                    $('#txtRfc').val(c.Rfc||c.rfc||'');
+                    $('#txtLicenciaconducir').val(c.Licencia||c.licencia||c.Licenciaconducir||c.licenciaconducir||'');
+                    var fv=c.FechaVencimientoLicencia||c.fechavencimientolicencia||c.FvtoLicencia||c.fvtoLicencia||'';
+                    $('#txtFechavencimientolicencia').val(fv?fv.substring(0,10):'');
+                    $('#txtTipolicencia').val(c.TipoLicencia||c.tipolicencia||'');
+                    $('#txtBanco').val(c.Banco||c.banco||'');
+                    $('#txtNombretitular').val(c.NombreTitular||c.nombretitular||c.Titular||c.titular||'');
+                    $('#txtClabeinterbancaria').val(c.ClabeInterbancaria||c.clabeinterbancaria||c.Clabe||c.clabe||'');
+                    $('#chkActivo').prop('checked',c.Activo!==undefined?(c.Activo===true||c.Activo===1):true);
                 });
             }
             AdminApp.openModal('modalConductor');
         }
 
-        function guardar() {
-            var obj = AdminApp.formToObj('frmConductor');
-            var id = parseInt($('#hdnIdConductor').val());
-            AdminApp.ajax('admin/ActualizarConductor', 'POST', obj, function (res) {
+        function guardar(){
+            if(!$('#frmConductor')[0].checkValidity()){$('#frmConductor')[0].reportValidity();return;}
+            var obj=AdminApp.formToObj('frmConductor'),id=parseInt($('#hdnIdConductor').val());
+            obj.idActualiza=parseInt(AdminApp.getUser().id||0);
+            AdminApp.ajax(id>0?'admin/ActualizarConductor':'admin/CrearConductor','POST',obj,function(){
                 AdminApp.closeModal('modalConductor');
-                AdminApp.Toast.success('Conductor actualizado');
+                AdminApp.Toast.success(id>0?'Conductor actualizado':'Conductor creado');
                 cargar();
             });
         }
 
-        function toggleBloqueo(id, estadoActual) {
-            var nuevoEstado = !estadoActual;
-            var msg = nuevoEstado ? '¿Bloquear este conductor?' : '¿Desbloquear este conductor?';
-            if (!confirm(msg)) return;
-            AdminApp.ajax('admin/SuspenderConductor', 'POST', { idConductor: id, bloqueado: nuevoEstado }, function (res) {
-                AdminApp.Toast.success(nuevoEstado ? 'Conductor bloqueado' : 'Conductor desbloqueado');
-                cargar();
+        function toggleBloqueo(id,estadoActual){
+            var n=!estadoActual;
+            AdminApp.ajax('admin/SuspenderConductor','POST',{idConductor:id,bloqueado:n},function(){
+                AdminApp.Toast.success(n?'Conductor bloqueado':'Conductor desbloqueado');cargar();
             });
         }
 
-        function verDocumentos(id) {
-            conductorActual = id;
-            AdminApp.ajax('admin/ListarDocumentosConductor', 'GET', { idConductor: id }, function (res) {
-                var dataArr = Array.isArray(res) ? res : (res.data || []);
-                var h = '<table class="table-custom"><thead><tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Estatus</th><th>Acciones</th></tr></thead><tbody>';
-                if (!dataArr || dataArr.length === 0) {
-                    h += '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-file"></i><h5>Sin documentos</h5></div></td></tr>';
-                } else {
-                    dataArr.forEach(function (d) {
-                        var did = d.IdDocumento || d.idDocumento || 0;
-                        var dnom = d.Nombre || d.nombre || '--';
-                        var dtipo = d.Tipo || d.tipo || '--';
-                        var dval = d.Validado !== undefined ? d.Validado : (d.validado !== undefined ? d.validado : false);
-                        var durl = d.Url || d.url || '';
-                        h += '<tr><td>#' + did + '</td><td>' + dnom + '</td><td>' + dtipo + '</td>';
-                        h += '<td>' + AdminApp.badge(dval, 'Validado', 'Pendiente', 'active', 'pending') + '</td>';
-                        h += '<td>';
-                        if (durl) h += '<button class="accion-btn" onclick="window.open(\'' + durl + '\',\'_blank\')" title="Ver"><i class="fas fa-eye"></i></button> ';
-                        if (!dval) h += '<button class="accion-btn" onclick="validarDocumento(' + did + ')" title="Validar"><i class="fas fa-check" style="color:var(--success)"></i></button>';
-                        h += '</td></tr>';
-                    });
-                }
-                h += '</tbody></table>';
-                $('#dvDocumentos').html(h);
-                AdminApp.openModal('modalDocumentos');
+        function verDocumentos(id){
+            conductorActual=id;
+            AdminApp.ajax('admin/ListarDocumentosConductor','GET',{idConductor:id},function(res){
+                var d=Array.isArray(res)?res:(res.data||[]);
+                var h='<table class="table-custom"><thead><tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Estatus</th><th>Acciones</th></tr></thead><tbody>';
+                if(!d||!d.length)h+='<tr><td colspan="5"><div class="empty-state"><i class="fas fa-file"></i><h5>Sin documentos</h5></div></td></tr>';
+                else d.forEach(function(doc){
+                    var did=doc.IdDocumento||doc.idDocumento||0;
+                    var dval=doc.Validado===true||doc.validado===true;
+                    h+='<tr><td>#'+did+'</td><td>'+(doc.Nombre||doc.nombre||'--')+'</td><td>'+(doc.Tipo||doc.tipo||'--')+'</td>';
+                    h+='<td>'+AdminApp.badge(dval,'Validado','Pendiente','active','pending')+'</td>';
+                    h+='<td>'+(doc.Url||doc.url?'<button class="accion-btn" onclick="window.open(\''+(doc.Url||doc.url)+'\',\'_blank\')" title="Ver"><i class="fas fa-eye"></i></button> ':'')+(dval?'':'<button class="accion-btn" onclick="AdminApp.confirm(\'Validar documento\',\'Confirmar validacion de este documento?\',function(){validarDocumento('+did+');})" title="Validar"><i class="fas fa-check" style="color:var(--success)"></i></button>')+'</td></tr>';
+                });
+                h+='</tbody></table>';$('#dvDocumentos').html(h);AdminApp.openModal('modalDocumentos');
             });
         }
 
-        function validarDocumento(idDocumento) {
-            if (!confirm('¿Validar este documento?')) return;
-            AdminApp.ajax('admin/ValidarDocumento', 'POST', { idDocumento: idDocumento, idConductor: conductorActual }, function (res) {
-                AdminApp.Toast.success('Documento validado');
-                verDocumentos(conductorActual);
+        function validarDocumento(idDocumento){
+            AdminApp.ajax('admin/ValidarDocumento','POST',{idDocumento:idDocumento,idConductor:conductorActual},function(){
+                AdminApp.Toast.success('Documento validado');verDocumentos(conductorActual);
             });
         }
     </script>

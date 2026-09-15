@@ -1,85 +1,511 @@
+using System;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using VaiaViajes.Api.Helpers;
 
 [Route("api/[controller]")]
 [ApiController]
 public class AdminController : ControllerBase
 {
-    [HttpPost("IniciarSesion")] public async Task<IActionResult> IniciarSesion([FromBody] dynamic p) { var d = ParameterHelper.ToDictionary(p); d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]); return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_IniciarSesion", d)); }
-    [HttpPost("CerrarSesion")] public async Task<IActionResult> CerrarSesion([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_CerrarSesion", p)); }
-    [HttpPost("CrearUsuario")] public async Task<IActionResult> CrearUsuario([FromBody] dynamic p) { var d = ParameterHelper.ToDictionary(p); d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]); return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_Crear", d)); }
-    [HttpPost("EditarUsuario")] public async Task<IActionResult> EditarUsuario([FromBody] dynamic p) { var d = ParameterHelper.ToDictionary(p); if (d.ContainsKey("pass")) d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]); return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_Actualizar", d)); }
-    [HttpPost("EliminarUsuario")] public async Task<IActionResult> EliminarUsuario([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_Eliminar", p)); }
-    [HttpGet("ListarUsuarios")] public async Task<IActionResult> ListarUsuarios(int pagina = 1, int tamano = 50, int? idRol = null, bool? activo = null, string buscar = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_Listar", new { pagina, tamano, idRol, activo, search = buscar })); }
-    [HttpGet("ObtenerUsuario")] public async Task<IActionResult> ObtenerUsuario(int idUsuario) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_usuario_Obtener", new { idUsuario })); }
-    [HttpGet("ListarRoles")] public async Task<IActionResult> ListarRoles() { return Ok(await DatabaseHelper.QueryAsync<object>("sp_rol_Listar")); }
-    [HttpGet("ListarPermisosXRol")] public async Task<IActionResult> ListarPermisosXRol(int idRol) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_rol_ListarPermisos", new { idRol })); }
+    [HttpGet("version")]
+    public IActionResult Version()
+    {
+        var asm = Assembly.GetExecutingAssembly();
+        var location = asm.Location;
+        var buildTime = System.IO.File.Exists(location)
+            ? System.IO.File.GetLastWriteTime(location)
+            : (DateTime?)null;
+        return new OkObjectResult(new
+        {
+            assembly = asm.GetName().Name,
+            version = asm.GetName().Version?.ToString(),
+            buildTime = buildTime?.ToString("o"),
+            path = location,
+            hasExtensions = new
+            {
+                vaiaOk = typeof(ApiResultExtensions).GetMethod("VaiaOk", new[] { typeof(object), typeof(string) }) != null,
+                vaiaFromSp = typeof(ApiResultExtensions).GetMethod("VaiaFromSp", new[] { typeof(object), typeof(string) }) != null,
+                vaiaSingleFromSp = typeof(ApiResultExtensions).GetMethod("VaiaSingleFromSp", new[] { typeof(object), typeof(string) }) != null,
+            }
+        });
+    }
 
-    [HttpGet("ListarPasajeros")] public async Task<IActionResult> ListarPasajeros(int pagina = 1, int tamano = 50, short? idCompania = null, bool? activo = null, string buscar = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_Listar", new { pagina, tamano, idCompania, activo, search = buscar })); }
-    [HttpGet("ObtenerPasajero")] public async Task<IActionResult> ObtenerPasajero(long idPasajero) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_Obtener", new { idPasajero })); }
-    [HttpPost("ActualizarPasajero")] public async Task<IActionResult> ActualizarPasajero([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_Actualizar", p)); }
-    [HttpPost("SuspenderPasajero")] public async Task<IActionResult> SuspenderPasajero([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_Bloquear", p)); }
-    [HttpPost("AsignarSaldoPasajero")] public async Task<IActionResult> AsignarSaldoPasajero([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_pasajero_AsignarSaldo", p)); }
+    [HttpPost("IniciarSesion")]
+    public async Task<IActionResult> IniciarSesion([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]);
+        var result = await DatabaseHelper.QueryAsync<object>("sp_usuario_IniciarSesion", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Inicio de sesion exitoso");
+    }
 
-    [HttpGet("ListarConductores")] public async Task<IActionResult> ListarConductores(int pagina = 1, int tamano = 50, short? idCompania = null, bool? activo = null, string buscar = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_Listar", new { pagina, tamano, idCompania, activo, search = buscar })); }
-    [HttpGet("ObtenerConductor")] public async Task<IActionResult> ObtenerConductor(int idConductor) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_Obtener", new { idConductor })); }
-    [HttpPost("ActualizarConductor")] public async Task<IActionResult> ActualizarConductor([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_Actualizar", p)); }
-    [HttpPost("SuspenderConductor")] public async Task<IActionResult> SuspenderConductor([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_Bloquear", p)); }
-    [HttpPost("ValidarDocumento")] public async Task<IActionResult> ValidarDocumento([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_ValidarDocumento", p)); }
-    [HttpGet("ListarDocumentosConductor")] public async Task<IActionResult> ListarDocumentosConductor(int idConductor) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_ListarDocumentos", new { idConductor })); }
-    [HttpPost("AprobarUnidad")] public async Task<IActionResult> AprobarUnidad([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_AprobarUnidad", p)); }
-    [HttpPost("ValidarDocumentoUnidad")] public async Task<IActionResult> ValidarDocumentoUnidad([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_ValidarDocumentoUnidad", p)); }
+    [HttpPost("CerrarSesion")]
+    public async Task<IActionResult> CerrarSesion([FromBody] dynamic p)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_usuario_CerrarSesion", p);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Sesion cerrada");
+    }
 
-    [HttpPost("GestionarServicio")] public async Task<IActionResult> GestionarServicio([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_servicio_Gestionar", p)); }
-    [HttpGet("ListarServicios")] public async Task<IActionResult> ListarServicios(int pagina = 1, int tamano = 50, System.DateTime? fi = null, System.DateTime? ff = null, int? idEstatusViaje = null, short? idCompania = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_servicio_Listar", new { pagina, tamano, fi, ff, idEstatusViaje, idCompania })); }
-    [HttpGet("DetalleServicio")] public async Task<IActionResult> DetalleServicio(long idServicio) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_servicio_Detalle", new { idServicio })); }
-    [HttpGet("ListarEstatusServicio")] public async Task<IActionResult> ListarEstatusServicio() { return Ok(await DatabaseHelper.QueryAsync<object>("sp_servicio_ListarEstatus")); }
+    [HttpPost("CrearUsuario")]
+    public async Task<IActionResult> CrearUsuario([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]);
+        if (!d.ContainsKey("idCreador") && d.ContainsKey("idActualiza")) d["idCreador"] = d["idActualiza"];
+        d.Remove("idActualiza");
+        d.Remove("idUsuario");
+        var result = await DatabaseHelper.QueryAsync<object>("sp_usuario_Crear", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Usuario creado");
+    }
 
-    [HttpGet("ReporteServicios")] public async Task<IActionResult> ReporteServicios(System.DateTime? fi = null, System.DateTime? ff = null, short? idCompania = null, int? idEstatusViaje = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_reporte_Servicios", new { fi, ff, idCompania, idEstatusViaje })); }
-    [HttpGet("ReportePasajeros")] public async Task<IActionResult> ReportePasajeros(System.DateTime? fi = null, System.DateTime? ff = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_reporte_Pasajeros", new { fi, ff })); }
-    [HttpGet("ReporteConductores")] public async Task<IActionResult> ReporteConductores(System.DateTime? fi = null, System.DateTime? ff = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_reporte_Conductores", new { fi, ff })); }
-    [HttpGet("ReporteIngresos")] public async Task<IActionResult> ReporteIngresos(System.DateTime? fi = null, System.DateTime? ff = null, short? idCompania = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_reporte_Ingresos", new { fi, ff, idCompania })); }
-    [HttpGet("ReporteComisiones")] public async Task<IActionResult> ReporteComisiones(System.DateTime? fi = null, System.DateTime? ff = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_reporte_Comisiones", new { fi, ff })); }
-    [HttpGet("ReporteUtilidadDiaria")] public async Task<IActionResult> ReporteUtilidadDiaria(System.DateTime? fecha = null, short? idCompania = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_reporte_UtilidadDiaria", new { fecha, idCompania })); }
+    [HttpPost("EditarUsuario")]
+    public async Task<IActionResult> EditarUsuario([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        if (d.ContainsKey("pass")) d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]);
+        var result = await DatabaseHelper.QueryAsync<object>("sp_usuario_Actualizar", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Usuario actualizado");
+    }
 
-    [HttpGet("ListarIncidentes")] public async Task<IActionResult> ListarIncidentes(int pagina = 1, int tamano = 50, System.DateTime? fi = null, System.DateTime? ff = null, int? idTipoIncidente = null, long? idServicio = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_incidente_Listar", new { pagina, tamano, fi, ff, idTipoIncidente, idServicio })); }
-    [HttpGet("DetalleIncidente")] public async Task<IActionResult> DetalleIncidente(long idIncidente) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_incidente_Detalle", new { idIncidente })); }
-    [HttpGet("TiposIncidente")] public async Task<IActionResult> TiposIncidente() { return Ok(await DatabaseHelper.QueryAsync<object>("sp_incidente_ListarTipos")); }
-    [HttpGet("ListaIncidentesTablas")] public async Task<IActionResult> ListaIncidentesTablas() { return Ok(await DatabaseHelper.QueryAsync<object>("sp_incidente_ListarTablas")); }
-    [HttpPost("ActualizarEstatusIncidente")] public async Task<IActionResult> ActualizarEstatusIncidente([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_incidente_ActualizarEstatus", p)); }
+    [HttpPost("EliminarUsuario")]
+    public async Task<IActionResult> EliminarUsuario([FromBody] dynamic p)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_usuario_Eliminar", p);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Usuario eliminado");
+    }
 
-    [HttpGet("ListarPromociones")] public async Task<IActionResult> ListarPromociones(int pagina = 1, int tamano = 50, bool? activo = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_promocion_Listar", new { pagina, tamano, activo })); }
-    [HttpPost("CrearPromocion")] public async Task<IActionResult> CrearPromocion([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_promocion_Crear", p)); }
-    [HttpPost("EditarPromocion")] public async Task<IActionResult> EditarPromocion([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_promocion_Actualizar", p)); }
-    [HttpPost("EliminarPromocion")] public async Task<IActionResult> EliminarPromocion([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_promocion_Eliminar", p)); }
-    [HttpPost("GenerarCodigoPromocional")] public async Task<IActionResult> GenerarCodigoPromocional([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_promocion_GenerarCodigo", p)); }
+    [HttpGet("ListarUsuarios")]
+    public async Task<IActionResult> ListarUsuarios(int pagina = 1, int tamano = 50, int? idRol = null, bool? activo = null, string busqueda = null)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_usuario_Listar", new { pagina, tamano, idRol, activo, search = busqueda });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Usuarios listados");
+    }
 
-    [HttpGet("ListarZonasCobertura")] public async Task<IActionResult> ListarZonasCobertura(int pagina = 1, int tamano = 50, bool? activo = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_zona_Listar", new { pagina, tamano, activo })); }
-    [HttpPost("AgregarZonaCobertura")] public async Task<IActionResult> AgregarZonaCobertura([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_zona_Crear", p)); }
-    [HttpPost("EditarZonaCobertura")] public async Task<IActionResult> EditarZonaCobertura([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_zona_Actualizar", p)); }
-    [HttpPost("EliminarZonaCobertura")] public async Task<IActionResult> EliminarZonaCobertura([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_zona_Eliminar", p)); }
-    [HttpGet("ObtenerComisionesZona")] public async Task<IActionResult> ObtenerComisionesZona(int idZona) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_zona_ObtenerComisiones", new { idZona })); }
-    [HttpPost("ActualizarComisionZona")] public async Task<IActionResult> ActualizarComisionZona([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_zona_ActualizarComision", p)); }
+    [HttpGet("ObtenerUsuario")]
+    public async Task<IActionResult> ObtenerUsuario(int idUsuario)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_usuario_Obtener", new { idUsuario });
+        if (result == null || !System.Linq.Enumerable.Any(result))
+            return "Usuario no encontrado".VaiaNotFound();
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Usuario obtenido");
+    }
 
-    [HttpGet("ObtenerConfiguracion")] public async Task<IActionResult> ObtenerConfiguracion() { return Ok(await DatabaseHelper.QueryAsync<object>("sp_configuracion_Obtener")); }
-    [HttpPost("GuardarConfiguracion")] public async Task<IActionResult> GuardarConfiguracion([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_configuracion_Guardar", p)); }
-    [HttpPost("ActualizarConfiguracionCosto")] public async Task<IActionResult> ActualizarConfiguracionCosto([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_configuracion_ActualizarCosto", p)); }
-    [HttpPost("ActualizarConfiguracionSistema")] public async Task<IActionResult> ActualizarConfiguracionSistema([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_configuracion_ActualizarSistema", p)); }
+    [HttpGet("ListarRoles")]
+    public async Task<IActionResult> ListarRoles()
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_rol_Listar");
+        return ApiResultExtensions.VaiaFromSp((object)result, "Roles listados");
+    }
 
-    [HttpGet("ListarCompanias")] public async Task<IActionResult> ListarCompanias() { return Ok(await DatabaseHelper.QueryAsync<object>("sp_compania_Listar")); }
-    [HttpPost("ActualizarCompania")] public async Task<IActionResult> ActualizarCompania([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_compania_Actualizar", p)); }
+    [HttpGet("ListarPermisosXRol")]
+    public async Task<IActionResult> ListarPermisosXRol(int idRol)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_rol_ListarPermisos", new { idRol });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Permisos listados");
+    }
 
-    [HttpGet("ListarSemanasCorte")] public async Task<IActionResult> ListarSemanasCorte(int? idConductor = null, short? idCompania = null, int pagina = 1, int tamano = 50) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_corte_ListarSemanas", new { idConductor, idCompania, pagina, tamano })); }
-    [HttpPost("ProcesarSemanaCorte")] public async Task<IActionResult> ProcesarSemanaCorte([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_corte_Procesar", p)); }
-    [HttpGet("ListarRazonesSocialesConductores")] public async Task<IActionResult> ListarRazonesSocialesConductores() { return Ok(await DatabaseHelper.QueryAsync<object>("sp_conductor_ListarRazonesSociales")); }
+    [HttpGet("ListarPasajeros")]
+    public async Task<IActionResult> ListarPasajeros(int pagina = 1, int tamano = 50, short? idCompania = null, bool? bloqueado = null, string busqueda = null)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_pasajero_Listar", new { pagina, tamano, idCompania, bloq = bloqueado, search = busqueda });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Pasajeros listados");
+    }
 
-    [HttpGet("ListarNotificaciones")] public async Task<IActionResult> ListarNotificaciones(int pagina = 1, int tamano = 50) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_notificacion_Listar", new { pagina, tamano })); }
-    [HttpPost("EnviarNotificacion")] public async Task<IActionResult> EnviarNotificacion([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_notificacion_Enviar", p)); }
+    [HttpGet("ObtenerPasajero")]
+    public async Task<IActionResult> ObtenerPasajero(long idPasajero)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_pasajero_Obtener", new { idPasajero });
+        if (result == null || !System.Linq.Enumerable.Any(result))
+            return "Pasajero no encontrado".VaiaNotFound();
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Pasajero obtenido");
+    }
 
-    [HttpGet("ListarAvisos")] public async Task<IActionResult> ListarAvisos(int pagina = 1, int tamano = 50, short? idCompania = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_aviso_Listar", new { pagina, tamano, idCompania })); }
-    [HttpPost("AgregarAviso")] public async Task<IActionResult> AgregarAviso([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_aviso_Crear", p)); }
-    [HttpPost("EditarAviso")] public async Task<IActionResult> EditarAviso([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_aviso_Actualizar", p)); }
-    [HttpPost("EliminarAviso")] public async Task<IActionResult> EliminarAviso([FromBody] dynamic p) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_aviso_Eliminar", p)); }
-    [HttpGet("ListarAuditoria")] public async Task<IActionResult> ListarAuditoria(int pagina = 1, int tamano = 50, System.DateTime? fi = null, System.DateTime? ff = null, int? idUsuario = null, string tabla = null, string accion = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_auditoria_Listar", new { pagina, tamano, fi, ff, idUsuario, tabla, accion })); }
-    [HttpGet("ObtenerLogs")] public async Task<IActionResult> ObtenerLogs(int pagina = 1, int tamano = 50, string nivel = null, string modulo = null) { return Ok(await DatabaseHelper.QueryAsync<object>("sp_log_Listar", new { pagina, tamano, nivel, modulo })); }
+    [HttpPost("CrearPasajero")]
+    public async Task<IActionResult> CrearPasajero([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        if (d.ContainsKey("notasadicionales")) { d["notas"] = d["notasadicionales"]; d.Remove("notasadicionales"); }
+        d.Remove("idPasajero");
+        var result = await DatabaseHelper.QueryAsync<object>("sp_pasajero_Crear", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Pasajero creado");
+    }
+
+    [HttpPost("ActualizarPasajero")]
+    public async Task<IActionResult> ActualizarPasajero([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        if (d.ContainsKey("notasadicionales")) { d["notas"] = d["notasadicionales"]; d.Remove("notasadicionales"); }
+        var result = await DatabaseHelper.QueryAsync<object>("sp_pasajero_Actualizar", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Pasajero actualizado");
+    }
+
+    [HttpPost("SuspenderPasajero")]
+    public async Task<IActionResult> SuspenderPasajero([FromBody] dynamic p)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_pasajero_Bloquear", p);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Pasajero suspendido");
+    }
+
+    [HttpPost("AsignarSaldoPasajero")]
+    public async Task<IActionResult> AsignarSaldoPasajero([FromBody] dynamic p)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_pasajero_AsignarSaldo", p);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Saldo asignado");
+    }
+
+    [HttpGet("ListarConductores")]
+    public async Task<IActionResult> ListarConductores(int pagina = 1, int tamano = 50, short? idCompania = null, bool? bloqueado = null, short? estatus = null, string busqueda = null)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_Listar", new { pagina, tamano, idCompania, bloq = bloqueado, idEst = estatus, search = busqueda });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Conductores listados");
+    }
+
+    [HttpGet("ObtenerConductor")]
+    public async Task<IActionResult> ObtenerConductor(int idConductor)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_Obtener", new { idConductor });
+        if (result == null || !System.Linq.Enumerable.Any(result))
+            return "Conductor no encontrado".VaiaNotFound();
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Conductor obtenido");
+    }
+
+    [HttpPost("CrearConductor")]
+    public async Task<IActionResult> CrearConductor([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        if (d.ContainsKey("licenciaconducir")) { d["licencia"] = d["licenciaconducir"]; d.Remove("licenciaconducir"); }
+        if (d.ContainsKey("fechavencimientolicencia")) { d["fvtoLicencia"] = d["fechavencimientolicencia"]; d.Remove("fechavencimientolicencia"); }
+        if (d.ContainsKey("tipolicencia")) { d["tipoLicencia"] = d["tipolicencia"]; d.Remove("tipolicencia"); }
+        if (d.ContainsKey("nombretitular")) { d["titular"] = d["nombretitular"]; d.Remove("nombretitular"); }
+        if (d.ContainsKey("clabeinterbancaria")) { d["clabe"] = d["clabeinterbancaria"]; d.Remove("clabeinterbancaria"); }
+        d.Remove("idConductor");
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_Crear", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Conductor creado");
+    }
+
+    [HttpPost("ActualizarConductor")]
+    public async Task<IActionResult> ActualizarConductor([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        if (d.ContainsKey("licenciaconducir")) { d["licencia"] = d["licenciaconducir"]; d.Remove("licenciaconducir"); }
+        if (d.ContainsKey("fechavencimientolicencia")) { d["fvtoLicencia"] = d["fechavencimientolicencia"]; d.Remove("fechavencimientolicencia"); }
+        if (d.ContainsKey("tipolicencia")) { d["tipoLicencia"] = d["tipolicencia"]; d.Remove("tipolicencia"); }
+        if (d.ContainsKey("nombretitular")) { d["titular"] = d["nombretitular"]; d.Remove("nombretitular"); }
+        if (d.ContainsKey("clabeinterbancaria")) { d["clabe"] = d["clabeinterbancaria"]; d.Remove("clabeinterbancaria"); }
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_Actualizar", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Conductor actualizado");
+    }
+
+    [HttpPost("SuspenderConductor")]
+    public async Task<IActionResult> SuspenderConductor([FromBody] dynamic p)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_Bloquear", p);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Conductor suspendido");
+    }
+
+    [HttpPost("ValidarDocumento")]
+    public async Task<IActionResult> ValidarDocumento([FromBody] dynamic p)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_ValidarDocumento", p);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Documento validado");
+    }
+
+    [HttpGet("ListarDocumentosConductor")]
+    public async Task<IActionResult> ListarDocumentosConductor(int idConductor)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_ListarDocumentos", new { idConductor });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Documentos listados");
+    }
+
+    [HttpPost("AprobarUnidad")]
+    public async Task<IActionResult> AprobarUnidad([FromBody] dynamic p)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_AprobarUnidad", p);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Unidad aprobada");
+    }
+
+    [HttpPost("ValidarDocumentoUnidad")]
+    public async Task<IActionResult> ValidarDocumentoUnidad([FromBody] dynamic p)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_ValidarDocumentoUnidad", p);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Documento de unidad validado");
+    }
+
+    [HttpPost("GestionarServicio")]
+    public async Task<IActionResult> GestionarServicio([FromBody] dynamic p)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_servicio_Gestionar", p);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Servicio gestionado");
+    }
+
+    [HttpGet("ListarServicios")]
+    public async Task<IActionResult> ListarServicios(int pagina = 1, int tamano = 50, System.DateTime? fi = null, System.DateTime? ff = null, short? estatus = null, short? idCompania = null, string busqueda = null)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_servicio_Listar", new { pagina, tamano, fi, ff, idEst = estatus, idCompania });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Servicios listados");
+    }
+
+    [HttpGet("DetalleServicio")]
+    public async Task<IActionResult> DetalleServicio(long idServicio)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_servicio_Detalle", new { idServicio });
+        if (result == null || !System.Linq.Enumerable.Any(result))
+            return "Servicio no encontrado".VaiaNotFound();
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Detalle del servicio");
+    }
+
+    [HttpGet("ListarEstatusServicio")]
+    public async Task<IActionResult> ListarEstatusServicio()
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_servicio_ListarEstatus");
+        return ApiResultExtensions.VaiaFromSp((object)result, "Estatus listados");
+    }
+
+    [HttpGet("ReporteServicios")]
+    public async Task<IActionResult> ReporteServicios(System.DateTime? fi = null, System.DateTime? ff = null, short? idCompania = null, int? idEstatusViaje = null)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_reporte_Servicios", new { fi, ff, idCompania, idEstatusViaje });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Reporte de servicios");
+    }
+
+    [HttpGet("ReportePasajeros")]
+    public async Task<IActionResult> ReportePasajeros(System.DateTime? fi = null, System.DateTime? ff = null)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_reporte_Pasajeros", new { fi, ff });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Reporte de pasajeros");
+    }
+
+    [HttpGet("ReporteConductores")]
+    public async Task<IActionResult> ReporteConductores(System.DateTime? fi = null, System.DateTime? ff = null)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_reporte_Conductores", new { fi, ff });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Reporte de conductores");
+    }
+
+    [HttpGet("ReporteIngresos")]
+    public async Task<IActionResult> ReporteIngresos(System.DateTime? fi = null, System.DateTime? ff = null, short? idCompania = null)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_reporte_Ingresos", new { fi, ff, idCompania });
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Reporte de ingresos");
+    }
+
+    [HttpGet("ReporteComisiones")]
+    public async Task<IActionResult> ReporteComisiones(System.DateTime? fi = null, System.DateTime? ff = null)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_reporte_Comisiones", new { fi, ff });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Reporte de comisiones");
+    }
+
+    [HttpGet("ReporteUtilidadDiaria")]
+    public async Task<IActionResult> ReporteUtilidadDiaria(System.DateTime? fecha = null, short? idCompania = null)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_reporte_UtilidadDiaria", new { fecha, idCompania });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Reporte de utilidad diaria");
+    }
+
+    [HttpGet("ListarIncidentes")]
+    public async Task<IActionResult> ListarIncidentes(int pagina = 1, int tamano = 50, System.DateTime? fi = null, System.DateTime? ff = null, int? idTipoIncidente = null, int? idEstatus = null)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_incidente_Listar", new { pagina, tamano, fi, ff, idTipo = idTipoIncidente, idEst = idEstatus });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Incidentes listados");
+    }
+
+    [HttpGet("DetalleIncidente")]
+    public async Task<IActionResult> DetalleIncidente(long idIncidente)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_incidente_DetalleCompleto", new { idIncidente });
+        if (result == null || !System.Linq.Enumerable.Any(result))
+            return "Incidente no encontrado".VaiaNotFound();
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Detalle del incidente");
+    }
+
+    [HttpGet("TiposIncidente")]
+    public async Task<IActionResult> TiposIncidente()
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_incidente_ListarTipos");
+        return ApiResultExtensions.VaiaFromSp((object)result, "Tipos de incidente");
+    }
+
+    [HttpGet("EstatusIncidente")]
+    public async Task<IActionResult> EstatusIncidente()
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_incidente_ListarEstatus");
+        return ApiResultExtensions.VaiaFromSp((object)result, "Estatus de incidente");
+    }
+
+    [HttpGet("ListaIncidentesTablas")]
+    public async Task<IActionResult> ListaIncidentesTablas()
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_incidente_ListarTablas");
+        return ApiResultExtensions.VaiaFromSp((object)result, "Tablas de incidente");
+    }
+
+    [HttpPost("ActualizarEstatusIncidente")]
+    public async Task<IActionResult> ActualizarEstatusIncidente([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        var result = await DatabaseHelper.QueryAsync<object>("sp_incidente_CambiarEstatus", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Estatus actualizado");
+    }
+
+    [HttpGet("ListarPromociones")]
+    public async Task<IActionResult> ListarPromociones(int pagina = 1, int tamano = 50, bool? activo = null)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_promocion_Listar", new { pagina, tamano, activo });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Promociones listadas");
+    }
+
+    [HttpPost("CrearPromocion")]
+    public async Task<IActionResult> CrearPromocion([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        var result = await DatabaseHelper.QueryAsync<object>("sp_promocion_Crear", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Promocion creada");
+    }
+
+    [HttpPost("EditarPromocion")]
+    public async Task<IActionResult> EditarPromocion([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        var result = await DatabaseHelper.QueryAsync<object>("sp_promocion_Actualizar", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Promocion actualizada");
+    }
+
+    [HttpPost("EliminarPromocion")]
+    public async Task<IActionResult> EliminarPromocion([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        var result = await DatabaseHelper.QueryAsync<object>("sp_promocion_Eliminar", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Promocion eliminada");
+    }
+
+    [HttpPost("GenerarCodigoPromocional")]
+    public async Task<IActionResult> GenerarCodigoPromocional([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        var result = await DatabaseHelper.QueryAsync<object>("sp_promocion_GenerarCodigo", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Codigo generado");
+    }
+
+    [HttpGet("ListarZonasCobertura")]
+    public async Task<IActionResult> ListarZonasCobertura(int pagina = 1, int tamano = 50)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_zona_Listar");
+        return ApiResultExtensions.VaiaFromSp((object)result, "Zonas listadas");
+    }
+
+    [HttpPost("AgregarZonaCobertura")]
+    public async Task<IActionResult> AgregarZonaCobertura([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        if (d.ContainsKey("descripcion")) { d["desc"] = d["descripcion"]; d.Remove("descripcion"); }
+        if (d.ContainsKey("latitudcentro")) { d["lat"] = d["latitudcentro"]; d.Remove("latitudcentro"); }
+        if (d.ContainsKey("longitudcentro")) { d["lng"] = d["longitudcentro"]; d.Remove("longitudcentro"); }
+        if (d.ContainsKey("radio_km")) { d["radio"] = d["radio_km"]; d.Remove("radio_km"); }
+        d.Remove("activo");
+        d.Remove("id");
+        var result = await DatabaseHelper.QueryAsync<object>("sp_zona_Crear", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Zona creada");
+    }
+
+    [HttpPost("EditarZonaCobertura")]
+    public async Task<IActionResult> EditarZonaCobertura([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        if (d.ContainsKey("descripcion")) { d["desc"] = d["descripcion"]; d.Remove("descripcion"); }
+        if (d.ContainsKey("latitudcentro")) { d["lat"] = d["latitudcentro"]; d.Remove("latitudcentro"); }
+        if (d.ContainsKey("longitudcentro")) { d["lng"] = d["longitudcentro"]; d.Remove("longitudcentro"); }
+        if (d.ContainsKey("radio_km")) { d["radio"] = d["radio_km"]; d.Remove("radio_km"); }
+        if (!d.ContainsKey("id") && d.ContainsKey("idZona")) d["id"] = d["idZona"];
+        if (d.ContainsKey("idZona")) d.Remove("idZona");
+        var result = await DatabaseHelper.QueryAsync<object>("sp_zona_Actualizar", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Zona actualizada");
+    }
+
+    [HttpPost("EliminarZonaCobertura")]
+    public async Task<IActionResult> EliminarZonaCobertura([FromBody] dynamic p)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_zona_Eliminar", p);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Zona eliminada");
+    }
+
+    [HttpGet("ObtenerComisionesZona")]
+    public async Task<IActionResult> ObtenerComisionesZona(int idZona)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_zona_ObtenerComisiones", new { idZona });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Comisiones de zona");
+    }
+
+    [HttpPost("ActualizarComisionZona")]
+    public async Task<IActionResult> ActualizarComisionZona([FromBody] dynamic p)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_zona_ActualizarComision", p);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Comision actualizada");
+    }
+
+    [HttpGet("ObtenerConfiguracion")]
+    public async Task<IActionResult> ObtenerConfiguracion()
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_configuracion_ObtenerConfig");
+        return ApiResultExtensions.VaiaFromSp((object)result, "Configuracion obtenida");
+    }
+
+    [HttpPost("GuardarConfiguracion")]
+    public async Task<IActionResult> GuardarConfiguracion([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        var result = await DatabaseHelper.QueryAsync<object>("sp_configuracion_ActualizarConfig", d);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Configuracion guardada");
+    }
+
+    [HttpPost("ActualizarConfiguracionCosto")]
+    public async Task<IActionResult> ActualizarConfiguracionCosto([FromBody] dynamic p)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_configuracion_ActualizarCosto", p);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Costo actualizado");
+    }
+
+    [HttpGet("ListarCompanias")]
+    public async Task<IActionResult> ListarCompanias()
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_compania_Listar");
+        return ApiResultExtensions.VaiaFromSp((object)result, "Companias listadas");
+    }
+
+    [HttpPost("ActualizarCompania")]
+    public async Task<IActionResult> ActualizarCompania([FromBody] dynamic p)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_compania_Actualizar", p);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Compania actualizada");
+    }
+
+    [HttpGet("ListarSemanasCorte")]
+    public async Task<IActionResult> ListarSemanasCorte(int? idConductor = null, short? idCompania = null, int pagina = 1, int tamano = 50)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_corte_ListarSemanas", new { idConductor, idCompania, pagina, tamano });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Semanas de corte listadas");
+    }
+
+    [HttpPost("ProcesarSemanaCorte")]
+    public async Task<IActionResult> ProcesarSemanaCorte([FromBody] dynamic p)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_corte_Procesar", p);
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Semana procesada");
+    }
 }

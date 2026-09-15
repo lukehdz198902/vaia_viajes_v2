@@ -3,59 +3,69 @@
 }
 
 @section Styles {
-    <link href="~/Scripts/Views/Home/Index/style.css" rel="stylesheet" />
+    <link href="~/css/pages/dashboard.css" rel="stylesheet" />
 }
 
-<div id="dvDashboard">
-    <div class="row g-4 mb-4" id="dvStatsCards"></div>
-
-    <div class="row g-4 mb-4">
-        <div class="col-lg-8">
-            <div class="card-custom">
-                <div class="card-header-custom">
-                    <h6><i class="fas fa-chart-area me-2" style="color: var(--primary);"></i>Ingresos Semanales</h6>
-                    <div class="d-flex gap-2">
-                        <button class="btn-soft outline btn-sm" onclick="window.cambiarPeriodo('semana')">Semana</button>
-                        <button class="btn-soft outline btn-sm" onclick="window.cambiarPeriodo('mes')">Mes</button>
-                    </div>
-                </div>
-                <div class="card-body-custom">
-                    <canvas id="chartIngresos" height="280"></canvas>
-                </div>
-            </div>
+<div class="dashboard" id="dvDashboard">
+    <div class="page-header">
+        <div>
+            <h2 class="page-header__title">Dashboard</h2>
+            <p class="page-header__subtitle">Resumen operativo en tiempo real</p>
         </div>
-        <div class="col-lg-4">
-            <div class="card-custom">
-                <div class="card-header-custom">
-                    <h6><i class="fas fa-clock me-2" style="color: var(--secondary);"></i>Actividad Reciente</h6>
-                </div>
-                <div class="card-body-custom">
-                    <div class="timeline" id="dvTimeline"></div>
-                </div>
-            </div>
+        <div class="page-header__actions">
+            <button type="button" class="btn btn--ghost btn--sm" id="btnRefreshDashboard" title="Actualizar">
+                <i class="fas fa-rotate"></i> Actualizar
+            </button>
         </div>
     </div>
 
-    <div class="row g-4">
-        <div class="col-12">
-            <div class="card-custom">
-                <div class="card-header-custom">
-                    <h6><i class="fas fa-list me-2" style="color: var(--accent);"></i>Ultimos Servicios</h6>
-                    <div class="search-box" style="width: 280px;">
-                        <i class="fas fa-search"></i>
-                        <input type="text" class="input-soft" id="txtBuscarServicio" placeholder="Buscar servicio..." />
-                    </div>
+    <section class="kpi-grid vaia-stagger" id="dvStatsCards" aria-label="Indicadores clave"></section>
+
+    <section class="chart-grid">
+        <article class="chart-card">
+            <header class="chart-card__header">
+                <div>
+                    <h3 class="chart-card__title">Ingresos</h3>
+                    <p class="chart-card__subtitle" id="lblPeriodo">Ultimos 7 dias</p>
                 </div>
-                <div class="card-body-custom p-0">
-                    <div id="dvTablaServicios"><div class="loader" style="margin: 40px auto;"></div></div>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn--ghost btn--sm" data-period="semana">Semana</button>
+                    <button type="button" class="btn btn--ghost btn--sm" data-period="mes">Mes</button>
                 </div>
+            </header>
+            <div class="chart-card__canvas">
+                <canvas id="chartIngresos"></canvas>
             </div>
-        </div>
-    </div>
+        </article>
+
+        <article class="chart-card">
+            <header class="chart-card__header">
+                <div>
+                    <h3 class="chart-card__title">Actividad reciente</h3>
+                    <p class="chart-card__subtitle">Ultimos eventos del sistema</p>
+                </div>
+            </header>
+            <div class="activity-list" id="dvActividad"></div>
+        </article>
+    </section>
+
+    <article class="card">
+        <header class="card-header">
+            <div>
+                <h3 class="card-title">Ultimos servicios</h3>
+                <p class="card-subtitle">Servicios registrados en los ultimos 7 dias</p>
+            </div>
+            <div class="input-icon toolbar__search">
+                <i class="fas fa-search input-icon__icon"></i>
+                <input type="text" class="form-input" id="txtBuscarServicio" placeholder="Buscar servicio..." aria-label="Buscar servicio" />
+            </div>
+        </header>
+        <div id="dvTablaServicios" class="card-body" style="padding-top: 0;"></div>
+    </article>
 </div>
 
 @section Scripts {
-    <script src="~/Scripts/Views/Home/Index/fn.js"></script>
-    <script src="~/Scripts/Views/Home/Index/jnAjax.js"></script>
-    <script src="~/Scripts/Views/Home/Index/Initscript.js"></script>
+    <script src="~/Scripts/Home/Index/fn.js"></script>
+    <script src="~/Scripts/Home/Index/jnAjax.js"></script>
+    <script src="~/Scripts/Home/Index/Initscript.js"></script>
 }

@@ -35,4 +35,24 @@ public static class ParameterHelper
             return sb.ToString();
         }
     }
+
+    /// <summary>
+    /// Renombra claves del diccionario para que coincidan con los parametros del SP.
+    /// Uso: ParameterHelper.ApplyAliases(d, "genero", "sexo", "licenciaconducir", "licencia");
+    /// Solo renombra si la clave destino no existe ya.
+    /// </summary>
+    public static void ApplyAliases(Dictionary<string, object> d, params string[] pairs)
+    {
+        if (d == null || pairs == null) return;
+        for (int i = 0; i + 1 < pairs.Length; i += 2)
+        {
+            var from = pairs[i];
+            var to = pairs[i + 1];
+            if (d.ContainsKey(from) && !d.ContainsKey(to))
+            {
+                d[to] = d[from];
+                d.Remove(from);
+            }
+        }
+    }
 }

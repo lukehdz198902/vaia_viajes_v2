@@ -2,9 +2,7 @@
     ViewBag.Title = "Usuarios";
 }
 
-@section Styles {
-    <link href="~/Content/section.css" rel="stylesheet" />
-}
+@section Styles {}
 
 <div id="dvUsuarios">
     <div class="section-header">
@@ -48,7 +46,7 @@
                         </div>
                         <div class="form-group">
                             <label>Apellido Materno</label>
-                            <input type="text" class="input-soft" name="apmaterno" id="txtApmaterno" />
+                            <input type="text" class="input-soft" name="apmaterno" id="txtApmaterno" required />
                         </div>
                         <div class="form-group">
                             <label>Correo</label>
@@ -56,7 +54,7 @@
                         </div>
                         <div class="form-group">
                             <label>Teléfono</label>
-                            <input type="text" class="input-soft" name="telefono" id="txtTelefono" />
+                            <input type="tel" class="input-soft" name="telefono" id="txtTelefono" pattern="[0-9]{10}" maxlength="10" title="10 digitos" oninput="this.value=this.value.replace(/\D/g,'')" />
                         </div>
                         <div class="form-group">
                             <label>Account</label>
@@ -64,12 +62,12 @@
                         </div>
                         <div class="form-group" id="dvPass">
                             <label>Contraseña</label>
-                            <input type="password" class="input-soft" name="pass" id="txtPass" />
-                            <small class="text-muted" id="lblPassHelp">Dejar vacío para mantener la actual</small>
+                            <input type="password" class="input-soft" name="pass" id="txtPass" minlength="6" />
+                            <small class="text-muted" id="lblPassHelp">Dejar vacio para mantener la actual</small>
                         </div>
                         <div class="form-group">
                             <label>Sexo</label>
-                            <select class="input-soft" name="sexo" id="selSexo">
+                            <select class="input-soft" name="sexo" id="selSexo" required>
                                 <option value="">-- Seleccionar --</option>
                                 <option value="M">Masculino</option>
                                 <option value="F">Femenino</option>
@@ -101,105 +99,74 @@
     <script>
         $(function () {
             cargar();
-            AdminApp.loadSelect('admin/ListarRoles', 'selRol', 'idRol', 'nombre');
-            AdminApp.loadSelect('admin/ListarRoles', 'selFiltroRol', 'idRol', 'nombre');
-            $('#txtBuscar').on('keyup', function (e) { if (e.key === 'Enter') cargar(); });
+            AdminApp.loadSelect('admin/ListarRoles','selRol','id','rolnombre');
+            AdminApp.loadSelect('admin/ListarRoles','selFiltroRol','id','rolnombre');
+            $('#txtBuscar').on('keyup',function(e){if(e.key==='Enter')cargar();});
         });
 
-        function cargar() {
-            var data = {
-                pagina: AdminApp.state.pagina,
-                tamano: AdminApp.state.tamano,
-                busqueda: $('#txtBuscar').val(),
-                idRol: $('#selFiltroRol').val(),
-                activo: $('#selFiltroActivo').val()
-            };
-            AdminApp.ajax('admin/ListarUsuarios', 'GET', data, function (res) {
-                var dataArr = Array.isArray(res) ? res : (res.data || []);
-                renderTable(dataArr);
-                renderPaginacion(res.totalRegistros || dataArr.length);
+        function cargar(){
+            AdminApp.ajax('admin/ListarUsuarios','GET',{
+                pagina:AdminApp.state.pagina,tamano:AdminApp.state.tamano,
+                busqueda:$('#txtBuscar').val(),idRol:$('#selFiltroRol').val(),activo:$('#selFiltroActivo').val()
+            },function(r){var d=Array.isArray(r)?r:(r.data||[]);renderTable(d);renderPaginacion(r.totalRegistros||d.length);});
+        }
+
+        function renderTable(data){
+            var h='<table class="table-custom"><thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Account</th><th>Rol</th><th>Activo</th><th class="col-acciones">Acciones</th></tr></thead><tbody>';
+            if(!data||!data.length)h+='<tr><td colspan="7"><div class="empty-state"><i class="fas fa-users"></i><h5>No hay usuarios</h5></div></td></tr>';
+            else data.forEach(function(u){
+                var id=AdminApp.getVal(u,'idUsuario')||AdminApp.getVal(u,'id');
+                var nom=AdminApp.getVal(u,'Nombre'),ap=AdminApp.getVal(u,'appaterno'),am=AdminApp.getVal(u,'apmaterno');
+                var activo=u.Activo!==undefined?u.Activo:(u.activo!==undefined?u.activo:true);
+                h+='<tr><td><strong>#'+id+'</strong></td><td>'+nom+' '+ap+(am?' '+am:'')+'</td><td>'+AdminApp.getVal(u,'Correo','--')+'</td><td>'+AdminApp.getVal(u,'Account','--')+'</td><td>'+AdminApp.getVal(u,'NombreRol','--')+'</td><td>'+AdminApp.badge(activo)+'</td><td class="col-acciones"><button class="accion-btn" onclick="abrirModal('+id+')" title="Editar"><i class="fas fa-edit"></i></button><button class="accion-btn" onclick="AdminApp.confirm(\'Eliminar usuario\',\'Esta seguro de eliminar este usuario?\',function(){eliminar('+id+');})" title="Eliminar"><i class="fas fa-trash"></i></button></td></tr>';
             });
+            h+='</tbody></table>';$('#dvTabla').html(h);
         }
 
-        function renderTable(data) {
-            var h = '<table class="table-custom"><thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Account</th><th>Rol</th><th>Activo</th><th class="col-acciones">Acciones</th></tr></thead><tbody>';
-            if (!data || data.length === 0) {
-                h += '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-users"></i><h5>No hay usuarios</h5></div></td></tr>';
-            } else {
-                data.forEach(function (u) {
-                    var id = u.IdUsuario || u.idUsuario || 0;
-                    var nom = u.Nombre || u.nombre || '';
-                    var ap = u.ApellidoPaterno || u.appaterno || '';
-                    var am = u.ApellidoMaterno || u.apmaterno || '';
-                    var nombreCompleto = nom + ' ' + ap + (am ? ' ' + am : '');
-                    var correo = u.Correo || u.correo || '--';
-                    var account = u.Account || u.account || '--';
-                    var rol = u.Rol || u.rol || u.NombreRol || u.nombreRol || '--';
-                    var activo = u.Activo !== undefined ? u.Activo : (u.activo !== undefined ? u.activo : true);
-                    h += '<tr>';
-                    h += '<td><strong>#' + id + '</strong></td>';
-                    h += '<td>' + AdminApp.getVal({ v: nombreCompleto }, 'v') + '</td>';
-                    h += '<td>' + correo + '</td>';
-                    h += '<td>' + account + '</td>';
-                    h += '<td>' + rol + '</td>';
-                    h += '<td>' + AdminApp.badge(activo) + '</td>';
-                    h += '<td class="col-acciones">';
-                    h += '<button class="accion-btn" onclick="abrirModal(' + id + ')" title="Editar"><i class="fas fa-edit"></i></button>';
-                    h += '<button class="accion-btn" onclick="eliminar(' + id + ')" title="Eliminar"><i class="fas fa-trash"></i></button>';
-                    h += '</td></tr>';
-                });
-            }
-            h += '</tbody></table>';
-            $('#dvTabla').html(h);
-        }
-
-        function renderPaginacion(total) {
-            var h = AdminApp.paginador(total, AdminApp.state.pagina, AdminApp.state.tamano, null);
+        function renderPaginacion(total){
+            var h=AdminApp.paginador(total,AdminApp.state.pagina,AdminApp.state.tamano,null);
             $('#dvPaginacion').html(h);
-            $('#dvPaginacion .pages button').on('click', function () {
-                AdminApp.state.pagina = parseInt($(this).data('p'));
-                cargar();
-            });
+            $('#dvPaginacion .pages button').on('click',function(){AdminApp.state.pagina=parseInt($(this).data('p'));cargar();});
         }
 
-        function abrirModal(id) {
-            AdminApp.closeModal('modalUsuario');
-            $('#hdnIdUsuario').val(0);
-            $('#lblModalTitulo').text('Nuevo Usuario');
-            $('#frmUsuario')[0].reset();
-            $('#chkActivo').prop('checked', true);
-            $('#dvPass').show();
-            $('#lblPassHelp').hide();
-            $('#txtPass').prop('required', true);
-            if (id) {
+        function abrirModal(id){
+            AdminApp.closeModal('modalUsuario');$('#hdnIdUsuario').val(0);$('#lblModalTitulo').text('Nuevo Usuario');
+            $('#frmUsuario')[0].reset();$('#chkActivo').prop('checked',true);$('#dvPass').show();$('#lblPassHelp').hide();$('#txtPass').prop('required',true);
+            if(id){
                 $('#lblModalTitulo').text('Editar Usuario');
-                AdminApp.ajax('admin/ObtenerUsuario', 'GET', { idUsuario: id }, function (u) {
-                    $('#hdnIdUsuario').val(u.IdUsuario || u.idUsuario);
-                    AdminApp.objToForm('frmUsuario', u);
-                    $('#dvPass').show();
-                    $('#lblPassHelp').show();
-                    $('#txtPass').prop('required', false);
+                AdminApp.ajax('admin/ObtenerUsuario','GET',{idUsuario:id},function(u){
+                    if(Array.isArray(u)) u=u[0]||{};
+                    $('#hdnIdUsuario').val(u.IdUsuario||u.idUsuario||id);
+                    $('#txtNombre').val(u.Nombre||u.nombre||'');
+                    $('#txtAppaterno').val(u.ApellidoPaterno||u.appaterno||'');
+                    $('#txtApmaterno').val(u.ApellidoMaterno||u.apmaterno||'');
+                    $('#txtCorreo').val(u.Correo||u.correo||'');
+                    $('#txtTelefono').val(u.Telefono||u.telefono||'');
+                    $('#txtAccount').val(u.Account||u.account||'');
+                    $('#selSexo').val(u.Sexo||u.sexo||'');
+                    AdminApp.loadSelect('admin/ListarRoles','selRol','id','rolnombre',AdminApp.getVal(u,'idRol'));
+                    var a=u.Activo!==undefined?u.Activo:(u.activo!==undefined?u.activo:true);
+                    $('#chkActivo').prop('checked',a===true||a===1||a==='true');
+                    $('#dvPass').show();$('#lblPassHelp').show();$('#txtPass').prop('required',false);
                 });
             }
             AdminApp.openModal('modalUsuario');
         }
 
-        function guardar() {
-            var obj = AdminApp.formToObj('frmUsuario');
-            var id = parseInt($('#hdnIdUsuario').val());
-            var metodo = id > 0 ? 'admin/EditarUsuario' : 'admin/CrearUsuario';
-            AdminApp.ajax(metodo, 'POST', obj, function (res) {
+        function guardar(){
+            if(!$('#frmUsuario')[0].checkValidity()){$('#frmUsuario')[0].reportValidity();return;}
+            var obj=AdminApp.formToObj('frmUsuario'),id=parseInt($('#hdnIdUsuario').val());
+            obj.idActualiza=parseInt(AdminApp.getUser().id||0);
+            AdminApp.ajax(id>0?'admin/EditarUsuario':'admin/CrearUsuario','POST',obj,function(){
                 AdminApp.closeModal('modalUsuario');
-                AdminApp.Toast.success(id > 0 ? 'Usuario actualizado' : 'Usuario creado');
+                AdminApp.Toast.success(id>0?'Usuario actualizado':'Usuario creado');
                 cargar();
             });
         }
 
-        function eliminar(id) {
-            if (!confirm('¿Eliminar este usuario?')) return;
-            AdminApp.ajax('admin/EliminarUsuario', 'POST', { idUsuario: id, idActualiza: 1 }, function (res) {
-                AdminApp.Toast.success('Usuario eliminado');
-                cargar();
+        function eliminar(id){
+            AdminApp.ajax('admin/EliminarUsuario','POST',{idUsuario:id,idActualiza:AdminApp.getUser().id||1},function(){
+                AdminApp.Toast.success('Usuario eliminado');cargar();
             });
         }
     </script>

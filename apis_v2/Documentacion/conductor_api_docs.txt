@@ -1,0 +1,822 @@
+================================================================================
+  API CONDUCTOR - DOCUMENTACION DE ENDPOINTS
+  Proyecto: apis_v2 (ASP.NET Core 2.2)
+  Ruta base: https://vaia.com.mx/api_v2/api/Conductor/
+================================================================================
+
+INDICE
+  1. Registrar
+  2. IniciarSesion
+  3. CerrarSesion
+  4. ObtenerPerfil
+  5. ActualizarPerfil
+  6. CambiarPassword
+  7. ActualizarUbicacion
+  8. CambiarEstatus
+  9. AceptarServicio
+  10. IniciarViaje
+  11. FinalizarViaje
+  12. ListarUnidades
+  13. SeleccionarUnidad
+  14. HistorialViajes
+  15. DetalleViaje
+  16. ObtenerSemanaCorte
+  17. TransferirSemanaCorte
+  18. EnviarMensajeChat
+  19. ObtenerMensajesChat
+  20. ActivarAlarmaSOS
+  21. ReportarIncidente
+  22. ObtenerNotificaciones
+  23. ObtenerAvisos
+  24. ObtenerServicioActivo
+
+
+================================================================================
+1. POST /Registrar
+================================================================================
+Registra un nuevo conductor en el sistema.
+
+REQUEST (JSON body)
+  idCompania         SMALLINT   Requerido   ID de la compania (ej: 1)
+  nombre             VARCHAR    Requerido   Nombre(s) del conductor (max 50)
+  appaterno          VARCHAR    Requerido   Apellido paterno (max 50)
+  apmaterno          VARCHAR    Opcional    Apellido materno (max 50)
+  correo             VARCHAR    Requerido   Correo electronico (max 100)
+  codigopaistel      VARCHAR    Opcional    Prefijo telefonico (def: '+52', max 15)
+  telefono           VARCHAR    Requerido   Telefono a 10 digitos (max 30)
+  googlekey          VARCHAR    Requerido   Token FCM para notificaciones push
+  account            VARCHAR    Requerido   Nombre de cuenta de usuario (max 50)
+  pass               VARCHAR    Requerido   Contrasena en texto plano (se hashea SHA256)
+  idiomapreferido    SMALLINT   Opcional    ID del idioma (NULL)
+  fechanacimiento    DATE       Opcional    Fecha de nacimiento (YYYY-MM-DD, NULL)
+  genero             CHAR(1)    Opcional    Genero M/F/O (NULL)
+
+NOTAS:
+  - El campo 'pass' se convierte a SHA256 antes de almacenarse.
+  - El campo 'idCompania' y 'googlekey' son obligatorios en el SP.
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 3,              // INT - Nuevo ID del conductor creado (>0 = exito)
+      "mensaje": "Registro exitoso"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (id)
+   3           Registro exitoso (id > 0)
+  -1           La cuenta de usuario ya existe
+  -2           El correo ya esta registrado
+  -3           El telefono ya esta registrado
+  -99          Error interno del servidor (ver mensaje)
+
+
+================================================================================
+2. POST /IniciarSesion
+================================================================================
+Inicia sesion para un conductor registrado.
+
+REQUEST (JSON body)
+  account            VARCHAR    Requerido   Usuario o correo electronico (max 50)
+  pass               VARCHAR    Requerido   Contrasena en texto plano (se hashea SHA256)
+  googlekey          VARCHAR    Opcional    Token FCM para notificaciones push (NULL)
+  googlekeyso        VARCHAR    Opcional    SO del dispositivo (android/ios, max 100)
+  dispositivoinfo    VARCHAR    Opcional    Info del dispositivo (max 500)
+  sistemaoperativo   VARCHAR    Opcional    SO (iOS/Android, max 100)
+  ipaddress          VARCHAR    Opcional    Direccion IP (max 50)
+  useragent          VARCHAR    Opcional    User agent (max 500)
+
+NOTAS:
+  - Busca por account (coincide con account O correo) y pass hasheada.
+  - Genera automaticamente un uuidsesion (NEWID()).
+  - Actualiza googlekey y googlekeyso en el registro del conductor.
+  - Inserta en tbhistorialconexionesconductor y tbsesionusuario.
+  - Si el conductor esta bloqueado, devuelve error.
+
+RESPONSE (200 OK) - Exito
+  [
+    {
+      "id": 1,
+      "idcompania": 1,
+      "nombre": "Carlos",
+      "appaterno": "Martinez",
+      "apmaterno": "Gomez",
+      "correo": "carlos@correo.com",
+      "correoconfirmado": false,
+      "codigopaistel": "+52",
+      "telefono": "5511111111",
+      "telefonoconfirmado": false,
+      "fotoperfil": "",
+      "account": "carlosmtz",
+      "bloqueado": false,
+      "uuidsesion": "GUID-aqui",
+      "mensaje": "Inicio de sesion exitoso"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (id)
+  -1           Credenciales invalidas o cuenta bloqueada
+  -99          Error interno del servidor
+
+
+================================================================================
+3. POST /CerrarSesion
+================================================================================
+Cierra la sesion activa del conductor.
+
+REQUEST (JSON body)
+  idConductor        INT        Requerido   ID del conductor
+  uuidsesion         VARCHAR    Opcional    UUID de la sesion a cerrar (max 1500)
+
+NOTAS:
+  - Si no se proporciona uuidsesion, cierra TODAS las sesiones activas.
+  - Actualiza conectado=0 y ultimadesconexionusr.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Sesion cerrada"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+   1           Sesion cerrada
+  -99          Error interno
+
+
+================================================================================
+4. GET /ObtenerPerfil?idConductor={idConductor}
+================================================================================
+Obtiene el perfil completo del conductor.
+
+PARAMETROS QUERY
+  idConductor        INT        Requerido   ID del conductor
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 1,                        // INT
+      "idcompania": 1,                // SMALLINT
+      "fotoperfil": "",               // VARCHAR(MAX)
+      "nombre": "Carlos",             // VARCHAR(50)
+      "appaterno": "Martinez",        // VARCHAR(50)
+      "apmaterno": "Gomez",           // VARCHAR(50)
+      "correo": "carlos@correo.com",  // VARCHAR(100)
+      "correoconfirmado": false,      // BIT
+      "codigopaistel": "+52",         // VARCHAR(15)
+      "telefono": "5511111111",       // VARCHAR(30)
+      "telefonoconfirmado": false,    // BIT
+      "googlekey": "...",             // VARCHAR(MAX)
+      "googlekeyso": null,            // VARCHAR(100)
+      "account": "carlosmtz",         // VARCHAR(50)
+      "pass": "...",                  // VARCHAR(8000) - hasheado
+      "activo": true,                 // BIT
+      "ultimaactualizacion": "...",   // DATETIME
+      "bloqueado": false,             // BIT
+      "ultimalatconsultada": null,    // VARCHAR(100)
+      "ultimalngconsultada": null,    // VARCHAR(100)
+      "conectado": true,              // BIT
+      "ultimaconexionusr": "...",     // DATETIME
+      "ultimadesconexionusr": null,   // DATETIME
+      "fechacreacion": "...",         // DATETIME
+      "metodopagopreferido": null,    // SMALLINT
+      "idiomapreferido": null,        // SMALLINT
+      "fechanacimiento": null,        // DATE
+      "genero": null,                 // CHAR(1)
+      "notasadicionales": null,       // VARCHAR(500)
+      "calificacionpromedio": 4.5,    // DECIMAL(3,2) - JOIN a calificaciones
+      "totalviajes": 150,             // INT - Total de viajes realizados
+      "companianombre": "Vaia Viajes Mexico" // VARCHAR - JOIN tbcompania
+    }
+  ]
+
+NOTA: Usa SELECT c.*, por lo que devuelve TODAS las columnas de tbconductor.
+
+
+================================================================================
+5. POST /ActualizarPerfil
+================================================================================
+Actualiza datos del perfil del conductor. Solo envia los campos a modificar.
+
+REQUEST (JSON body)
+  idConductor        INT        Requerido   ID del conductor
+  nombre             VARCHAR    Opcional    Nuevo nombre (max 50)
+  appaterno          VARCHAR    Opcional    Nuevo apellido paterno (max 50)
+  apmaterno          VARCHAR    Opcional    Nuevo apellido materno (max 50)
+  fotoperfil         VARCHAR    Opcional    Foto en base64 (MAX)
+  idiomapreferido    SMALLINT   Opcional    ID del idioma
+  fechanacimiento    DATE       Opcional    Fecha de nacimiento (YYYY-MM-DD)
+  genero             CHAR(1)    Opcional    Genero M/F/O
+  notasadicionales   VARCHAR    Opcional    Notas adicionales (max 500)
+
+NOTAS:
+  - Usa ISNULL en SQL, solo actualiza campos no NULL.
+  - Si el conductor no existe (activo=1), devuelve error.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Perfil actualizado"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+  -1           Conductor no encontrado
+   1           Perfil actualizado
+
+
+================================================================================
+6. POST /CambiarPassword
+================================================================================
+Cambia la contrasena del conductor.
+
+REQUEST (JSON body)
+  idConductor        INT        Requerido   ID del conductor
+  passActual         VARCHAR    Requerido   Contrasena actual (se hashea SHA256)
+  pass               VARCHAR    Requerido   Nueva contrasena (se hashea SHA256)
+
+NOTAS:
+  - El campo 'passActual' se compara con el hash almacenado.
+  - El campo 'pass' es la nueva contrasena (se renombra a 'passNuevo' internamente).
+  - Ambos se convierten a SHA256 antes de procesar.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Contrasena actualizada"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+  -1           Contrasena actual incorrecta
+   1           Contrasena actualizada
+
+
+================================================================================
+7. POST /ActualizarUbicacion
+================================================================================
+Actualiza la ubicacion geografica en tiempo real del conductor.
+
+REQUEST (JSON body)
+  idConductor        INT        Requerido   ID del conductor
+  lat                VARCHAR    Requerido   Latitud actual (max 50)
+  lng                VARCHAR    Requerido   Longitud actual (max 50)
+  altitud            VARCHAR    Opcional    Altitud (max 50)
+  precisiongps       VARCHAR    Opcional    Precision del GPS (max 50)
+  proveedorubicacion VARCHAR    Opcional    Proveedor de ubicacion (gps/red, max 50)
+  velocidad          VARCHAR    Opcional    Velocidad actual (max 50)
+  bearing            VARCHAR    Opcional    Rumbo/direccion en grados (max 50)
+
+NOTAS:
+  - Actualiza ultimalat, ultimalng y ultimaactualizacion en tbconductor.
+  - Tambien inserta un registro historico en tbhistorialubicacionconductor.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Ubicacion actualizada"
+    }
+  ]
+
+
+================================================================================
+8. POST /CambiarEstatus
+================================================================================
+Cambia el estatus de disponibilidad del conductor.
+
+REQUEST (JSON body)
+  idConductor        INT        Requerido   ID del conductor
+  estatus            VARCHAR    Requerido   Nuevo estatus (max 50):
+                                              Disponible
+                                              Ocupado
+                                              Descanso
+                                              Desconectado
+  lat                VARCHAR    Opcional    Latitud al cambiar estatus (max 50)
+  lng                VARCHAR    Opcional    Longitud al cambiar estatus (max 50)
+
+NOTAS:
+  - Actualiza estatus en tbconductor.
+  - Si se proporcionan lat/lng, actualiza ubicacion simultaneamente.
+  - Si estatus = 'Disponible', el conductor aparece en busquedas de pasajeros.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Estatus actualizado"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+  -1           Estatus invalido
+   1           Estatus actualizado
+
+
+================================================================================
+9. POST /AceptarServicio
+================================================================================
+Acepta un servicio asignado o solicitado (proceso de asignacion).
+
+REQUEST (JSON body)
+  idConductor        INT        Requerido   ID del conductor
+  idServicio         BIGINT     Requerido   ID del servicio a aceptar
+
+NOTAS:
+  - Asigna el conductor al servicio.
+  - Cambia el estatus del servicio a 'En Camino'.
+  - Cambia el estatus del conductor a 'Ocupado'.
+  - Valida que el servicio este en estatus 'Solicitado' o 'Buscando Conductor'.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Servicio aceptado"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+  -1           Servicio no disponible
+  -2           Conductor no disponible
+   1           Servicio aceptado
+
+
+================================================================================
+10. POST /IniciarViaje
+================================================================================
+Inicia el viaje una vez que el pasajero aborda la unidad.
+
+REQUEST (JSON body)
+  idConductor        INT        Requerido   ID del conductor
+  idServicio         BIGINT     Requerido   ID del servicio
+  codigoInicio       VARCHAR    Requerido   Codigo de inicio proporcionado por el pasajero (max 20)
+  lat                VARCHAR    Opcional    Latitud de inicio (max 50)
+  lng                VARCHAR    Opcional    Longitud de inicio (max 50)
+
+NOTAS:
+  - Valida que el codigoInicio coincida con el generado para el servicio.
+  - Cambia estatus del servicio a 'En Viaje'.
+  - Establece servicioiniciado=1 y fechaservicioiniciado=GETDATE().
+  - Registra la ubicacion de inicio si se proporciona.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Viaje iniciado"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+  -1           Codigo de inicio invalido
+  -2           El servicio no esta en estatus valido
+   1           Viaje iniciado
+
+
+================================================================================
+11. POST /FinalizarViaje
+================================================================================
+Finaliza el viaje cuando se llega al destino.
+
+REQUEST (JSON body)
+  idConductor        INT        Requerido   ID del conductor
+  idServicio         BIGINT     Requerido   ID del servicio
+  lat                VARCHAR    Opcional    Latitud de destino (max 50)
+  lng                VARCHAR    Opcional    Longitud de destino (max 50)
+  rd_m               INT        Opcional    Distancia real recorrida en metros
+  rd_s               INT        Opcional    Duracion real en segundos
+  polylineruta       VARCHAR    Opcional    Polyline de la ruta seguida (MAX)
+  puntosruta         VARCHAR    Opcional    Puntos de ruta en JSON (MAX)
+
+NOTAS:
+  - Cambia estatus del servicio a 'Finalizado'.
+  - Establece llegoasudestino=1 y fechallegoasudestino=GETDATE().
+  - Cambia estatus del conductor a 'Disponible'.
+  - Si se proporciona rd_m/rd_s, actualiza la distancia y duracion reales.
+  - Al finalizar, se activa la pantalla de calificacion para el pasajero.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Viaje finalizado"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+  -1           Servicio no valido o no activo
+   1           Viaje finalizado correctamente
+
+
+================================================================================
+12. GET /ListarUnidades?idConductor={idConductor}
+================================================================================
+Lista las unidades (vehiculos) asignadas al conductor.
+
+PARAMETROS QUERY
+  idConductor        INT        Requerido   ID del conductor
+
+NOTAS:
+  - Filtra unidades activas y asignadas al conductor.
+  - Muestra tambien la submarca y marca de cada unidad.
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 3,                      // INT - ID de la unidad
+      "unidad": "Versa 2023",       // VARCHAR(50)
+      "alias": "Sedan Azul",        // VARCHAR(50)
+      "colorhex": "#0000FF",        // VARCHAR(30)
+      "colornombre": "Azul",        // VARCHAR(50)
+      "numeroasientos": 4,          // TINYINT
+      "placas": "ABC-1234",         // VARCHAR(100)
+      "modelo": 2023,               // SMALLINT
+      "anio": 2023,                 // SMALLINT
+      "nombresubmarca": "Versa",    // VARCHAR(50)
+      "nombremarca": "Nissan",      // VARCHAR(50)
+      "esprincipal": true,          // BIT - Indica si es la unidad principal
+      "activo": true                // BIT
+    }
+  ]
+
+
+================================================================================
+13. POST /SeleccionarUnidad
+================================================================================
+Selecciona la unidad con la que el conductor trabajara actualmente.
+
+REQUEST (JSON body)
+  idConductor        INT        Requerido   ID del conductor
+  idUnidad           INT        Requerido   ID de la unidad a seleccionar
+
+NOTAS:
+  - Establece la unidad seleccionada como la activa para el conductor.
+  - Desmarca cualquier otra unidad que estuviera como principal.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Unidad seleccionada"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+  -1           Unidad no asignada al conductor
+   1           Unidad seleccionada
+
+
+================================================================================
+14. GET /HistorialViajes?idConductor={idConductor}&pagina={pagina}&tamano={tamano}&fi={fi}&ff={ff}
+================================================================================
+Obtiene el historial de viajes del conductor con paginacion.
+
+PARAMETROS QUERY
+  idConductor        INT        Requerido   ID del conductor
+  pagina             INT        Opcional    Numero de pagina (def: 1)
+  tamano             INT        Opcional    Viajes por pagina (def: 20)
+  fi                 DATETIME   Opcional    Fecha inicio (YYYY-MM-DD)
+  ff                 DATETIME   Opcional    Fecha fin (YYYY-MM-DD)
+
+NOTAS:
+  - Filtra solo servicios asignados a este conductor.
+  - Ordena por fechacreacion DESC.
+  - Incluye totalregistros para paginacion.
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 15,
+      "idpasajero": 5,
+      "direccionorigen": "Calle 1, Col. Centro",
+      "direcciondestination": "Av. Principal 500",
+      "costoestimado": 85.50,
+      "gananciaconductor": 68.40,
+      "comisionaplicada": 17.10,
+      "distanciametros": 5000,
+      "durationsegundos": 1200,
+      "fechacreacion": "2026-07-26T12:00:00",
+      "fechaservicioiniciado": "2026-07-26T12:05:00",
+      "fechallegoasudestino": "2026-07-26T12:25:00",
+      "calificacion": 5,
+      "estatus": "Finalizado",
+      "pas_nombre": "Juan",
+      "pas_appaterno": "Perez",
+      "pas_foto": null,
+      "totalregistros": 42
+    }
+  ]
+
+
+================================================================================
+15. GET /DetalleViaje?idServicio={idServicio}&idConductor={idConductor}
+================================================================================
+Obtiene el detalle completo de un viaje especifico desde la perspectiva del conductor.
+
+PARAMETROS QUERY
+  idServicio         BIGINT     Requerido   ID del servicio
+  idConductor        INT        Requerido   ID del conductor
+
+RESPONSE (200 OK) - Una fila
+  {
+    "id": 15,                          // BIGINT
+    "idservicioestatus": 5,            // SMALLINT
+    "estatus": "Finalizado",
+    "estatusdescription": "...",
+    "direccionorigen": "...",
+    "direcciondestination": "...",
+    "costoestimado": 85.50,
+    "gananciaconductor": 68.40,
+    "comisionaplicada": 17.10,
+    "distanciametros": 5000,
+    "durationsegundos": 1200,
+    "servicioiniciado": true,
+    "llegoalorigen": true,
+    "llegoasudestino": true,
+    "fechacreacion": "2026-07-26T12:00:00",
+    "fechaservicioiniciado": "2026-07-26T12:05:00",
+    "fechallegoalorigen": "2026-07-26T12:03:00",
+    "fechallegoasudestino": "2026-07-26T12:25:00",
+    "alarmasospasajero": false,
+    "alarmasosconductor": false,
+    "motivocancelacion": null,
+    "tipoviaje": "URBANO",
+    "idtipopago": 1,
+    "tipopago": "Efectivo",
+    "codigopromocional": null,
+    "montodescuento": 0.00,
+    "pas_nombre": "Juan",
+    "pas_appaterno": "Perez",
+    "pas_apmaterno": "Lopez",
+    "pas_foto": null,
+    "pas_tel": "5512345678",
+    "pas_calificacion": null,
+    "rd_m": 5200,
+    "rd_s": 1300,
+    "polylineruta": "...",
+    "puntosruta": "..."
+  }
+
+
+================================================================================
+16. GET /ObtenerSemanaCorte?idConductor={idConductor}
+================================================================================
+Obtiene el resumen de la semana de corte actual del conductor (ganancias).
+
+PARAMETROS QUERY
+  idConductor        INT        Requerido   ID del conductor
+
+NOTAS:
+  - Calcula el periodo de corte semanal (lunes-domingo o configurable).
+  - Muestra total de viajes, ganancia bruta, comision y ganancia neta.
+
+RESPONSE (200 OK)
+  [
+    {
+      "idsemanacorte": 1,            // INT - ID de la semana de corte
+      "numerosemana": 30,            // INT - Numero de semana del ano
+      "fechainicio": "2026-07-20",   // DATE - Inicio del periodo
+      "fechafin": "2026-07-26",      // DATE - Fin del periodo
+      "totalviajes": 25,             // INT - Viajes realizados en la semana
+      "totalgananciabruta": 2500.00, // DECIMAL(18,2) - Suma de ganancias
+      "totalcomision": 500.00,       // DECIMAL(18,2) - Comision total de la plataforma
+      "totalganancianeta": 2000.00,  // DECIMAL(18,2) - Ganancia despues de comision
+      "transferido": false,          // BIT - Ya se transfirio el pago?
+      "fechatransferencia": null     // DATETIME - Fecha de transferencia
+    }
+  ]
+
+
+================================================================================
+17. POST /TransferirSemanaCorte
+================================================================================
+Solicita la transferencia del pago de la semana de corte al conductor.
+
+REQUEST (JSON body)
+  idConductor        INT        Requerido   ID del conductor
+  idSemanaCorte      INT        Requerido   ID de la semana de corte
+  idMetodoPago       SMALLINT   Opcional    ID del metodo de pago para transferencia
+
+NOTAS:
+  - Cambia el estatus de la semana de corte a 'En Proceso' o 'Transferido'.
+  - Valida que la semana no haya sido transferida previamente.
+  - Registra la fecha de solicitud de transferencia.
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Transferencia solicitada"
+    }
+  ]
+
+CODIGOS DE RESPUESTA (resultado)
+  -1           Semana de corte ya transferida
+  -2           Sin ganancias pendientes
+   1           Transferencia solicitada
+
+
+================================================================================
+18. POST /EnviarMensajeChat
+================================================================================
+Envia un mensaje de chat desde el conductor al pasajero del servicio.
+
+REQUEST (JSON body)
+  idServicio         BIGINT     Requerido   ID del servicio
+  idConductor        INT        Requerido   ID del conductor
+  mensaje            VARCHAR    Requerido   Contenido del mensaje (max 150)
+
+NOTAS:
+  - Inserta el mensaje como enviado desde la app del conductor.
+  - El campo desdeappconductor se establece como true.
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 10,            // BIGINT - ID del mensaje creado
+      "mensaje": "Mensaje enviado"
+    }
+  ]
+
+
+================================================================================
+19. GET /ObtenerMensajesChat?idServicio={idServicio}&idConductor={idConductor}
+================================================================================
+Obtiene el historial de mensajes del chat de un servicio para el conductor.
+
+PARAMETROS QUERY
+  idServicio         BIGINT     Requerido   ID del servicio
+  idConductor        INT        Requerido   ID del conductor
+
+RESPONSE (200 OK) - Ordenados por fechacreacion ASC
+  [
+    {
+      "id": 1,
+      "mensaje": "Hola, ya llegue",
+      "desdeappconductor": true,
+      "desdeapppasajero": false,
+      "fechacreacion": "2026-07-26T12:00:00"
+    },
+    {
+      "id": 2,
+      "mensaje": "Perfecto, ya salgo",
+      "desdeappconductor": false,
+      "desdeapppasajero": true,
+      "fechacreacion": "2026-07-26T12:01:00"
+    }
+  ]
+
+
+================================================================================
+20. POST /ActivarAlarmaSOS
+================================================================================
+Activa la alarma de emergencia SOS desde la aplicacion del conductor.
+
+REQUEST (JSON body)
+  idServicio         BIGINT     Requerido   ID del servicio
+  idConductor        INT        Requerido   ID del conductor
+
+NOTAS:
+  - Establece alarmasosconductor=1 y fechaalarmasosconductor=GETDATE().
+  - No valida el estatus del servicio (se activa en cualquier estado).
+
+RESPONSE (200 OK)
+  [
+    {
+      "resultado": 1,
+      "mensaje": "Alarma SOS activada"
+    }
+  ]
+
+
+================================================================================
+21. POST /ReportarIncidente
+================================================================================
+Reporta un incidente relacionado con un servicio desde la app del conductor.
+
+REQUEST (JSON body)
+  idServicio         BIGINT     Requerido   ID del servicio
+  idConductor        INT        Requerido   ID del conductor
+  idTipo             INT        Requerido   ID del tipo de incidente:
+                                               1 = Problema con el Conductor
+                                               2 = Problema con el Pasajero
+                                               3 = Problema con la Unidad
+                                               4 = Problema de Pago
+                                               5 = Problema de Ruta
+                                               6 = Problema de Seguridad
+                                               7 = Queja General
+  desc               VARCHAR    Requerido   Descripcion del incidente (MAX)
+  so                 VARCHAR    Opcional    SO del dispositivo (max 100)
+
+NOTAS:
+  - El servicio debe estar asignado al conductor.
+  - Crea el incidente con estatus 'Reportado'.
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 3,             // INT - ID del incidente creado
+      "mensaje": "Incidente reportado"
+    }
+  ]
+
+CODIGOS DE RESPUESTA
+  -1           Servicio no pertenece al conductor
+
+
+================================================================================
+22. GET /ObtenerNotificaciones?idConductor={idConductor}
+================================================================================
+Obtiene las notificaciones activas para el conductor.
+
+PARAMETROS QUERY
+  idConductor        INT        Requerido   ID del conductor
+
+NOTAS:
+  - Muestra notificaciones no leidas o recientes.
+  - Incluye notificaciones del sistema y de la compania.
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 1,
+      "titulo": "Nuevo servicio disponible",
+      "mensaje": "Tienes un nuevo servicio solicitado cerca de tu ubicacion",
+      "leida": false,
+      "fechacreacion": "2026-07-26T12:00:00",
+      "tipo": "servicio",           // 'servicio', 'sistema', 'promocion'
+      "idreferencia": 15            // ID del recurso referenciado
+    }
+  ]
+
+
+================================================================================
+23. GET /ObtenerAvisos?idCompania={idCompania}
+================================================================================
+Obtiene los avisos activos para los conductores de una compania.
+
+PARAMETROS QUERY
+  idCompania         SMALLINT   Requerido   ID de la compania (ej: 1)
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 1,
+      "tituloaviso": "Mantenimiento programado",
+      "descripcionaviso": "La app estara en mantenimiento el sabado...",
+      "fechacreacion": "2026-07-25T10:00:00"
+    }
+  ]
+
+
+================================================================================
+24. GET /ObtenerServicioActivo?idConductor={idConductor}
+================================================================================
+Obtiene el servicio activo actual del conductor (si tiene alguno).
+
+PARAMETROS QUERY
+  idConductor        INT        Requerido   ID del conductor
+
+NOTAS:
+  - Busca el servicio en estatus: 'En Camino', 'Llego al Origen' o 'En Viaje'.
+  - Si no tiene servicio activo, devuelve array vacio.
+
+RESPONSE (200 OK)
+  [
+    {
+      "id": 15,                        // BIGINT - ID del servicio
+      "idservicioestatus": 2,          // SMALLINT
+      "estatus": "En Camino",          // VARCHAR
+      "direccionorigen": "...",        // VARCHAR(300)
+      "latorigen": "19.4326",          // VARCHAR(50)
+      "lngorigen": "-99.1332",         // VARCHAR(50)
+      "direcciondestination": "...",   // VARCHAR(300)
+      "latdestination": "19.4326",     // VARCHAR(50)
+      "lngdestination": "-99.1332",    // VARCHAR(50)
+      "costoestimado": 85.50,          // DECIMAL(18,2)
+      "distanciametros": 5000,         // INT
+      "durationsegundos": 1200,        // INT
+      "montodescuento": 0.00,          // DECIMAL(18,2)
+      "servicioiniciado": false,       // BIT
+      "llegoalorigen": false,          // BIT
+      "llegoasudestino": false,        // BIT
+      "fechacreacion": "...",          // DATETIME
+      "pas_nombre": "Juan",            // VARCHAR(50)
+      "pas_appaterno": "Perez",        // VARCHAR(50)
+      "pas_foto": null,                // VARCHAR(MAX)
+      "pas_tel": "5512345678",         // VARCHAR(30)
+      "pas_calificacion": 4.8,         // DECIMAL(3,2) - Calificacion promedio del pasajero
+      "codigoinicio": "4829",          // VARCHAR(20) - Codigo para iniciar viaje
+      "tipopago": "Efectivo",          // VARCHAR
+      "idtipopago": 1                  // SMALLINT
+    }
+  ]
+
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================

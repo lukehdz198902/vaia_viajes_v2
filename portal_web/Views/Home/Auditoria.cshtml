@@ -3,32 +3,27 @@
 }
 
 @section Styles {
-    <link href="~/Scripts/Views/Home/Auditoria/style.css" rel="stylesheet" />
+    <link href="~/css/admin.css" rel="stylesheet" />
 }
 
 <div id="dvAuditoria">
-    <div class="section-header d-flex justify-content-between align-items-center mb-4">
-        <h5 class="m-0 fw-bold"><i class="fas fa-history me-2" style="color: var(--primary);"></i>Auditoria y Logs</h5>
+    <div class="section-header">
+        <h4><i class="fas fa-history"></i> Auditoria y Logs</h4>
     </div>
 
     <div class="card-custom">
-        <div class="card-header-custom">
-            <ul class="nav nav-tabs card-header-tabs border-0" id="tabAuditoria" role="tablist">
+        <div class="card-header-custom p-0">
+            <ul class="nav nav-tabs border-0" id="tabAuditoria" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="tab-auditoria" data-bs-toggle="tab" data-bs-target="#pane-auditoria" type="button" role="tab" aria-selected="true">
-                        <i class="fas fa-clipboard-list me-1"></i>Auditoria
-                    </button>
+                    <button class="nav-link active" id="tab-auditoria" data-bs-toggle="tab" data-bs-target="#pane-auditoria" type="button" role="tab" aria-selected="true"><i class="fas fa-clipboard-list me-1"></i>Auditoria</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-logs" data-bs-toggle="tab" data-bs-target="#pane-logs" type="button" role="tab" aria-selected="false">
-                        <i class="fas fa-bug me-1"></i>Logs
-                    </button>
+                    <button class="nav-link" id="tab-logs" data-bs-toggle="tab" data-bs-target="#pane-logs" type="button" role="tab" aria-selected="false"><i class="fas fa-bug me-1"></i>Logs</button>
                 </li>
             </ul>
         </div>
         <div class="card-body-custom p-0">
             <div class="tab-content">
-                <!-- Tab Auditoria -->
                 <div class="tab-pane fade show active" id="pane-auditoria" role="tabpanel">
                     <div class="p-3 border-bottom">
                         <div class="row g-2 align-items-end">
@@ -46,7 +41,7 @@
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small fw-medium text-muted">Accion</label>
-                                <select class="form-select input-soft" id="selAudAccion">
+                                <select class="input-soft" id="selAudAccion">
                                     <option value="">Todas</option>
                                     <option value="INSERT">INSERT</option>
                                     <option value="UPDATE">UPDATE</option>
@@ -59,12 +54,15 @@
                             </div>
                         </div>
                     </div>
-                    <div id="dvTablaAuditoria">
-                        <div class="loader" style="margin: 40px auto;"></div>
+                    <div class="table-wrap">
+                        <table class="table-custom">
+                            <thead><tr><th>ID</th><th>Tabla</th><th>Accion</th><th>Registro ID</th><th>Usuario</th><th>Fecha</th><th>Detalle</th></tr></thead>
+                            <tbody id="tbAuditoria"><tr><td colspan="7"><div class="loader" style="margin:20px auto;"></div></td></tr></tbody>
+                        </table>
                     </div>
+                    <div class="pagination-wrap" id="dvPagAuditoria"></div>
                 </div>
 
-                <!-- Tab Logs -->
                 <div class="tab-pane fade" id="pane-logs" role="tabpanel">
                     <div class="p-3 border-bottom">
                         <div class="row g-2 align-items-end">
@@ -85,9 +83,13 @@
                             </div>
                         </div>
                     </div>
-                    <div id="dvTablaLogs">
-                        <div class="loader" style="margin: 40px auto;"></div>
+                    <div class="table-wrap">
+                        <table class="table-custom">
+                            <thead><tr><th>ID</th><th>Modulo</th><th>Nivel</th><th>Mensaje</th><th>Usuario</th><th>Fecha</th></tr></thead>
+                            <tbody id="tbLogs"><tr><td colspan="6"><div class="loader" style="margin:20px auto;"></div></td></tr></tbody>
+                        </table>
                     </div>
+                    <div class="pagination-wrap" id="dvPagLogs"></div>
                 </div>
             </div>
         </div>
@@ -96,7 +98,61 @@
 
 @section Scripts {
     <script src="~/Scripts/admin.js"></script>
-    <script src="~/Scripts/Views/Home/Auditoria/fn.js"></script>
-    <script src="~/Scripts/Views/Home/Auditoria/jnAjax.js"></script>
-    <script src="~/Scripts/Views/Home/Auditoria/Initscript.js"></script>
+    <script>
+        var AuditoriaApp = (function () {
+            var stateAud = { pagina: 1, tamano: 20 };
+            var stateLog = { pagina: 1, tamano: 20 };
+
+            function cargarAuditoria() {
+                var fi = $('#txtAudFi').val(), ff = $('#txtAudFf').val();
+                var tabla = $('#txtAudTabla').val(), accion = $('#selAudAccion').val();
+                AdminApp.ajax('admin/ListarAuditoria', 'GET', { fi: fi || null, ff: ff || null, tabla: tabla || null, accion: accion || null, pagina: stateAud.pagina, tamano: stateAud.tamano }, function (res) {
+                    var data = Array.isArray(res) ? res : (res.data || []);
+                    var total = res.totalregistros || res.total || data.length;
+                    renderAuditoria(data);
+                    $('#dvPagAuditoria').html(AdminApp.paginador(total, stateAud.pagina, stateAud.tamano, function (p) { stateAud.pagina = p; cargarAuditoria(); }));
+                });
+            }
+
+            function renderAuditoria(data) {
+                var h = '';
+                if (!data.length) { h = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-clipboard-list"></i><p>Sin registros de auditoria</p></div></td></tr>'; }
+                else { data.forEach(function (r) {
+                    h += '<tr><td>' + AdminApp.getVal(r, 'id') + '</td><td>' + (AdminApp.getVal(r, 'tablaafectada') || AdminApp.getVal(r, 'tabla')) + '</td><td>' + AdminApp.getVal(r, 'accion') + '</td><td>' + (AdminApp.getVal(r, 'idregistro') || AdminApp.getVal(r, 'idRegistro')) + '</td><td>' + (AdminApp.getVal(r, 'usuario_nombre') || AdminApp.getVal(r, 'usuario') || '--') + '</td><td>' + AdminApp.fmtFecha(r.fechacreacion || r.fecha) + '</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + AdminApp.getVal(r, 'detallenuevovalor') + '">' + AdminApp.getVal(r, 'detallenuevovalor', '--') + '</td></tr>';
+                }); }
+                $('#tbAuditoria').html(h);
+            }
+
+            function filtrarAuditoria() { stateAud.pagina = 1; cargarAuditoria(); }
+
+            function cargarLogs() {
+                var fi = $('#txtLogFi').val(), ff = $('#txtLogFf').val();
+                AdminApp.ajax('admin/ObtenerLogs', 'GET', { fi: fi || null, ff: ff || null, pagina: stateLog.pagina, tamano: stateLog.tamano }, function (res) {
+                    var data = Array.isArray(res) ? res : (res.data || []);
+                    var total = res.totalregistros || res.total || data.length;
+                    renderLogs(data);
+                    $('#dvPagLogs').html(AdminApp.paginador(total, stateLog.pagina, stateLog.tamano, function (p) { stateLog.pagina = p; cargarLogs(); }));
+                });
+            }
+
+            function renderLogs(data) {
+                var h = '';
+                if (!data.length) { h = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-bug"></i><p>Sin logs</p></div></td></tr>'; }
+                else { data.forEach(function (r) {
+                    h += '<tr><td>' + AdminApp.getVal(r, 'id') + '</td><td>' + AdminApp.getVal(r, 'modulo', '--') + '</td><td>' + AdminApp.getVal(r, 'nivel', 'INFO') + '</td><td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + AdminApp.getVal(r, 'logdescription') + '">' + AdminApp.getVal(r, 'logdescription') + '</td><td>' + AdminApp.getVal(r, 'usuario', '--') + '</td><td>' + AdminApp.fmtFecha(r.fechacreacion || r.fecha) + '</td></tr>';
+                }); }
+                $('#tbLogs').html(h);
+            }
+
+            function filtrarLogs() { stateLog.pagina = 1; cargarLogs(); }
+
+            function init() {
+                cargarAuditoria();
+                $('#tab-logs').on('shown.bs.tab', function () { if ($('#tbLogs').text().includes('loader')) cargarLogs(); });
+            }
+
+            return { init: init, cargarAuditoria: cargarAuditoria, filtrarAuditoria: filtrarAuditoria, cargarLogs: cargarLogs, filtrarLogs: filtrarLogs };
+        })();
+        $(document).ready(function () { AuditoriaApp.init(); });
+    </script>
 }

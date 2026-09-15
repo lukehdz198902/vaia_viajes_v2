@@ -1,379 +1,198 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 <!DOCTYPE html>
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 <html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vaia Viajes - Portal Administrativo</title>
+    <title>Vaia Viajes - @(ViewBag.Title ?? "Portal")</title>
     <link rel="icon" type="image/svg+xml" href="https://cdn-icons-png.flaticon.com/512/3095/3095583.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.min.css" rel="stylesheet" />
-    <style>
-        :root {
-            --primary: #5B6ABF;
-            --primary-light: #7B8AD9;
-            --primary-dark: #3D4A9F;
-            --secondary: #F0A5C8;
-            --accent: #6CC4A1;
-            --bg-body: #F5F6FA;
-            --bg-card: #FFFFFF;
-            --text-dark: #2D3748;
-            --text-muted: #718096;
-            --border-color: #E2E8F0;
-            --sidebar-width: 260px;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Inter, system-ui, -apple-system, sans-serif;
-            background: var(--bg-body);
-            color: var(--text-dark);
-            overflow-x: hidden;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: var(--sidebar-width);
-            height: 100vh;
-            background: linear-gradient(180deg, #2D3748 0%, #1A202C 100%);
-            z-index: 1000;
-            transition: var(--transition);
-            overflow-y: auto;
-            overflow-x: hidden;
-            box-shadow: 2px 0 12px rgba(0,0,0,0.15);
-        }
-        .sidebar-brand {
-            padding: 24px 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-        .sidebar-brand i { font-size: 1.8rem; color: var(--primary-light); }
-        .sidebar-brand h5 {
-            color: #fff;
-            font-weight: 600;
-            font-size: 1.1rem;
-            margin: 0;
-            letter-spacing: 0.5px;
-        }
-        .sidebar-brand small {
-            color: rgba(255,255,255,0.5);
-            font-size: 0.7rem;
-            display: block;
-            margin-top: 2px;
-        }
-        .sidebar-menu { padding: 12px 0; }
-        .sidebar-menu .menu-label {
-            padding: 16px 20px 6px;
-            color: rgba(255,255,255,0.35);
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            font-weight: 600;
-        }
-        .sidebar-menu .nav-item { position: relative; }
-        .sidebar-menu .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 20px;
-            color: rgba(255,255,255,0.65);
-            text-decoration: none;
-            transition: var(--transition);
-            border-left: 3px solid transparent;
-            font-size: 0.88rem;
-        }
-        .sidebar-menu .nav-link:hover {
-            color: #fff;
-            background: rgba(255,255,255,0.06);
-            border-left-color: var(--primary-light);
-        }
-        .sidebar-menu .nav-link.active {
-            color: #fff;
-            background: rgba(91, 106, 191, 0.2);
-            border-left-color: var(--primary);
-        }
-        .sidebar-menu .nav-link i { width: 20px; text-align: center; font-size: 1.05rem; }
-        .sidebar-menu .nav-link .badge {
-            margin-left: auto;
-            font-size: 0.65rem;
-            padding: 2px 8px;
-            border-radius: 10px;
-        }
-
-        .main-content {
-            margin-left: var(--sidebar-width);
-            min-height: 100vh;
-            transition: var(--transition);
-        }
-        .top-bar {
-            background: var(--bg-card);
-            padding: 12px 28px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: var(--shadow-sm);
-            position: sticky;
-            top: 0;
-            z-index: 999;
-        }
-        .top-bar .page-title { font-weight: 600; font-size: 1.15rem; color: var(--text-dark); }
-        .top-bar .page-title span { color: var(--text-muted); font-weight: 400; }
-        .top-bar .user-info { display: flex; align-items: center; gap: 16px; }
-        .top-bar .user-avatar {
-            width: 36px; height: 36px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            display: flex; align-items: center; justify-content: center;
-            color: #fff; font-weight: 600; font-size: 0.85rem; cursor: pointer;
-            transition: var(--transition);
-        }
-        .top-bar .user-avatar:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(91,106,191,0.3); }
-        .top-bar .notification-btn {
-            width: 36px; height: 36px; border-radius: 50%; border: none;
-            background: var(--bg-body); color: var(--text-muted);
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            transition: var(--transition); position: relative;
-        }
-        .top-bar .notification-btn:hover { background: var(--primary); color: #fff; }
-        .top-bar .notification-btn .dot {
-            position: absolute; top: 6px; right: 6px; width: 8px; height: 8px;
-            background: #F56565; border-radius: 50%; border: 2px solid #fff;
-        }
-
-        .content-area { padding: 24px 28px; }
-
-        .stat-card {
-            background: var(--bg-card); border-radius: var(--radius-md);
-            padding: 20px 24px; box-shadow: var(--shadow-sm);
-            transition: var(--transition); border: 1px solid var(--border-color);
-            position: relative; overflow: hidden;
-        }
-        .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-        .stat-card .icon-circle {
-            width: 48px; height: 48px; border-radius: var(--radius-sm);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem; margin-bottom: 12px;
-        }
-        .stat-card .stat-label { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
-        .stat-card .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--text-dark); margin: 4px 0; }
-        .stat-card .stat-change { font-size: 0.78rem; display: flex; align-items: center; gap: 4px; }
-        .stat-card .stat-change.up { color: var(--accent); }
-        .stat-card .stat-change.down { color: #F56565; }
-
-        .card-custom {
-            background: var(--bg-card); border-radius: var(--radius-md);
-            border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);
-            transition: var(--transition);
-        }
-        .card-custom:hover { box-shadow: var(--shadow-md); }
-        .card-custom .card-header-custom {
-            padding: 16px 20px; border-bottom: 1px solid var(--border-color);
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .card-custom .card-header-custom h6 { margin: 0; font-weight: 600; font-size: 0.95rem; }
-        .card-custom .card-body-custom { padding: 20px; }
-
-        .timeline { position: relative; padding-left: 28px; }
-        .timeline::before {
-            content: ''; position: absolute; left: 8px; top: 0; bottom: 0;
-            width: 2px; background: linear-gradient(to bottom, var(--primary-light), var(--secondary), var(--accent));
-        }
-        .timeline-item { position: relative; padding-bottom: 20px; }
-        .timeline-item:last-child { padding-bottom: 0; }
-        .timeline-item .dot {
-            position: absolute; left: -24px; top: 4px; width: 14px; height: 14px;
-            border-radius: 50%; background: var(--primary);
-            border: 3px solid var(--bg-body); box-shadow: 0 0 0 2px var(--primary-light);
-        }
-        .timeline-item .dot.pink { background: var(--secondary); box-shadow: 0 0 0 2px var(--secondary); }
-        .timeline-item .dot.green { background: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
-        .timeline-item .time { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px; }
-        .timeline-item .content { font-size: 0.88rem; color: var(--text-dark); }
-        .timeline-item .content strong { color: var(--primary-dark); }
-
-        .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .table-custom thead th {
-            background: var(--bg-body); color: var(--text-muted);
-            font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;
-            padding: 10px 16px; border-bottom: 2px solid var(--border-color); font-weight: 600;
-        }
-        .table-custom tbody td { padding: 12px 16px; border-bottom: 1px solid var(--border-color); font-size: 0.88rem; vertical-align: middle; }
-        .table-custom tbody tr:hover { background: rgba(91,106,191,0.03); }
-        .table-custom tbody tr:last-child td { border-bottom: none; }
-
-        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 500; display: inline-block; }
-        .status-badge.active { background: #C6F6D5; color: #22543D; }
-        .status-badge.inactive { background: #FED7D7; color: #9B2C2C; }
-        .status-badge.pending { background: #FEEBC8; color: #9C4221; }
-        .status-badge.info { background: #BEE3F8; color: #2A4365; }
-
-        .btn-soft { border: none; padding: 8px 18px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 500; transition: var(--transition); cursor: pointer; }
-        .btn-soft.primary { background: var(--primary); color: #fff; }
-        .btn-soft.primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(91,106,191,0.3); }
-        .btn-soft.secondary { background: var(--secondary); color: #fff; }
-        .btn-soft.secondary:hover { background: #E08DB5; transform: translateY(-1px); }
-        .btn-soft.success { background: var(--accent); color: #fff; }
-        .btn-soft.success:hover { background: #4FB590; transform: translateY(-1px); }
-        .btn-soft.outline { background: transparent; border: 1.5px solid var(--border-color); color: var(--text-muted); }
-        .btn-soft.outline:hover { border-color: var(--primary); color: var(--primary); background: rgba(91,106,191,0.05); }
-
-        .input-soft { border: 1.5px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 0.88rem; transition: var(--transition); background: var(--bg-body); width: 100%; outline: none; }
-        .input-soft:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(91,106,191,0.12); background: #fff; }
-
-        .search-box { position: relative; }
-        .search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
-        .search-box .input-soft { padding-left: 36px; }
-
-        @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 0.4s ease forwards; }
-
-        .loader { width: 24px; height: 24px; border-radius: 50%; border: 3px solid var(--border-color); border-top-color: var(--primary); animation: spin 0.8s linear infinite; margin: 0 auto; }
-        @@keyframes spin { to { transform: rotate(360deg); } }
-
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-
-        .modal-soft .modal-content { border: none; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
-        .modal-soft .modal-header { border-bottom: 1px solid var(--border-color); padding: 16px 24px; }
-        .modal-soft .modal-body { padding: 24px; }
-        .modal-soft .modal-footer { border-top: 1px solid var(--border-color); padding: 12px 24px; }
-
-        .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
-        .empty-state i { font-size: 3rem; margin-bottom: 16px; opacity: 0.4; }
-        .empty-state h5 { color: var(--text-dark); font-weight: 600; }
-    </style>
+    <script>
+        (function () {
+            try {
+                var stored = localStorage.getItem('vaia-theme');
+                var theme = (stored === 'light' || stored === 'dark')
+                    ? stored
+                    : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+        })();
+    </script>
+    <link href="~/css/tokens.css?v=2" rel="stylesheet" />
+    <link href="~/css/base.css?v=2" rel="stylesheet" />
+    <link href="~/css/animations.css?v=2" rel="stylesheet" />
+    <link href="~/css/components.css?v=2" rel="stylesheet" />
+    <link href="~/css/layout.css?v=2" rel="stylesheet" />
+    <link href="~/css/responsive.css?v=2" rel="stylesheet" />
+    <link href="~/css/legacy.css?v=2" rel="stylesheet" />
     @RenderSection("Styles", required: false)
 </head>
 <body>
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <i class="fas fa-car-side"></i>
-            <div>
-                <h5>Vaia Viajes</h5>
-                <small>Portal Administrativo</small>
-            </div>
-        </div>
-        <div class="sidebar-menu">
-            <div class="menu-label">Navegacion</div>
-            <div class="nav-item">
-                <a href="@Url.Action("Index", "Home")" class="nav-link active" data-menu="home">
-                    <i class="fas fa-th-large"></i> Dashboard
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="@Url.Action("Usuarios", "Home")" class="nav-link" data-menu="usuarios">
-                    <i class="fas fa-user-shield"></i> Usuarios
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="@Url.Action("Pasajeros", "Home")" class="nav-link" data-menu="pasajeros">
-                    <i class="fas fa-users"></i> Pasajeros
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="@Url.Action("Conductores", "Home")" class="nav-link" data-menu="conductores">
-                    <i class="fas fa-id-card"></i> Conductores
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="@Url.Action("Servicios", "Home")" class="nav-link" data-menu="servicios">
-                    <i class="fas fa-route"></i> Servicios
-                </a>
-            </div>
-            <div class="menu-label">Gestion</div>
-            <div class="nav-item">
-                <a href="@Url.Action("Reportes", "Home")" class="nav-link" data-menu="reportes">
-                    <i class="fas fa-chart-bar"></i> Reportes
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="@Url.Action("Incidentes", "Home")" class="nav-link" data-menu="incidentes">
-                    <i class="fas fa-exclamation-triangle"></i> Incidentes
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="@Url.Action("Promociones", "Home")" class="nav-link" data-menu="promociones">
-                    <i class="fas fa-tags"></i> Promociones
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="@Url.Action("Zonas", "Home")" class="nav-link" data-menu="zonas">
-                    <i class="fas fa-map-marked-alt"></i> Zonas
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="@Url.Action("Cortes", "Home")" class="nav-link" data-menu="cortes">
-                    <i class="fas fa-money-bill-wave"></i> Cortes
-                </a>
-            </div>
-            <div class="menu-label">Sistema</div>
-            <div class="nav-item">
-                <a href="@Url.Action("Configuracion", "Home")" class="nav-link" data-menu="configuracion">
-                    <i class="fas fa-cog"></i> Configuracion
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="@Url.Action("Compania", "Home")" class="nav-link" data-menu="compania">
-                    <i class="fas fa-building"></i> Compania
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="@Url.Action("Notificaciones", "Home")" class="nav-link" data-menu="notificaciones">
-                    <i class="fas fa-bell"></i> Notificaciones
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="@Url.Action("Avisos", "Home")" class="nav-link" data-menu="avisos">
-                    <i class="fas fa-bullhorn"></i> Avisos
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="@Url.Action("Auditoria", "Home")" class="nav-link" data-menu="auditoria">
-                    <i class="fas fa-history"></i> Auditoria
-                </a>
-            </div>
-        </div>
-    </aside>
-
-    <div class="main-content">
-        <div class="top-bar">
-            <div class="page-title" id="pageTitle">Dashboard <span>/ Resumen General</span></div>
-            <div class="user-info">
-                <button class="notification-btn" title="Notificaciones">
-                    <i class="fas fa-bell"></i>
-                    <span class="dot"></span>
+    <div class="app-shell" id="appShell">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <button class="sidebar-toggle" id="btnToggleSidebar" title="Toggle sidebar">
+                    <i class="fas fa-bars"></i>
                 </button>
-                <div class="user-avatar" title="Administrador">AD</div>
+                <div class="brand-text">
+                    <i class="fas fa-car-side"></i>
+                    <span class="brand-name">Vaia Viajes</span>
+                </div>
             </div>
-        </div>
-        <div class="content-area">
-            @RenderBody()
-        </div>
+            <nav class="sidebar-nav" id="sidebarNav">
+                <div class="nav-section-label">Principal</div>
+                <a href="@Url.Action("Index", "Home")" class="nav-item"><i class="fas fa-th-large"></i><span>Dashboard</span></a>
+                <a href="@Url.Action("Usuarios", "Home")" class="nav-item"><i class="fas fa-user-shield"></i><span>Usuarios</span></a>
+                <a href="@Url.Action("Pasajeros", "Home")" class="nav-item"><i class="fas fa-users"></i><span>Pasajeros</span></a>
+                <a href="@Url.Action("Conductores", "Home")" class="nav-item"><i class="fas fa-id-card"></i><span>Conductores</span></a>
+                <a href="@Url.Action("Servicios", "Home")" class="nav-item"><i class="fas fa-route"></i><span>Servicios</span></a>
+
+                <div class="nav-section-label">Gestion</div>
+                <a href="@Url.Action("Reportes", "Home")" class="nav-item"><i class="fas fa-chart-bar"></i><span>Reportes</span></a>
+                <a href="@Url.Action("Incidentes", "Home")" class="nav-item"><i class="fas fa-exclamation-triangle"></i><span>Incidentes</span></a>
+                <a href="@Url.Action("Promociones", "Home")" class="nav-item"><i class="fas fa-tags"></i><span>Promociones</span></a>
+                <a href="@Url.Action("Zonas", "Home")" class="nav-item"><i class="fas fa-map-marked-alt"></i><span>Zonas</span></a>
+                <a href="@Url.Action("Cortes", "Home")" class="nav-item"><i class="fas fa-money-bill-wave"></i><span>Cortes</span></a>
+
+                <div class="nav-section-label">Sistema</div>
+                <a href="@Url.Action("Configuracion", "Home")" class="nav-item"><i class="fas fa-cog"></i><span>Configuracion</span></a>
+                <a href="@Url.Action("Compania", "Home")" class="nav-item"><i class="fas fa-building"></i><span>Compania</span></a>
+                <a href="@Url.Action("Notificaciones", "Home")" class="nav-item"><i class="fas fa-bell"></i><span>Notificaciones</span></a>
+                <a href="@Url.Action("Avisos", "Home")" class="nav-item"><i class="fas fa-bullhorn"></i><span>Avisos</span></a>
+                <a href="@Url.Action("Auditoria", "Home")" class="nav-item"><i class="fas fa-history"></i><span>Auditoria</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-mini" id="userMini">
+                    <div class="avatar" id="userAvatar">AD</div>
+                    <div class="user-info-text">
+                        <div class="user-name" id="userName">Admin</div>
+                        <div class="user-role" id="userRole">--</div>
+                    </div>
+                </div>
+                <button type="button" class="theme-toggle" data-vaia-theme-toggle aria-label="Cambiar tema" aria-pressed="false" title="Cambiar tema">
+                    <i class="fas fa-moon" data-theme-icon></i>
+                </button>
+                <a href="@Url.Action("Logout", "Home")" class="logout-btn" title="Cerrar sesion">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-area" id="mainArea">
+            <header class="topbar">
+                <button class="mobile-toggle" id="btnMobileToggle"><i class="fas fa-bars"></i></button>
+                <div class="page-title" id="pageTitle">@(ViewBag.Title ?? "Dashboard")</div>
+                <div class="topbar-actions">
+                    <button class="topbar-btn" id="btnNotif" title="Notificaciones">
+                        <i class="fas fa-bell"></i>
+                        <span class="notif-dot"></span>
+                    </button>
+                    <div class="user-dropdown">
+                        <div class="topbar-user" id="topbarUser">
+                            <div class="avatar-sm" id="topbarAvatar">AD</div>
+                            <span class="user-label" id="topbarName">Admin</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <div class="content-area" id="contentArea">
+                @RenderBody()
+            </div>
+        </main>
     </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="~/Scripts/core/vaia-theme.js"></script>
+    <script src="~/Scripts/core/vaia-ui.js"></script>
+    @Html.Partial("_VaiaConfig")
     <script>
-        $(function() {
-            $('.sidebar-menu .nav-link').on('click', function() {
-                $('.sidebar-menu .nav-link').removeClass('active');
-                $(this).addClass('active');
+        (function () {
+            var usr = sessionStorage.getItem('usr_id');
+            if (!usr) { window.location.href = '@Url.Action("Login", "Home")'; return; }
+
+            var nombre = sessionStorage.getItem('usr_nombre') || 'Admin';
+            var account = sessionStorage.getItem('usr_account') || '';
+            var rol = sessionStorage.getItem('usr_rol') || '';
+            var iniciales = nombre ? nombre.charAt(0).toUpperCase() : 'A';
+            if (nombre.indexOf(' ') > -1) iniciales = nombre.charAt(0) + nombre.charAt(nombre.indexOf(' ')+1);
+            iniciales = iniciales.toUpperCase().substring(0,2);
+
+            $('#userName, #topbarName').text(nombre);
+            $('#userRole').text(rol);
+            $('#userAvatar, #topbarAvatar').text(iniciales);
+
+            var path = window.location.pathname.toLowerCase();
+            $('#sidebarNav .nav-item').each(function () {
+                var href = $(this).attr('href').toLowerCase();
+                if (path === href || (href !== '/home/login' && path.startsWith(href))) $(this).addClass('active');
             });
-        });
+
+            var $sidebar = $('#sidebar'),
+                $overlay = $('#sidebarOverlay'),
+                $shell = $('#appShell'),
+                $body = $('body');
+
+            function isMobile() { return window.matchMedia('(max-width: 900px)').matches; }
+
+            $('#btnToggleSidebar').on('click', function (e) {
+                e.stopPropagation();
+                if (isMobile()) {
+                    $sidebar.toggleClass('open');
+                    $overlay.toggleClass('is-visible', $sidebar.hasClass('open'));
+                } else {
+                    $shell.toggleClass('collapsed');
+                }
+            });
+
+            $('#btnMobileToggle').on('click', function () {
+                $sidebar.addClass('open');
+                $overlay.addClass('is-visible');
+            });
+
+            $overlay.on('click', function () {
+                $sidebar.removeClass('open');
+                $overlay.removeClass('is-visible');
+            });
+
+            var hoverTimer;
+            $sidebar.on('mouseenter', function () {
+                if ($shell.hasClass('collapsed') && !isMobile()) {
+                    clearTimeout(hoverTimer);
+                    $shell.addClass('expanding');
+                }
+            }).on('mouseleave', function () {
+                if ($shell.hasClass('collapsed') && !isMobile()) {
+                    hoverTimer = setTimeout(function () { $shell.removeClass('expanding'); }, 200);
+                }
+            });
+
+            $('.logout-btn').on('click', function (e) {
+                e.preventDefault();
+                AdminApp.confirm('Cerrar sesion', 'Esta seguro de cerrar la sesion?', function () {
+                    sessionStorage.clear();
+                    window.location.href = '/Home/Login';
+                });
+            });
+
+            function syncOnResize() {
+                if (isMobile()) {
+                    $shell.removeClass('collapsed');
+                    $sidebar.removeClass('open');
+                    $overlay.removeClass('is-visible');
+                }
+            }
+            window.addEventListener('resize', syncOnResize);
+        })();
     </script>
     @RenderSection("Scripts", required: false)
 </body>

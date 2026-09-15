@@ -1,5 +1,5 @@
 window.jnAjaxHome = (function () {
-    var apiBase = 'http://localhost:5000/api/';
+    var apiBase = window.__VAIA_API_BASE__ || 'https://vaia.com.mx/api_v2/api/';
 
     function _ajax(url, metodo, datos, onOk, onError) {
         $.ajax({

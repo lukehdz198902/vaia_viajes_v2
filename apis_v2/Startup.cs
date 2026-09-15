@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using VaiaViajes.Api.Middleware;
+using VaiaViajes.Api.Services;
 
 namespace VaiaViajes.Api
 {
@@ -16,6 +18,11 @@ namespace VaiaViajes.Api
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors(opts => opts.AddPolicy("AllowAll", p =>
+                p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+
+            services.AddSingleton<FcmService>();
+
             services.AddMvc()
                 .AddJsonOptions(opts =>
                 {
@@ -33,6 +40,8 @@ namespace VaiaViajes.Api
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseVaiaErrorHandling();
+            app.UseCors("AllowAll");
             app.UseMvc(routes =>
             {
                 routes.MapRoute(

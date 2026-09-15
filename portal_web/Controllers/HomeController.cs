@@ -4,6 +4,8 @@ namespace VaiaViajes.Web.Controllers
 {
     public class HomeController : Controller
     {
+        public IActionResult Login() { return View(); }
+        public IActionResult Logout() { return RedirectToAction("Login"); }
         public IActionResult Index() { return View(); }
         public IActionResult Usuarios() { ViewBag.Title = "Usuarios"; return View(); }
         public IActionResult Pasajeros() { ViewBag.Title = "Pasajeros"; return View(); }

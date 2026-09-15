@@ -3,195 +3,326 @@
 }
 
 @section Styles {
-    <link href="~/Content/section.css" rel="stylesheet" />
+    <link href="~/css/pages/dashboard.css?v=2" rel="stylesheet" />
 }
 
-<div id="dvReportes">
-    <div class="section-header">
-        <h4><i class="fas fa-chart-bar me-2" style="color: var(--primary);"></i>Reportes</h4>
+<div class="dashboard" id="dvReportes">
+
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">Reportes</h2>
+            <p class="page-header__subtitle">Analisis operativo y financiero por periodo</p>
+        </div>
+        <div class="page-header__actions">
+            <button type="button" class="btn btn--ghost btn--sm" id="btnExportarPDF">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+            </button>
+        </div>
+    </header>
+
+    <div class="filter-bar" id="dvFiltros">
+        <div class="form-field">
+            <label class="form-label" for="txtFi">Fecha inicio</label>
+            <input type="date" class="form-input" id="txtFi" />
+        </div>
+        <div class="form-field">
+            <label class="form-label" for="txtFf">Fecha fin</label>
+            <input type="date" class="form-input" id="txtFf" />
+        </div>
+        <div class="form-field">
+            <label class="form-label" for="selPeriodo">Periodo rapido</label>
+            <select class="form-select" id="selPeriodo">
+                <option value="">Personalizado</option>
+                <option value="7">Ultimos 7 dias</option>
+                <option value="30" selected>Ultimos 30 dias</option>
+                <option value="90">Ultimos 90 dias</option>
+                <option value="365">Ultimo año</option>
+            </select>
+        </div>
+        <div class="filter-bar__actions">
+            <button type="button" class="btn btn--primary btn--sm" id="btnGenerar">
+                <i class="fas fa-rotate"></i> Generar reporte
+            </button>
+        </div>
     </div>
 
-    <div class="filters" id="dvFiltros">
-        <div class="form-group" style="margin-bottom:0;min-width:140px;">
-            <label style="font-size:0.75rem;color:#718096;margin-bottom:2px;">Fecha Inicio</label>
-            <input type="date" class="input-soft" id="txtFi" />
-        </div>
-        <div class="form-group" style="margin-bottom:0;min-width:140px;">
-            <label style="font-size:0.75rem;color:#718096;margin-bottom:2px;">Fecha Fin</label>
-            <input type="date" class="input-soft" id="txtFf" />
-        </div>
-        <button class="btn-soft" onclick="generar()"><i class="fas fa-sync me-1"></i>Generar</button>
-    </div>
+    <section class="kpi-grid vaia-stagger" id="dvStatsCards" aria-label="KPIs del periodo"></section>
 
-    <div class="row g-4 mb-4" id="dvStatsCards"></div>
-
-    <div class="row g-4 mb-4">
-        <div class="col-12">
-            <div class="card-custom">
-                <div class="card-header-custom">
-                    <h6><i class="fas fa-chart-line me-2" style="color: var(--primary);"></i>Ingresos Diarios</h6>
+    <section class="chart-grid">
+        <article class="chart-card">
+            <header class="chart-card__header">
+                <div>
+                    <h3 class="chart-card__title">Ingresos diarios</h3>
+                    <p class="chart-card__subtitle">Evolucion diaria del periodo seleccionado</p>
                 </div>
-                <div class="card-body-custom">
-                    <canvas id="chartIngresosDiarios" height="280"></canvas>
-                </div>
+            </header>
+            <div class="chart-card__canvas">
+                <canvas id="chartIngresosDiarios"></canvas>
             </div>
-        </div>
-    </div>
+        </article>
 
-    <div class="row g-4 mb-4">
-        <div class="col-lg-6">
-            <div class="card-custom">
-                <div class="card-header-custom">
-                    <h6><i class="fas fa-list me-2" style="color: var(--primary);"></i>Servicios por Periodo</h6>
+        <article class="chart-card">
+            <header class="chart-card__header">
+                <div>
+                    <h3 class="chart-card__title">Comisiones por zona</h3>
+                    <p class="chart-card__subtitle">Top zonas del periodo</p>
                 </div>
-                <div class="card-body-custom p-0">
-                    <div class="table-wrap" id="dvTablaServicios"></div>
-                </div>
+            </header>
+            <div id="dvTablaComisiones"></div>
+        </article>
+    </section>
+
+    <article class="card">
+        <header class="card-header">
+            <div>
+                <h3 class="card-title">Servicios del periodo</h3>
+                <p class="card-subtitle">Listado de viajes con su estatus</p>
             </div>
-        </div>
-        <div class="col-lg-6">
-            <div class="card-custom">
-                <div class="card-header-custom">
-                    <h6><i class="fas fa-map-marker-alt me-2" style="color: var(--primary);"></i>Comisiones por Zona</h6>
-                </div>
-                <div class="card-body-custom p-0">
-                    <div class="table-wrap" id="dvTablaComisiones"></div>
-                </div>
+            <div class="config-summary">
+                <i class="fas fa-circle-info"></i>
+                <span id="lblResumenServicios">0 servicios</span>
             </div>
-        </div>
-    </div>
+        </header>
+        <div id="dvTablaServicios" class="card-body" style="padding-top:0;"></div>
+    </article>
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7"></script>
     <script src="~/Scripts/admin.js"></script>
     <script>
-        $(function () {
-            var today = new Date().toISOString().split('T')[0];
-            var monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-            $('#txtFi').val(monthAgo);
-            $('#txtFf').val(today);
-            generar();
-        });
+        window.VaiaReportes = (function () {
+            var chartIngresos = null;
 
-        var chartIngresos = null;
-
-        function generar() {
-            var fi = $('#txtFi').val();
-            var ff = $('#txtFf').val();
-            cargarStats(fi, ff);
-            cargarIngresosDiarios(fi, ff);
-            cargarServiciosPeriodo(fi, ff);
-            cargarComisionesZona(fi, ff);
-        }
-
-        function cargarStats(fi, ff) {
-            AdminApp.ajax('admin/ReporteIngresos', 'GET', { fi: fi, ff: ff }, function (res) {
-                var d = res || {};
-                var cards = [
-                    { label: 'Total Ingresos', valor: AdminApp.fmtMoneda(d.TotalIngresos || d.totalIngresos || 0), icono: 'fa-dollar-sign', clase: 'ingresos' },
-                    { label: 'Total Viajes', valor: d.TotalViajes || d.totalViajes || 0, icono: 'fa-route', clase: 'viajes' },
-                    { label: 'Comisiones', valor: AdminApp.fmtMoneda(d.Comisiones || d.comisiones || 0), icono: 'fa-percentage', clase: 'pasajeros' },
-                    { label: 'Utilidad', valor: AdminApp.fmtMoneda(d.Utilidad || d.utilidad || 0), icono: 'fa-chart-pie', clase: 'conductores' }
-                ];
-                var h = '';
-                cards.forEach(function (c) {
-                    h += '<div class="col-md-6 col-xl-3 fade-in">';
-                    h += '  <div class="stat-card ' + c.clase + '">';
-                    h += '    <i class="fas ' + c.icono + ' stat-icon-bg"></i>';
-                    h += '    <div class="icon-circle"><i class="fas ' + c.icono + '"></i></div>';
-                    h += '    <div class="stat-label">' + c.label + '</div>';
-                    h += '    <div class="stat-value">' + c.valor + '</div>';
-                    h += '  </div>';
-                    h += '</div>';
+            function fmtCurrency(v) {
+                return '$' + Number(v || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+            function fmtNum(v) {
+                return Number(v || 0).toLocaleString('es-MX');
+            }
+            function fmtDate(s) {
+                if (!s) return '--';
+                var d = new Date(s);
+                if (isNaN(d)) return '--';
+                return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+            }
+            function getVal(obj, key) {
+                if (!obj || !key) return undefined;
+                var k = key.toLowerCase();
+                for (var p in obj) {
+                    if (p.toLowerCase() === k) return obj[p];
+                }
+                return undefined;
+            }
+            function escapeHtml(s) {
+                if (s == null) return '';
+                return String(s).replace(/[&<>"']/g, function (m) {
+                    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
                 });
-                $('#dvStatsCards').html(h);
-            });
-        }
+            }
 
-        function cargarIngresosDiarios(fi, ff) {
-            AdminApp.ajax('admin/ReporteUtilidadDiaria', 'GET', { fi: fi, ff: ff }, function (res) {
-                var data = Array.isArray(res) ? res : (res.data || []);
-                var labels = data.map(function (d) { var dt = d.Fecha || d.fecha; return dt ? AdminApp.fmtFecha(dt) : '--'; });
-                var valores = data.map(function (d) { return d.Total || d.total || d.Ingreso || d.ingreso || 0; });
-                var ctx = document.getElementById('chartIngresosDiarios');
-                if (!ctx) return;
-                if (window.chartIngresos) { window.chartIngresos.destroy(); }
-                window.chartIngresos = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels.length ? labels : ['Sin datos'],
-                        datasets: [{
-                            label: 'Ingresos',
-                            data: valores.length ? valores : [0],
-                            borderColor: '#5B6ABF',
-                            backgroundColor: 'rgba(91, 106, 191, 0.08)',
-                            fill: true,
-                            tension: 0.4,
-                            pointBackgroundColor: '#5B6ABF',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: true, position: 'top', labels: { usePointStyle: true, padding: 16, font: { size: 12 } } },
-                            tooltip: { backgroundColor: '#2D3748', titleFont: { size: 12 }, bodyFont: { size: 13 }, padding: 12, cornerRadius: 8 }
+            function getCssVar(name) {
+                return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+            }
+            function hexToRgba(hex, a) {
+                var h = (hex || '').replace('#', '');
+                if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+                var n = parseInt(h, 16);
+                return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+            }
+
+            function setFechasDefault() {
+                var days = parseInt($('#selPeriodo').val() || '30', 10);
+                var ff = new Date();
+                var fi = new Date(); fi.setDate(fi.getDate() - days);
+                $('#txtFf').val(ff.toISOString().split('T')[0]);
+                $('#txtFi').val(fi.toISOString().split('T')[0]);
+            }
+
+            function cargarStats(fi, ff) {
+                $('#dvStatsCards').html('<article class="kpi-card"><div class="skeleton" style="width:44px;height:44px;border-radius:12px;"></div><div class="skeleton skeleton--text"></div><div class="skeleton skeleton--value"></div><div class="skeleton skeleton--text-sm"></div></article>'.repeat(4));
+                AdminApp.ajax('admin/ReporteIngresos', 'GET', { fi: fi, ff: ff }, function (res) {
+                    var d = res || {};
+                    var cards = [
+                        { label: 'Total ingresos',  valor: fmtCurrency(getVal(d, 'totalIngresos') || getVal(d, 'TotalIngresos') || 0), icono: 'fa-dollar-sign', raw: parseFloat(getVal(d, 'totalIngresos')) || 0 },
+                        { label: 'Total viajes',    valor: fmtNum(getVal(d, 'totalViajes') || getVal(d, 'TotalViajes') || 0),         icono: 'fa-route',       raw: parseFloat(getVal(d, 'totalViajes')) || 0 },
+                        { label: 'Comisiones',      valor: fmtCurrency(getVal(d, 'comisiones') || getVal(d, 'Comisiones') || 0),         icono: 'fa-percent',      raw: parseFloat(getVal(d, 'comisiones')) || 0 },
+                        { label: 'Utilidad',        valor: fmtCurrency(getVal(d, 'utilidad') || getVal(d, 'Utilidad') || 0),               icono: 'fa-chart-pie',    raw: parseFloat(getVal(d, 'utilidad')) || 0 }
+                    ];
+                    var html = '';
+                    cards.forEach(function (c) {
+                        html += '<article class="kpi-card">';
+                        html += '  <div class="kpi-card__icon"><i class="fas ' + c.icono + '"></i></div>';
+                        html += '  <div class="kpi-card__label">' + c.label + '</div>';
+                        html += '  <div class="kpi-card__value" data-countup="' + c.raw + '" data-format="currency">' + c.valor + '</div>';
+                        html += '</article>';
+                    });
+                    $('#dvStatsCards').html(html);
+                    if (window.VaiaUI && typeof window.VaiaUI.countUp === 'function') window.VaiaUI.countUp('#dvStatsCards [data-countup]');
+                }, function () {
+                    $('#dvStatsCards').html('<div class="empty-state" style="grid-column:1/-1;"><div class="empty-state__icon"><i class="fas fa-triangle-exclamation"></i></div><h4 class="empty-state__title">No se pudieron cargar las estadisticas</h4></div>');
+                });
+            }
+
+            function cargarIngresosDiarios(fi, ff) {
+                AdminApp.ajax('admin/ReporteUtilidadDiaria', 'GET', { fi: fi, ff: ff }, function (res) {
+                    var data = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+                    var labels = data.map(function (d) {
+                        var dt = d.Fecha || d.fecha;
+                        if (!dt) return '';
+                        var x = new Date(dt);
+                        return x.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+                    });
+                    var valores = data.map(function (d) { return d.Total || d.total || d.Ingreso || d.ingreso || 0; });
+                    var accent = getCssVar('--accent');
+                    var text = getCssVar('--text-muted');
+                    var border = getCssVar('--border');
+                    var ctx = document.getElementById('chartIngresosDiarios');
+                    if (!ctx) return;
+                    if (chartIngresos) chartIngresos.destroy();
+                    chartIngresos = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels.length ? labels : ['Sin datos'],
+                            datasets: [{
+                                label: 'Ingresos',
+                                data: valores.length ? valores : [0],
+                                borderColor: accent,
+                                backgroundColor: hexToRgba(accent, 0.12),
+                                fill: true,
+                                tension: 0.4,
+                                pointBackgroundColor: accent,
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 4,
+                                pointHoverRadius: 7,
+                                borderWidth: 2.5
+                            }]
                         },
-                        scales: {
-                            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }, ticks: { font: { size: 11 }, color: '#718096' } },
-                            x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#718096' } }
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: { display: true, position: 'top', align: 'end', labels: { usePointStyle: true, padding: 14, font: { size: 11 }, color: text } },
+                                tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.92)', titleFont: { size: 11, weight: '600' }, bodyFont: { size: 12 }, padding: 10, cornerRadius: 8, displayColors: true }
+                            },
+                            scales: {
+                                y: { beginAtZero: true, grid: { color: hexToRgba(border, 0.5), drawBorder: false }, ticks: { font: { size: 10 }, color: text, callback: function (v) { return '$' + Number(v).toLocaleString('es-MX'); } } },
+                                x: { grid: { display: false }, ticks: { font: { size: 10 }, color: text } }
+                            },
+                            animation: { duration: 700, easing: 'easeOutQuart' }
                         }
+                    });
+                }, function () {
+                    var ctx = document.getElementById('chartIngresosDiarios');
+                    if (ctx) {
+                        if (chartIngresos) chartIngresos.destroy();
+                        chartIngresos = null;
                     }
                 });
-            });
-        }
+            }
 
-        function cargarServiciosPeriodo(fi, ff) {
-            AdminApp.ajax('admin/ReporteServicios', 'GET', { fi: fi, ff: ff }, function (res) {
-                var data = Array.isArray(res) ? res : (res.data || []);
-                var h = '<table class="table-custom"><thead><tr><th>ID</th><th>Pasajero</th><th>Conductor</th><th>Monto</th><th>Estatus</th><th>Fecha</th></tr></thead><tbody>';
-                if (!data || data.length === 0) {
-                    h += '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-route"></i><h5>Sin servicios</h5></div></td></tr>';
-                } else {
-                    data.forEach(function (s) {
-                        var sid = s.IdServicio || s.idServicio || 0;
-                        var pasajero = s.NombrePasajero || s.pasajero || s.Pasajero || '--';
-                        var conductor = s.NombreConductor || s.conductor || s.Conductor || '--';
-                        var monto = s.MontoTotal || s.monto || s.Monto || 0;
-                        var estatus = s.EstatusViaje || s.estatus || s.Estatus || '--';
-                        var fecha = s.FechaServicio || s.fecha || s.Fecha || null;
-                        h += '<tr><td>#' + sid + '</td><td>' + pasajero + '</td><td>' + conductor + '</td><td>' + AdminApp.fmtMoneda(monto) + '</td><td>' + AdminApp.badge(true, estatus) + '</td><td>' + AdminApp.fmtFecha(fecha) + '</td></tr>';
+            function cargarServicios(fi, ff) {
+                AdminApp.ajax('admin/ReporteServicios', 'GET', { fi: fi, ff: ff }, function (res) {
+                    var data = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+                    $('#lblResumenServicios').text(data.length + ' servicios');
+                    if (!data.length) {
+                        $('#dvTablaServicios').html('<div class="empty-state"><div class="empty-state__icon"><i class="fas fa-route"></i></div><h4 class="empty-state__title">Sin servicios en el periodo</h4><p class="empty-state__message">No se encontraron viajes en el rango seleccionado.</p></div>');
+                        return;
+                    }
+                    var html = '<div class="data-table-wrap"><table class="data-table records-table"><thead><tr><th class="col-id">ID</th><th>Pasajero</th><th>Conductor</th><th>Monto</th><th class="col-status">Estatus</th><th>Fecha</th></tr></thead><tbody>';
+                    data.slice(0, 50).forEach(function (s) {
+                        var sid = s.Id || s.id || s.IdServicio || 0;
+                        var pasajero = (s.P_nombre || s.p_nombre || '') + ' ' + (s.P_appaterno || s.p_appaterno || '');
+                        pasajero = pasajero.trim() || s.Pasajero || s.pasajero || '--';
+                        var conductor = (s.C_nombre || s.c_nombre || '') + ' ' + (s.C_appaterno || s.c_appaterno || '');
+                        conductor = conductor.trim() || s.Conductor || s.conductor || '--';
+                        var monto = s.MontoTotal || s.montoTotal || s.monto || 0;
+                        var estatus = s.Estatus || s.estatus || s.EstatusViaje || '--';
+                        var fecha = s.Fecha || s.fecha || s.FechaServicio || s.fechaservicio;
+                        html += '<tr>';
+                        html += '  <td class="col-id">#' + sid + '</td>';
+                        html += '  <td><div class="col-name">' + escapeHtml(pasajero) + '</div></td>';
+                        html += '  <td><div class="col-name">' + escapeHtml(conductor) + '</div></td>';
+                        html += '  <td><strong>' + fmtCurrency( + monto) + '</strong></td>';
+                        html += '  <td class="col-status"><span class="badge badge--neutral"><span class="dot"></span>' + escapeHtml(estatus) + '</span></td>';
+                        html += '  <td>' + fmtDate(fecha) + '</td>';
+                        html += '</tr>';
                     });
-                }
-                h += '</tbody></table>';
-                $('#dvTablaServicios').html(h);
-            });
-        }
+                    html += '</tbody></table></div>';
+                    if (data.length > 50) html += '<p style="text-align:center;margin-top:var(--space-3);color:var(--text-muted);font-size:var(--text-xs);">Mostrando 50 de ' + data.length + ' servicios. Refina el periodo para ver menos.</p>';
+                    $('#dvTablaServicios').html(html);
+                }, function () {
+                    $('#dvTablaServicios').html('<div class="alert alert--danger">No se pudieron cargar los servicios.</div>');
+                });
+            }
 
-        function cargarComisionesZona(fi, ff) {
-            AdminApp.ajax('admin/ReporteComisiones', 'GET', { fi: fi, ff: ff }, function (res) {
-                var data = Array.isArray(res) ? res : (res.data || []);
-                var h = '<table class="table-custom"><thead><tr><th>Zona</th><th>Comisiones</th><th>Viajes</th><th>Promedio</th></tr></thead><tbody>';
-                if (!data || data.length === 0) {
-                    h += '<tr><td colspan="4"><div class="empty-state"><i class="fas fa-map-marker-alt"></i><h5>Sin datos</h5></div></td></tr>';
-                } else {
+            function cargarComisiones(fi, ff) {
+                AdminApp.ajax('admin/ReporteComisiones', 'GET', { fi: fi, ff: ff }, function (res) {
+                    var data = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+                    if (!data.length) {
+                        $('#dvTablaComisiones').html('<div class="empty-state"><div class="empty-state__icon"><i class="fas fa-map-marker-alt"></i></div><h4 class="empty-state__title">Sin comisiones</h4></div>');
+                        return;
+                    }
+                    var html = '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Zona</th><th>Comisiones</th><th>Viajes</th><th>Promedio</th></tr></thead><tbody>';
                     data.forEach(function (z) {
-                        var zona = z.Zona || z.zona || '--';
-                        var com = z.Comisiones || z.comisiones || z.TotalComision || z.totalComision || 0;
-                        var viajes = z.Viajes || z.viajes || z.TotalViajes || z.totalViajes || 0;
+                        var zona = z.Zona || z.zona || z.NombreZona || '--';
+                        var com = parseFloat(z.Comisiones || z.comisiones || z.TotalComision || 0);
+                        var viajes = parseInt(z.Viajes || z.viajes || z.TotalViajes || 0, 10);
                         var prom = viajes > 0 ? com / viajes : 0;
-                        h += '<tr><td>' + zona + '</td><td>' + AdminApp.fmtMoneda(com) + '</td><td>' + viajes + '</td><td>' + AdminApp.fmtMoneda(prom) + '</td></tr>';
+                        html += '<tr>';
+                        html += '  <td><div class="col-name">' + escapeHtml(zona) + '</div></td>';
+                        html += '  <td><strong>' + fmtCurrency(com) + '</strong></td>';
+                        html += '  <td>' + fmtNum(viajes) + '</td>';
+                        html += '  <td>' + fmtCurrency(prom) + '</td>';
+                        html += '</tr>';
                     });
+                    html += '</tbody></table></div>';
+                    $('#dvTablaComisiones').html(html);
+                }, function () {
+                    $('#dvTablaComisiones').html('<div class="alert alert--danger">No se pudieron cargar las comisiones.</div>');
+                });
+            }
+
+            function generar() {
+                var fi = $('#txtFi').val();
+                var ff = $('#txtFf').val();
+                cargarStats(fi, ff);
+                cargarIngresosDiarios(fi, ff);
+                cargarServicios(fi, ff);
+                cargarComisiones(fi, ff);
+            }
+
+            function aplicarTemaChart() {
+                if (!chartIngresos) return;
+                var accent = getCssVar('--accent');
+                var text = getCssVar('--text-muted');
+                var border = getCssVar('--border');
+                chartIngresos.data.datasets[0].borderColor = accent;
+                chartIngresos.data.datasets[0].backgroundColor = hexToRgba(accent, 0.12);
+                chartIngresos.data.datasets[0].pointBackgroundColor = accent;
+                if (chartIngresos.options.scales.y) {
+                    chartIngresos.options.scales.y.grid.color = hexToRgba(border, 0.5);
+                    chartIngresos.options.scales.y.ticks.color = text;
                 }
-                h += '</tbody></table>';
-                $('#dvTablaComisiones').html(h);
-            });
-        }
+                if (chartIngresos.options.scales.x) chartIngresos.options.scales.x.ticks.color = text;
+                if (chartIngresos.options.plugins.legend) chartIngresos.options.plugins.legend.labels.color = text;
+                chartIngresos.update('none');
+            }
+
+            function initEventos() {
+                $('#btnGenerar').on('click', generar);
+                $('#selPeriodo').on('change', function () {
+                    var v = $(this).val();
+                    if (v) { setFechasDefault(); generar(); }
+                });
+                window.addEventListener('vaia:theme-changed', aplicarTemaChart);
+            }
+
+            return { init: function () { setFechasDefault(); initEventos(); generar(); } };
+        })();
+
+        $(document).ready(function () { window.VaiaReportes.init(); });
     </script>
 }

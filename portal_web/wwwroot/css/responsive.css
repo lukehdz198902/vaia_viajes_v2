@@ -1,0 +1,100 @@
+@media (max-width: 1536px) {
+  .content-area { padding: var(--space-5); }
+}
+
+@media (max-width: 1100px) {
+  .sidebar { width: 76px; }
+  .sidebar .nav-item span,
+  .sidebar .nav-section-label,
+  .sidebar-brand .brand-text,
+  .sidebar .user-info-text {
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .sidebar-nav .nav-item { justify-content: center; padding-left: 0; padding-right: 0; }
+  .sidebar-footer { justify-content: center; padding-left: 0; padding-right: 0; }
+  .nav-item.active::before { display: none; }
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    z-index: 40;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-2xl);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar.open .nav-item span,
+  .sidebar.open .nav-section-label,
+  .sidebar.open .sidebar-brand .brand-text,
+  .sidebar.open .user-info-text {
+    opacity: 1;
+    pointer-events: auto;
+    width: auto;
+  }
+  .sidebar.open .sidebar-nav .nav-item { justify-content: flex-start; }
+  .sidebar.open .sidebar-footer { justify-content: flex-start; padding-left: var(--space-3); padding-right: var(--space-3); }
+  .sidebar.open .nav-item.active::before { display: block; }
+  .sidebar-overlay { display: block; }
+  .mobile-toggle { display: inline-flex; }
+  .topbar-user .user-label { display: none; }
+  .topbar { padding: var(--space-3) var(--space-4); }
+}
+
+@media (max-width: 768px) {
+  .content-area { padding: var(--space-4); }
+  .page-header { flex-direction: column; align-items: flex-start; }
+  .page-header__actions { width: 100%; }
+  .topbar-actions { gap: var(--space-2); }
+  .data-table thead th,
+  .data-table tbody td { padding: var(--space-2) var(--space-3); font-size: var(--text-xs); }
+}
+
+@media (max-width: 640px) {
+  .filter-bar { grid-template-columns: 1fr; }
+  .kpi-card__value { font-size: var(--text-2xl); }
+  .page-title { font-size: var(--text-md); }
+  .modal-dialog { max-width: 100%; }
+  .modal { padding: var(--space-3); }
+}
+
+@media (max-width: 480px) {
+  .content-area { padding: var(--space-3); }
+  .topbar { padding: var(--space-3); }
+  .topbar-btn { width: 34px; height: 34px; }
+  .toast { min-width: auto; max-width: calc(100vw - var(--space-8)); }
+}
+
+@media (max-width: 1100px) {
+  .app-shell.expanding .sidebar {
+    width: 260px;
+    position: fixed;
+    z-index: 40;
+    box-shadow: var(--shadow-2xl);
+  }
+  .app-shell.expanding .sidebar .nav-item span,
+  .app-shell.expanding .sidebar .nav-section-label,
+  .app-shell.expanding .sidebar-brand .brand-text,
+  .app-shell.expanding .sidebar .user-info-text {
+    opacity: 1;
+    pointer-events: auto;
+    width: auto;
+  }
+  .app-shell.expanding .sidebar-nav .nav-item { justify-content: flex-start; padding-left: var(--space-3); }
+  .app-shell.expanding .sidebar-footer { justify-content: flex-start; padding-left: var(--space-3); padding-right: var(--space-3); }
+  .app-shell.expanding .nav-item.active::before { display: block; }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .btn { min-height: 44px; }
+  .form-input, .form-select, .form-textarea { min-height: 44px; font-size: var(--text-base); }
+  .topbar-btn { min-width: 44px; min-height: 44px; }
+  .nav-item { padding: var(--space-4) var(--space-3); }
+}

@@ -3,206 +3,277 @@
 }
 
 @section Styles {
-    <link href="~/Content/css/admin.css" rel="stylesheet" />
-    <style>
-        .history-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
-        .history-item:last-child { border-bottom: none; }
-        .history-item .h-time { font-size: 0.75rem; color: var(--text-muted); min-width: 100px; }
-        .history-item .h-status { font-weight: 500; font-size: 0.85rem; }
-        .history-item .h-comment { font-size: 0.82rem; color: var(--text-muted); }
-    </style>
+    <link href="~/css/pages/incidentes.css?v=2" rel="stylesheet" />
 }
 
-<div id="dvIncidentes">
-    <div class="section-header">
-        <h4><i class="fas fa-exclamation-triangle"></i> Incidentes</h4>
-    </div>
+<div class="list-page" id="dvIncidentes">
 
-    <div class="card-custom">
-        <div class="card-body-custom">
-            <div class="filters-row">
-                <div class="search-box" style="width:200px;">
-                    <i class="fas fa-calendar"></i>
-                    <input type="date" class="input-soft" id="txtFi" />
-                </div>
-                <div class="search-box" style="width:200px;">
-                    <i class="fas fa-calendar"></i>
-                    <input type="date" class="input-soft" id="txtFf" />
-                </div>
-                <select class="input-soft" id="selTipo"><option value="">Tipo</option></select>
-                <select class="input-soft" id="selEstatus"><option value="">Estatus</option></select>
-                <button class="btn-soft primary" onclick="Incidentes.filtrar()"><i class="fas fa-search"></i> Buscar</button>
-                <button class="btn-soft outline" onclick="Incidentes.limpiarFiltros()"><i class="fas fa-undo"></i> Limpiar</button>
-            </div>
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">Incidentes</h2>
+            <p class="page-header__subtitle">Reportes generados desde la app y su seguimiento</p>
+        </div>
+        <div class="page-header__actions">
+            <button type="button" class="btn btn--ghost btn--sm" id="btnReloadIncidentes">
+                <i class="fas fa-rotate"></i> Recargar
+            </button>
+        </div>
+    </header>
+
+    <div class="inc-filter-bar">
+        <div class="form-field">
+            <label class="form-label" for="txtFi">Fecha inicio</label>
+            <input type="date" class="form-input" id="txtFi" />
+        </div>
+        <div class="form-field">
+            <label class="form-label" for="txtFf">Fecha fin</label>
+            <input type="date" class="form-input" id="txtFf" />
+        </div>
+        <div class="form-field">
+            <label class="form-label" for="selTipo">Tipo</label>
+            <select class="form-select" id="selTipo">
+                <option value="">Todos</option>
+            </select>
+        </div>
+        <div class="form-field">
+            <label class="form-label" for="selEstatus">Estatus</label>
+            <select class="form-select" id="selEstatus">
+                <option value="">Todos</option>
+            </select>
+        </div>
+        <div class="inc-filter-bar__actions">
+            <button type="button" class="btn btn--ghost btn--sm" id="btnLimpiarFiltros" title="Limpiar filtros">
+                <i class="fas fa-undo"></i> Limpiar filtros
+            </button>
         </div>
     </div>
 
-    <div class="card-custom mt-3">
-        <div class="card-body-custom p-0">
-            <div class="table-wrap">
-                <table class="table-custom">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Tipo</th>
-                            <th>Servicio</th>
-                            <th>Descripcion</th>
-                            <th>Estatus</th>
-                            <th>Fecha</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbIncidentes"></tbody>
-                </table>
-            </div>
-            <div class="pagination-wrap" id="dvPaginador"></div>
-        </div>
+    <div class="config-summary">
+        <i class="fas fa-circle-info"></i>
+        <span id="lblResumenIncidentes">Cargando...</span>
     </div>
-</div>
 
-<div class="modal fade modal-soft" id="modalViewIncidente" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2" style="color:var(--primary);"></i>Detalle del Incidente</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="detail-grid" id="dvDetalleIncidente"></div>
-                <hr />
-                <h6 class="mb-3"><i class="fas fa-history me-2" style="color:var(--primary);"></i>Historial de Estatus</h6>
-                <div id="dvHistorialIncidente"></div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-soft outline" data-bs-dismiss="modal">Cerrar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade modal-soft" id="modalStatusIncidente" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-exchange-alt me-2" style="color:var(--primary);"></i>Cambiar Estatus</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="txtStatusIdIncidente" />
-                <div class="form-group mb-3">
-                    <label>Estatus</label>
-                    <select class="input-soft" id="selNuevoEstatus"></select>
-                </div>
-                <div class="form-group mb-3">
-                    <label>Comentarios</label>
-                    <textarea class="input-soft" id="txtStatusComentarios" rows="3" placeholder="Comentarios..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-soft outline" data-bs-dismiss="modal">Cancelar</button>
-                <button class="btn-soft primary" onclick="Incidentes.guardarEstatus()"><i class="fas fa-save"></i> Guardar</button>
-            </div>
-        </div>
+    <div class="card">
+        <div id="dvTablaIncidentes" class="card-body" style="padding-top:0;"></div>
     </div>
 </div>
 
 @section Scripts {
     <script src="~/Scripts/admin.js"></script>
     <script>
-        var Incidentes = (function () {
-            var state = { pagina: 1, tamano: 20 };
+        window.VaiaIncidentes = (function () {
+            var DATA = [];
+            var state = { pagina: 1, tamano: 50 };
 
-            function cargar() {
-                var fi = $('#txtFi').val(), ff = $('#txtFf').val();
-                var idTipo = $('#selTipo').val(), idEst = $('#selEstatus').val();
-                AdminApp.ajax('admin/ListarIncidentes', 'GET', { idEst, idTipo, fi, ff, pagina: state.pagina, tamano: state.tamano }, function (res) {
-                    var data = Array.isArray(res) ? res : (res.data || []);
-                    var total = res.totalregistros || res.total || data.length;
-                    renderTabla(data);
-                    $('#dvPaginador').html(AdminApp.paginador(total, state.pagina, state.tamano, function (p) { state.pagina = p; cargar(); }));
+            function getVal(obj, key) {
+                if (!obj || !key) return undefined;
+                var k = key.toLowerCase();
+                for (var p in obj) {
+                    if (p.toLowerCase() === k) return obj[p];
+                }
+                return undefined;
+            }
+
+            function escapeHtml(s) {
+                if (s == null) return '';
+                return String(s).replace(/[&<>"']/g, function (m) {
+                    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
                 });
             }
 
-            function renderTabla(data) {
-                var h = '';
-                if (!data.length) { h = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>No hay incidentes</p></div></td></tr>'; }
-                else { data.forEach(function (r) {
-                    h += '<tr><td>' + AdminApp.getVal(r, 'idIncidente') + '</td><td>' + AdminApp.getVal(r, 'tipo') + '</td><td>' + AdminApp.getVal(r, 'servicio') + '</td><td>' + AdminApp.getVal(r, 'descripcion') + '</td><td>' + AdminApp.getVal(r, 'estatus') + '</td><td>' + AdminApp.fmtFecha(r.fecha) + '</td><td class="accion-cell"><button class="view" title="Ver" onclick="Incidentes.ver(' + AdminApp.getVal(r, 'idIncidente') + ')"><i class="fas fa-eye"></i></button><button class="edit" title="Cambiar Estatus" onclick="Incidentes.cambiarEstatus(' + AdminApp.getVal(r, 'idIncidente') + ')"><i class="fas fa-exchange-alt"></i></button></td></tr>';
-                }); }
-                $('#tbIncidentes').html(h);
+            function fmtDate(s) {
+                if (!s) return '--';
+                var d = new Date(s);
+                if (isNaN(d)) return '--';
+                return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) +
+                       ' ' + d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
             }
 
-            function ver(id) {
-                AdminApp.ajax('admin/DetalleIncidente', 'GET', { idIncidente: id }, function (r) {
-                    var d = r;
-                    var h = '';
-                    h += '<div class="detail-group"><span class="label">Tipo</span><span class="value">' + AdminApp.getVal(d, 'tipo') + '</span></div>';
-                    h += '<div class="detail-group"><span class="label">Descripcion</span><span class="value">' + AdminApp.getVal(d, 'descripcion') + '</span></div>';
-                    h += '<div class="detail-group"><span class="label">Servicio Vinculado</span><span class="value">' + AdminApp.getVal(d, 'servicio') + ' (ID: ' + AdminApp.getVal(d, 'idServicio') + ')</span></div>';
-                    h += '<div class="detail-group"><span class="label">Conductor</span><span class="value">' + AdminApp.getVal(d, 'conductor') + '</span></div>';
-                    h += '<div class="detail-group"><span class="label">Pasajero</span><span class="value">' + AdminApp.getVal(d, 'pasajero') + '</span></div>';
-                    h += '<div class="detail-group"><span class="label">Fecha</span><span class="value">' + AdminApp.fmtFecha(d.fecha) + '</span></div>';
-                    h += '<div class="detail-group"><span class="label">Estatus Actual</span><span class="value">' + AdminApp.getVal(d, 'estatus') + '</span></div>';
-                    $('#dvDetalleIncidente').html(h);
+            function statusClass(estatus) {
+                var e = (estatus || '').toLowerCase().replace(/\s+/g, '');
+                if (e.indexOf('reportado') >= 0) return 'inc-status--reportado';
+                if (e.indexOf('investigacion') >= 0) return 'inc-status--eninvestigacion';
+                if (e.indexOf('resuelto') >= 0) return 'inc-status--resuelto';
+                if (e.indexOf('cerrado') >= 0) return 'inc-status--cerrado';
+                if (e.indexOf('cancelado') >= 0) return 'inc-status--cancelado';
+                return '';
+            }
 
-                    var historial = d.historial || d.historialEstatus || [];
-                    var hh = '';
-                    if (!historial.length) { hh = '<p class="text-muted">Sin historial</p>'; }
-                    else { historial.forEach(function (hst) {
-                        hh += '<div class="history-item"><div class="h-time">' + AdminApp.fmtFecha(hst.fecha) + '</div><div><div class="h-status">' + AdminApp.getVal(hst, 'estatus') + '</div><div class="h-comment">' + AdminApp.getVal(hst, 'comentarios') + '</div></div></div>';
-                    }); }
-                    $('#dvHistorialIncidente').html(hh);
-                    AdminApp.openModal('modalViewIncidente');
+            function cargarCatalogos() {
+                AdminApp.ajax('admin/TiposIncidente', 'GET', null, function (res) {
+                    var data = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+                    var $sel = $('#selTipo').empty().append('<option value="">Todos</option>');
+                    data.forEach(function (t) {
+                        $sel.append('<option value="' + (getVal(t, 'id') || '') + '">' + escapeHtml(getVal(t, 'nombre') || getVal(t, 'nombretipo') || '--') + '</option>');
+                    });
+                }, function () { if (window.VaiaUI) window.VaiaUI.toast({ type: 'danger', title: 'Error', message: 'No se pudieron cargar los tipos de incidente' }); });
+
+                AdminApp.ajax('admin/EstatusIncidente', 'GET', null, function (res) {
+                    var data = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+                    var $sel = $('#selEstatus').empty().append('<option value="">Todos</option>');
+                    data.forEach(function (e) {
+                        $sel.append('<option value="' + (getVal(e, 'id') || '') + '">' + escapeHtml(getVal(e, 'nombre') || getVal(e, 'nombreestatus') || '--') + '</option>');
+                    });
+                }, function () { if (window.VaiaUI) window.VaiaUI.toast({ type: 'danger', title: 'Error', message: 'No se pudieron cargar los estatus' }); });
+            }
+
+            function cargarIncidentes() {
+                var $dv = $('#dvTablaIncidentes');
+                $dv.html('<div class="skeleton skeleton--block" style="height:200px;"></div>');
+                var params = { pagina: state.pagina, tamano: state.tamano };
+                var fi = $('#txtFi').val(); if (fi) params.fi = fi;
+                var ff = $('#txtFf').val(); if (ff) params.ff = ff;
+                var idTipo = $('#selTipo').val(); if (idTipo) params.idTipoIncidente = parseInt(idTipo, 10);
+                var idEst = $('#selEstatus').val(); if (idEst) params.idEstatus = parseInt(idEst, 10);
+
+                AdminApp.ajax('admin/ListarIncidentes', 'GET', params, function (res) {
+                    var data = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+                    var total = getVal(res, 'totalregistros') || data.length;
+                    DATA = data.map(function (r) {
+                        return {
+                            id: getVal(r, 'idIncidente') || getVal(r, 'id'),
+                            tipo: getVal(r, 'tipo') || getVal(r, 'nombretipo') || '--',
+                            servicio: getVal(r, 'servicio') || (getVal(r, 'idservicio') ? '#' + getVal(r, 'idservicio') : '--'),
+                            descripcion: getVal(r, 'descripcion') || getVal(r, 'descripcionincidente') || '',
+                            estatus: getVal(r, 'estatus') || getVal(r, 'nombreestatus') || '--',
+                            fecha: getVal(r, 'fecha') || getVal(r, 'fechaincidente')
+                        };
+                    });
+                    renderTabla();
+                    $('#lblResumenIncidentes').text(DATA.length + ' de ' + total + ' incidentes');
+                }, function () {
+                    $dv.html('<div class="empty-state"><div class="empty-state__icon"><i class="fas fa-triangle-exclamation"></i></div><h4 class="empty-state__title">No se pudieron cargar los incidentes</h4><p class="empty-state__message">Verifica la conexion con el servidor e intenta de nuevo.</p></div>');
+                    if (window.VaiaUI) window.VaiaUI.toast({ type: 'danger', title: 'Error', message: 'No se pudieron cargar los incidentes' });
+                });
+            }
+
+            function renderTabla() {
+                if (!DATA.length) {
+                    $('#dvTablaIncidentes').html('<div class="empty-state"><div class="empty-state__icon"><i class="fas fa-circle-check"></i></div><h4 class="empty-state__title">Sin incidentes</h4><p class="empty-state__message">No hay incidentes registrados en el periodo seleccionado.</p></div>');
+                    return;
+                }
+                var html = '<div class="data-table-wrap"><table class="data-table inc-table"><thead><tr>';
+                html += '<th class="col-id">ID</th><th class="col-tipo">Tipo</th><th>Servicio</th><th class="col-desc">Descripcion</th><th class="col-status">Estatus</th><th>Fecha</th><th class="col-actions"></th>';
+                html += '</tr></thead><tbody>';
+                DATA.forEach(function (r) {
+                    html += '<tr>';
+                    html += '  <td class="col-id">#' + r.id + '</td>';
+                    html += '  <td class="col-tipo">' + escapeHtml(r.tipo) + '</td>';
+                    html += '  <td>' + escapeHtml(r.servicio) + '</td>';
+                    html += '  <td class="col-desc" title="' + escapeHtml(r.descripcion) + '">' + escapeHtml(r.descripcion) + '</td>';
+                    html += '  <td class="col-status"><span class="inc-status ' + statusClass(r.estatus) + '"><span class="dot"></span>' + escapeHtml(r.estatus) + '</span></td>';
+                    html += '  <td>' + fmtDate(r.fecha) + '</td>';
+                    html += '  <td class="col-actions"><button class="btn btn--ghost btn--icon btn--sm" data-action="ver" data-id="' + r.id + '" title="Ver detalle"><i class="fas fa-eye"></i></button><button class="btn btn--ghost btn--icon btn--sm" data-action="estatus" data-id="' + r.id + '" title="Cambiar estatus"><i class="fas fa-arrows-rotate"></i></button></td>';
+                    html += '</tr>';
+                });
+                html += '</tbody></table></div>';
+                $('#dvTablaIncidentes').html(html);
+            }
+
+            function verDetalle(id) {
+                AdminApp.ajax('admin/DetalleIncidente', 'GET', { idIncidente: id }, function (res) {
+                    var main = Array.isArray(res) ? res[0] : res;
+                    var historial = Array.isArray(res) && res.length > 1 ? res[1] : (Array.isArray(res) ? [] : (res && res.historial ? res.historial : []));
+
+                    if (!main || !main.idIncidente) {
+                        if (window.VaiaUI) window.VaiaUI.toast({ type: 'danger', title: 'Error', message: 'No se encontro el incidente' });
+                        return;
+                    }
+
+                    var body = '<div class="inc-detail-grid">' +
+                        '<div class="inc-detail-item"><span class="inc-detail-item__label">Tipo</span><span class="inc-detail-item__value">' + escapeHtml(getVal(main, 'tipo') || '--') + '</span></div>' +
+                        '<div class="inc-detail-item"><span class="inc-detail-item__label">Estatus actual</span><span class="inc-detail-item__value"><span class="inc-status ' + statusClass(getVal(main, 'estatus')) + '"><span class="dot"></span>' + escapeHtml(getVal(main, 'estatus') || '--') + '</span></span></div>' +
+                        '<div class="inc-detail-item"><span class="inc-detail-item__label">Servicio vinculado</span><span class="inc-detail-item__value">' + (getVal(main, 'idservicio') ? '#' + getVal(main, 'idservicio') : '--') + '</span></div>' +
+                        '<div class="inc-detail-item"><span class="inc-detail-item__label">Conductor</span><span class="inc-detail-item__value">' + escapeHtml(getVal(main, 'conductor') || '--') + '</span></div>' +
+                        '<div class="inc-detail-item"><span class="inc-detail-item__label">Pasajero</span><span class="inc-detail-item__value">' + escapeHtml(getVal(main, 'pasajero') || '--') + '</span></div>' +
+                        '<div class="inc-detail-item"><span class="inc-detail-item__label">Fecha</span><span class="inc-detail-item__value">' + fmtDate(getVal(main, 'fecha')) + '</span></div>' +
+                        '<div class="inc-detail-item" style="grid-column:1/-1;"><span class="inc-detail-item__label">Descripcion</span><span class="inc-detail-item__value">' + escapeHtml(getVal(main, 'descripcion') || '--') + '</span></div>' +
+                        (getVal(main, 'so') ? '<div class="inc-detail-item"><span class="inc-detail-item__label">Sistema operativo</span><span class="inc-detail-item__value">' + escapeHtml(getVal(main, 'so')) + '</span></div>' : '') +
+                        '</div>' +
+                        '<h4 style="margin:0 0 var(--space-3);font-size:var(--text-md);"><i class="fas fa-clock-rotate-left" style="color:var(--accent);margin-right:6px;"></i>Historial de seguimiento</h4>' +
+                        (historial && historial.length ?
+                            '<div class="timeline-list">' + historial.map(function (h) {
+                                return '<div class="timeline-step"><div class="timeline-step__dot"><i class="fas fa-circle-check"></i></div><div class="timeline-step__body"><div class="timeline-step__title">' + escapeHtml(getVal(h, 'estatus') || getVal(h, 'nombreestatus') || '--') + '</div><div class="timeline-step__meta">' + fmtDate(getVal(h, 'fecha') || getVal(h, 'fechacreacion')) + '</div>' + (getVal(h, 'comentarios') ? '<div class="timeline-step__comment">' + escapeHtml(getVal(h, 'comentarios')) + '</div>' : '') + '</div></div>';
+                            }).join('') + '</div>'
+                            : '<p style="color:var(--text-muted);text-align:center;padding:var(--space-4);">Sin historial de cambios.</p>');
+
+                    window.VaiaUI.modal({
+                        title: '<i class="fas fa-circle-exclamation" style="color:var(--state-warning);margin-right:8px;"></i>Detalle del incidente #' + getVal(main, 'idIncidente'),
+                        titleHtml: true,
+                        body: body,
+                        fullscreen: true,
+                        footer: '<button type="button" class="btn btn--ghost" data-close>Cerrar</button>'
+                    });
+                }, function () {
+                    if (window.VaiaUI) window.VaiaUI.toast({ type: 'danger', title: 'Error', message: 'No se pudo cargar el detalle del incidente' });
                 });
             }
 
             function cambiarEstatus(id) {
-                $('#txtStatusIdIncidente').val(id);
-                AdminApp.ajax('admin/ListaIncidentesTablas', 'GET', null, function (res) {
-                    var estatusList = Array.isArray(res) ? res : (res.estatus || []);
-                    AdminApp.loadSelect('admin/ListaIncidentesTablas', 'selNuevoEstatus', 'id', 'nombre', null, true);
-                    function loadEstatus() {
-                        var $sel = $('#selNuevoEstatus'); $sel.html('<option value="">-- Seleccionar --</option>');
-                        if (Array.isArray(estatusList)) { estatusList.forEach(function (e) { $sel.append('<option value="' + (e.id || e.idEstatus) + '">' + (e.nombre || e.estatus) + '</option>'); }); }
-                    }
-                    if (!Array.isArray(estatusList)) {
-                        AdminApp.ajax('admin/ListaIncidentesTablas', 'GET', null, function (r2) {
-                            estatusList = r2.estatus || r2;
-                            loadEstatus();
+                AdminApp.ajax('admin/EstatusIncidente', 'GET', null, function (res) {
+                    var data = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+                    var opciones = data.map(function (e) {
+                        return '<option value="' + (getVal(e, 'id') || '') + '">' + escapeHtml(getVal(e, 'nombre') || getVal(e, 'nombreestatus') || '--') + '</option>';
+                    }).join('');
+
+                    var body = '<input type="hidden" id="vaiaIncId" value="' + id + '">' +
+                        '<div class="form-field" style="margin-bottom:var(--space-3);">' +
+                        '  <label class="form-label" for="vaiaIncEstatus">Nuevo estatus <span class="required-mark">*</span></label>' +
+                        '  <select class="form-select" id="vaiaIncEstatus">' + opciones + '</select>' +
+                        '</div>' +
+                        '<div class="form-field">' +
+                        '  <label class="form-label" for="vaiaIncComentarios">Comentarios (opcional)</label>' +
+                        '  <textarea class="form-textarea" id="vaiaIncComentarios" rows="3" placeholder="Describe el avance o accion tomada..."></textarea>' +
+                        '</div>';
+
+                    var m = window.VaiaUI.modal({
+                        title: '<i class="fas fa-arrows-rotate" style="color:var(--accent);margin-right:8px;"></i>Cambiar estatus del incidente',
+                        titleHtml: true,
+                        body: body,
+                        fullscreen: true,
+                        footer:
+                            '<button type="button" class="btn btn--ghost" data-close>Cancelar</button>' +
+                            '<button type="button" class="btn btn--primary" id="vaiaIncGuardar"><i class="fas fa-save"></i> Actualizar</button>'
+                    });
+
+                    $('#vaiaIncGuardar').on('click', function () {
+                        var idEstatus = $('#vaiaIncEstatus').val();
+                        var comentarios = $('#vaiaIncComentarios').val();
+                        if (!idEstatus) { window.VaiaUI.toast({ type: 'warning', title: 'Selecciona estatus' }); return; }
+                        AdminApp.ajax('admin/ActualizarEstatusIncidente', 'POST', {
+                            idIncidente: id,
+                            idUsuario: AdminApp.getUser().id,
+                            idEstatus: idEstatus,
+                            comentarios: comentarios
+                        }, function () {
+                            window.VaiaUI.toast({ type: 'success', title: 'Estatus actualizado' });
+                            m.close();
+                            cargarIncidentes();
                         });
-                    } else { loadEstatus(); }
-                });
-                $('#txtStatusComentarios').val('');
-                AdminApp.openModal('modalStatusIncidente');
-            }
-
-            function guardarEstatus() {
-                var id = $('#txtStatusIdIncidente').val();
-                var idEstatus = $('#selNuevoEstatus').val();
-                var comentarios = $('#txtStatusComentarios').val();
-                if (!idEstatus) { Toast.warning('Seleccione un estatus'); return; }
-                AdminApp.ajax('admin/ActualizarEstatusIncidente', 'POST', { idIncidente: id, idUsuario: 1, idEstatus: idEstatus, comentarios: comentarios }, function () {
-                    Toast.success('Estatus actualizado');
-                    AdminApp.closeModal('modalStatusIncidente');
-                    cargar();
+                    });
+                }, function () {
+                    if (window.VaiaUI) window.VaiaUI.toast({ type: 'danger', title: 'Error', message: 'No se pudieron cargar los estatus' });
                 });
             }
 
-            function filtrar() { state.pagina = 1; cargar(); }
-            function limpiarFiltros() { $('#txtFi, #txtFf, #selTipo, #selEstatus').val(''); state.pagina = 1; cargar(); }
-
-            function init() {
-                AdminApp.loadSelect('admin/TiposIncidente', 'selTipo', 'id', 'nombre');
-                AdminApp.ajax('admin/ListaIncidentesTablas', 'GET', null, function (res) {
-                    var estatusList = Array.isArray(res) ? res : (res.estatus || []);
-                    var $sel = $('#selEstatus');
-                    if (Array.isArray(estatusList)) { estatusList.forEach(function (e) { $sel.append('<option value="' + (e.id || e.idEstatus) + '">' + (e.nombre || e.estatus) + '</option>'); }); }
+            function initEventos() {
+                $('#txtFi, #txtFf, #selTipo, #selEstatus').on('change', function () { state.pagina = 1; cargarIncidentes(); });
+                $('#btnLimpiarFiltros').on('click', function () {
+                    $('#txtFi, #txtFf, #selTipo, #selEstatus').val('');
+                    state.pagina = 1;
+                    cargarIncidentes();
                 });
-                cargar();
+                $('#btnReloadIncidentes').on('click', cargarIncidentes);
+                $('#dvTablaIncidentes').on('click', '[data-action]', function () {
+                    var id = $(this).data('id');
+                    if ($(this).data('action') === 'ver') verDetalle(id);
+                    else if ($(this).data('action') === 'estatus') cambiarEstatus(id);
+                });
             }
 
-            return { init: init, cargar: cargar, filtrar: filtrar, limpiarFiltros: limpiarFiltros, ver: ver, cambiarEstatus: cambiarEstatus, guardarEstatus: guardarEstatus };
+            return { init: function () { cargarCatalogos(); initEventos(); cargarIncidentes(); } };
         })();
-        $(document).ready(function () { Incidentes.init(); });
+
+        $(document).ready(function () { window.VaiaIncidentes.init(); });
     </script>
 }

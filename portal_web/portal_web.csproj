@@ -11,4 +11,9 @@
     <PackageReference Include="Microsoft.jQuery.Unobtrusive.Ajax" Version="3.2.6" />
     <PackageReference Include="bootstrap" Version="5.3.3" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="App_Start\" />
+    <Folder Include="Models\" />
+    <Folder Include="Scripts\lib\" />
+  </ItemGroup>
 </Project>

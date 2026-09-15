@@ -335,7 +335,7 @@ CODIGOS DE RESPUESTA (resultado)
 
 
 ================================================================================
-9. POST /ValidarCodigoPromocional
+9. POST /ValidarCodigoPromocionaltarje
 ================================================================================
 Valida un codigo promocional contra el pasajero y el monto del viaje.
 

@@ -3,84 +3,67 @@
 }
 
 @section Styles {
-    <link href="~/Scripts/Views/Home/Notificaciones/style.css" rel="stylesheet" />
+    <link href="~/css/admin.css" rel="stylesheet" />
 }
 
 <div id="dvNotificaciones">
-    <div class="section-header d-flex justify-content-between align-items-center mb-4">
-        <h5 class="m-0 fw-bold"><i class="fas fa-bell me-2" style="color: var(--primary);"></i>Notificaciones Push</h5>
-        <div>
-            <button class="btn-soft primary" onclick="NotifApp.abrirEnviar()"><i class="fas fa-plus me-1"></i>Nueva</button>
-        </div>
+    <div class="section-header">
+        <h4><i class="fas fa-bell"></i> Notificaciones Push</h4>
+        <button class="btn-soft primary" onclick="NotifApp.abrirEnviar()"><i class="fas fa-plus me-1"></i>Nueva</button>
     </div>
 
     <div class="card-custom">
         <div class="card-body-custom p-0">
-            <div id="dvTablaNotificaciones">
-                <div class="loader" style="margin: 40px auto;"></div>
+            <div class="table-wrap">
+                <table class="table-custom">
+                    <thead><tr><th>ID</th><th>Titulo</th><th>Audiencia</th><th>Estado</th><th>Programada</th><th>Enviada</th><th>Acciones</th></tr></thead>
+                    <tbody id="tbNotificaciones"></tbody>
+                </table>
             </div>
+            <div class="pagination-wrap" id="dvPaginador"></div>
         </div>
     </div>
 </div>
 
-<!-- Detail Modal -->
-<div class="modal fade modal-soft" id="mdlDetalleNotif" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade modal-soft" id="modalNotificacion" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h6 class="modal-title"><i class="fas fa-info-circle me-2" style="color: var(--primary);"></i>Detalle de Notificacion</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="dvDetalleNotifBody">
-                <div class="loader" style="margin: 20px auto;"></div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-soft outline" data-bs-dismiss="modal">Cerrar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Send/Create Modal -->
-<div class="modal fade modal-soft" id="mdlEnviarNotif" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h6 class="modal-title"><i class="fas fa-paper-plane me-2" style="color: var(--primary);"></i>Enviar Notificacion</h6>
+                <h6 class="modal-title"><i class="fas fa-paper-plane me-2" style="color:var(--primary);"></i>Enviar Notificacion</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="frmNotificacion">
-                    <div class="mb-3">
-                        <label class="form-label small fw-medium text-muted">Titulo</label>
-                        <input type="text" class="input-soft" id="txtTitulo" name="titulo" required />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-medium text-muted">Mensaje</label>
-                        <textarea class="input-soft" id="txtMensaje" name="mensaje" rows="3" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-medium text-muted">Tipo de Audiencia</label>
-                        <select class="form-select input-soft" id="selTipoAudiencia" name="tipoaudiencia">
-                            <option value="TODOS">TODOS</option>
-                            <option value="PASAJEROS">PASAJEROS</option>
-                            <option value="CONDUCTORES">CONDUCTORES</option>
-                            <option value="INDIVIDUAL">INDIVIDUAL</option>
-                        </select>
-                    </div>
-                    <div class="row g-3" id="dvCamposIndividual" style="display:none;">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-medium text-muted">ID Pasajero</label>
-                            <input type="number" class="input-soft" id="txtIdPasajero" name="idPasajero" min="0" />
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>Titulo</label>
+                            <input type="text" class="input-soft" name="titulo" id="txtTitulo" required />
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-medium text-muted">ID Conductor</label>
-                            <input type="number" class="input-soft" id="txtIdConductor" name="idConductor" min="0" />
+                        <div class="form-group">
+                            <label>Tipo de Audiencia</label>
+                            <select class="input-soft" name="tipoaudiencia" id="selTipoAudiencia">
+                                <option value="TODOS">TODOS</option>
+                                <option value="PASAJEROS">PASAJEROS</option>
+                                <option value="CONDUCTORES">CONDUCTORES</option>
+                                <option value="INDIVIDUAL">INDIVIDUAL</option>
+                            </select>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-medium text-muted">Fecha Programada <small class="text-muted">(opcional)</small></label>
-                        <input type="datetime-local" class="input-soft" id="txtFechaProgramada" name="fechaprogramada" />
+                        <div class="form-group full-row">
+                            <label>Mensaje</label>
+                            <textarea class="input-soft" name="mensaje" id="txtMensaje" rows="3" required></textarea>
+                        </div>
+                        <div class="form-group" id="dvIdPasajero" style="display:none;">
+                            <label>ID Pasajero</label>
+                            <input type="number" class="input-soft" name="idPasajero" id="txtIdPasajero" min="0" />
+                        </div>
+                        <div class="form-group" id="dvIdConductor" style="display:none;">
+                            <label>ID Conductor</label>
+                            <input type="number" class="input-soft" name="idConductor" id="txtIdConductor" min="0" />
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Programada <small>(opcional)</small></label>
+                            <input type="datetime-local" class="input-soft" name="fechaprogramada" id="txtFechaProgramada" />
+                        </div>
                     </div>
                 </form>
             </div>
@@ -92,9 +75,87 @@
     </div>
 </div>
 
+<div class="modal fade modal-soft" id="modalDetalleNotif" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title"><i class="fas fa-info-circle me-2" style="color:var(--primary);"></i>Detalle de Notificacion</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-grid" id="dvDetalleNotif"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-soft outline" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="~/Scripts/admin.js"></script>
-    <script src="~/Scripts/Views/Home/Notificaciones/fn.js"></script>
-    <script src="~/Scripts/Views/Home/Notificaciones/jnAjax.js"></script>
-    <script src="~/Scripts/Views/Home/Notificaciones/Initscript.js"></script>
+    <script>
+        var NotifApp = (function () {
+            var state = { pagina: 1, tamano: 20 };
+
+            function cargar() {
+                AdminApp.ajax('admin/ListarNotificaciones', 'GET', { pagina: state.pagina, tamano: state.tamano }, function (res) {
+                    var data = Array.isArray(res) ? res : (res.data || []);
+                    var total = res.totalregistros || res.total || data.length;
+                    renderTabla(data);
+                    $('#dvPaginador').html(AdminApp.paginador(total, state.pagina, state.tamano, function (p) { state.pagina = p; cargar(); }));
+                });
+            }
+
+            function renderTabla(data) {
+                var h = '';
+                if (!data.length) { h = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-bell"></i><p>No hay notificaciones</p></div></td></tr>'; }
+                else { data.forEach(function (r) {
+                    var prog = r.fechaprogramada ? AdminApp.fmtFecha(r.fechaprogramada) : '--';
+                    var env = r.fechaenvio ? AdminApp.fmtFecha(r.fechaenvio) : '--';
+                    h += '<tr><td>' + AdminApp.getVal(r, 'id') + '</td><td>' + AdminApp.getVal(r, 'titulo') + '</td><td>' + AdminApp.getVal(r, 'tipoaudiencia', '--') + '</td><td>' + AdminApp.badge(r.enviada === true || r.enviada === 1, 'Enviada', 'Pendiente') + '</td><td>' + prog + '</td><td>' + env + '</td><td class="accion-cell"><button class="view" title="Ver" onclick="NotifApp.verDetalle(' + AdminApp.getVal(r, 'id') + ')"><i class="fas fa-eye"></i></button></td></tr>';
+                }); }
+                $('#tbNotificaciones').html(h);
+            }
+
+            function abrirEnviar() {
+                $('#frmNotificacion')[0].reset();
+                $('#dvIdPasajero, #dvIdConductor').hide();
+                AdminApp.openModal('modalNotificacion');
+            }
+
+            function enviar() {
+                if (!$('#frmNotificacion')[0].checkValidity()) { $('#frmNotificacion')[0].reportValidity(); return; }
+                var obj = AdminApp.formToObj('frmNotificacion');
+                AdminApp.ajax('admin/EnviarNotificacion', 'POST', obj, function () {
+                    Toast.success('Notificacion enviada');
+                    AdminApp.closeModal('modalNotificacion');
+                    cargar();
+                });
+            }
+
+            function verDetalle(id) {
+                AdminApp.ajax('admin/ListarNotificaciones', 'GET', { pagina: 1, tamano: 500 }, function (res) {
+                    var data = Array.isArray(res) ? res : (res.data || []);
+                    var item = data.find(function (x) { return (x.id || x.idNotificacion) == id; });
+                    if (!item) { Toast.error('Notificacion no encontrada'); return; }
+                    var h = '';
+                    h += '<div class="detail-group"><span class="label">ID</span><span class="value">#' + AdminApp.getVal(item, 'id') + '</span></div>';
+                    h += '<div class="detail-group"><span class="label">Titulo</span><span class="value">' + AdminApp.getVal(item, 'titulo') + '</span></div>';
+                    h += '<div class="detail-group"><span class="label">Mensaje</span><span class="value">' + AdminApp.getVal(item, 'mensaje') + '</span></div>';
+                    h += '<div class="detail-group"><span class="label">Audiencia</span><span class="value">' + AdminApp.getVal(item, 'tipoaudiencia', '--') + '</span></div>';
+                    h += '<div class="detail-group"><span class="label">Estado</span><span class="value">' + (item.enviada ? 'Enviada' : 'Pendiente') + '</span></div>';
+                    h += '<div class="detail-group"><span class="label">Creada</span><span class="value">' + AdminApp.fmtFecha(item.fechacreacion) + '</span></div>';
+                    if (item.fechaenvio) h += '<div class="detail-group"><span class="label">Enviada</span><span class="value">' + AdminApp.fmtFecha(item.fechaenvio) + '</span></div>';
+                    $('#dvDetalleNotif').html(h);
+                    AdminApp.openModal('modalDetalleNotif');
+                });
+            }
+
+            function init() { cargar(); }
+
+            return { init: init, cargar: cargar, abrirEnviar: abrirEnviar, enviar: enviar, verDetalle: verDetalle };
+        })();
+        $(document).ready(function () { NotifApp.init(); });
+    </script>
 }

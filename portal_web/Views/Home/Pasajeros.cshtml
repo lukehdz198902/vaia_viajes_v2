@@ -2,9 +2,7 @@
     ViewBag.Title = "Pasajeros";
 }
 
-@section Styles {
-    <link href="~/Content/section.css" rel="stylesheet" />
-}
+@section Styles {}
 
 <div id="dvPasajeros">
     <div class="section-header">
@@ -55,7 +53,7 @@
                         </div>
                         <div class="form-group">
                             <label>Teléfono</label>
-                            <input type="text" class="input-soft" name="telefono" id="txtTelefono" />
+                            <input type="tel" class="input-soft" name="telefono" id="txtTelefono" pattern="[0-9]{10}" maxlength="10" title="10 digitos" oninput="this.value=this.value.replace(/\D/g,'')" />
                         </div>
                         <div class="form-group">
                             <label>Fecha de Nacimiento</label>
@@ -110,118 +108,74 @@
 @section Scripts {
     <script src="~/Scripts/admin.js"></script>
     <script>
-        $(function () {
-            cargar();
-            $('#txtBuscar').on('keyup', function (e) { if (e.key === 'Enter') cargar(); });
-        });
+        $(function () { cargar(); $('#txtBuscar').on('keyup', function (e) { if (e.key === 'Enter') cargar(); }); });
+
+        function fmtTel(t) { if (!t || t.length!==10) return t||'--'; return t.substring(0,3)+'-'+t.substring(3,6)+'-'+t.substring(6); }
 
         function cargar() {
-            var data = {
-                pagina: AdminApp.state.pagina,
-                tamano: AdminApp.state.tamano,
-                busqueda: $('#txtBuscar').val(),
-                bloqueado: $('#selFiltroBloqueado').val()
-            };
-            AdminApp.ajax('admin/ListarPasajeros', 'GET', data, function (res) {
-                var dataArr = Array.isArray(res) ? res : (res.data || []);
-                renderTable(dataArr);
-                renderPaginacion(res.totalRegistros || dataArr.length);
-            });
+            AdminApp.ajax('admin/ListarPasajeros','GET',{
+                pagina:AdminApp.state.pagina,tamano:AdminApp.state.tamano,
+                busqueda:$('#txtBuscar').val(),bloqueado:$('#selFiltroBloqueado').val()
+            },function(r){ var d=Array.isArray(r)?r:(r.data||[]); renderTable(d); renderPaginacion(r.totalRegistros||d.length); });
         }
 
         function renderTable(data) {
-            var h = '<table class="table-custom"><thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Account</th><th>Viajes</th><th>Bloqueado</th><th class="col-acciones">Acciones</th></tr></thead><tbody>';
-            if (!data || data.length === 0) {
-                h += '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-user-friends"></i><h5>No hay pasajeros</h5></div></td></tr>';
-            } else {
-                data.forEach(function (p) {
-                    var id = p.IdPasajero || p.idPasajero || 0;
-                    var nom = p.Nombre || p.nombre || '';
-                    var ap = p.ApellidoPaterno || p.appaterno || '';
-                    var am = p.ApellidoMaterno || p.apmaterno || '';
-                    var nombreCompleto = nom + ' ' + ap + (am ? ' ' + am : '');
-                    var correo = p.Correo || p.correo || '--';
-                    var telefono = p.Telefono || p.telefono || '--';
-                    var account = p.Account || p.account || '--';
-                    var viajes = p.Viajes || p.viajes || p.TotalViajes || p.totalViajes || 0;
-                    var bloqueado = p.Bloqueado !== undefined ? p.Bloqueado : (p.bloqueado !== undefined ? p.bloqueado : false);
-                    h += '<tr>';
-                    h += '<td><strong>#' + id + '</strong></td>';
-                    h += '<td>' + nombreCompleto + '</td>';
-                    h += '<td>' + correo + '</td>';
-                    h += '<td>' + telefono + '</td>';
-                    h += '<td>' + account + '</td>';
-                    h += '<td>' + viajes + '</td>';
-                    h += '<td>' + AdminApp.badge(bloqueado, 'Bloqueado', 'Normal', 'inactive', 'active') + '</td>';
-                    h += '<td class="col-acciones">';
-                    h += '<button class="accion-btn" onclick="verDetalle(' + id + ')" title="Ver"><i class="fas fa-eye"></i></button>';
-                    h += '<button class="accion-btn" onclick="abrirModal(' + id + ')" title="Editar"><i class="fas fa-edit"></i></button>';
-                    h += '<button class="accion-btn" onclick="toggleBloqueo(' + id + ',' + bloqueado + ')" title="' + (bloqueado ? 'Desbloquear' : 'Bloquear') + '"><i class="fas ' + (bloqueado ? 'fa-unlock' : 'fa-ban') + '"></i></button>';
-                    h += '</td></tr>';
-                });
-            }
-            h += '</tbody></table>';
-            $('#dvTabla').html(h);
+            var h='<table class="table-custom"><thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Telefono</th><th>Account</th><th>Viajes</th><th>Bloqueado</th><th class="col-acciones">Acciones</th></tr></thead><tbody>';
+            if(!data||!data.length) h+='<tr><td colspan="8"><div class="empty-state"><i class="fas fa-user-friends"></i><h5>No hay pasajeros</h5></div></td></tr>';
+            else data.forEach(function(p){
+                var id=AdminApp.getVal(p,'idPasajero')||AdminApp.getVal(p,'id');
+                var nom=AdminApp.getVal(p,'Nombre'),ap=AdminApp.getVal(p,'appaterno'),am=AdminApp.getVal(p,'apmaterno');
+                var tel=fmtTel(AdminApp.getVal(p,'Telefono'));
+                var blq=p.Bloqueado===true||p.bloqueado===true||p.Bloqueado===1;
+                h+='<tr><td><strong>#'+id+'</strong></td><td>'+nom+' '+ap+(am?' '+am:'')+'</td><td>'+AdminApp.getVal(p,'Correo','--')+'</td><td>'+tel+'</td><td>'+AdminApp.getVal(p,'Account','--')+'</td><td>'+AdminApp.safeNum(AdminApp.getVal(p,'TotalViajes'))+'</td><td>'+AdminApp.badge(blq,'Bloqueado','Normal','inactive','active')+'</td><td class="col-acciones"><button class="accion-btn" onclick="verDetalle('+id+')" title="Ver"><i class="fas fa-eye"></i></button><button class="accion-btn" onclick="abrirModal('+id+')" title="Editar"><i class="fas fa-edit"></i></button><button class="accion-btn" onclick="AdminApp.confirm(\''+(blq?'Desbloquear':'Bloquear')+' pasajero\',\'Esta seguro de '+(blq?'desbloquear':'bloquear')+' este pasajero?\',function(){ toggleBloqueo('+id+','+blq+'); })" title="'+(blq?'Desbloquear':'Bloquear')+'"><i class="fas '+(blq?'fa-unlock':'fa-ban')+'"></i></button></td></tr>';
+            });
+            h+='</tbody></table>'; $('#dvTabla').html(h);
         }
 
         function renderPaginacion(total) {
-            var h = AdminApp.paginador(total, AdminApp.state.pagina, AdminApp.state.tamano, null);
+            var h=AdminApp.paginador(total,AdminApp.state.pagina,AdminApp.state.tamano,null);
             $('#dvPaginacion').html(h);
-            $('#dvPaginacion .pages button').on('click', function () {
-                AdminApp.state.pagina = parseInt($(this).data('p'));
-                cargar();
-            });
+            $('#dvPaginacion .pages button').on('click',function(){ AdminApp.state.pagina=parseInt($(this).data('p')); cargar(); });
         }
 
         function abrirModal(id) {
-            AdminApp.closeModal('modalPasajero');
-            $('#hdnIdPasajero').val(0);
-            $('#lblModalTitulo').text('Nuevo Pasajero');
-            $('#frmPasajero')[0].reset();
-            $('#chkActivo').prop('checked', true);
-            if (id) {
+            AdminApp.closeModal('modalPasajero'); $('#hdnIdPasajero').val(0); $('#lblModalTitulo').text('Nuevo Pasajero');
+            $('#frmPasajero')[0].reset(); $('#chkActivo').prop('checked',true);
+            if(id){
                 $('#lblModalTitulo').text('Editar Pasajero');
-                AdminApp.ajax('admin/ObtenerPasajero', 'GET', { idPasajero: id }, function (p) {
-                    $('#hdnIdPasajero').val(p.IdPasajero || p.idPasajero);
-                    AdminApp.objToForm('frmPasajero', p);
+                AdminApp.ajax('admin/ObtenerPasajero','GET',{idPasajero:id},function(p){
+                    if(Array.isArray(p)) p=p[0]||{};
+                    $('#hdnIdPasajero').val(p.IdPasajero||p.idPasajero||id);
+                    $('#txtNombre').val(p.Nombre||p.nombre||'');
+                    $('#txtAppaterno').val(p.ApellidoPaterno||p.appaterno||'');
+                    $('#txtApmaterno').val(p.ApellidoMaterno||p.apmaterno||'');
+                    $('#txtCorreo').val(p.Correo||p.correo||'');
+                    $('#txtTelefono').val(p.Telefono||p.telefono||'');
+                    var fn=p.FechaNacimiento||p.fechanacimiento||'';
+                    $('#txtFechanacimiento').val(fn?fn.substring(0,10):'');
+                    $('#selGenero').val(p.Genero||p.genero||'');
+                    $('#txtNotasadicionales').val(p.NotasAdicionales||p.notasadicionales||'');
+                    $('#chkActivo').prop('checked',p.Activo!==undefined?(p.Activo===true||p.Activo===1):true);
                 });
             }
             AdminApp.openModal('modalPasajero');
         }
 
         function guardar() {
-            var obj = AdminApp.formToObj('frmPasajero');
-            var id = parseInt($('#hdnIdPasajero').val());
-            AdminApp.ajax('admin/ActualizarPasajero', 'POST', obj, function (res) {
+            if(!$('#frmPasajero')[0].checkValidity()){ $('#frmPasajero')[0].reportValidity(); return; }
+            var obj=AdminApp.formToObj('frmPasajero'), id=parseInt($('#hdnIdPasajero').val());
+            obj.idActualiza=parseInt(AdminApp.getUser().id||0);
+            AdminApp.ajax(id>0?'admin/ActualizarPasajero':'admin/CrearPasajero','POST',obj,function(){
                 AdminApp.closeModal('modalPasajero');
-                AdminApp.Toast.success('Pasajero actualizado');
+                AdminApp.Toast.success(id>0?'Pasajero actualizado':'Pasajero creado');
                 cargar();
             });
         }
 
-        function verDetalle(id) {
-            AdminApp.ajax('admin/ObtenerPasajero', 'GET', { idPasajero: id }, function (p) {
-                var h = '<div class="detail-row"><span class="label">ID</span><span>' + (p.IdPasajero || p.idPasajero) + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Nombre</span><span>' + (p.Nombre || p.nombre) + ' ' + (p.ApellidoPaterno || p.appaterno) + ' ' + (p.ApellidoMaterno || p.apmaterno || '') + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Correo</span><span>' + (p.Correo || p.correo || '--') + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Teléfono</span><span>' + (p.Telefono || p.telefono || '--') + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Account</span><span>' + (p.Account || p.account || '--') + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Género</span><span>' + (p.Genero || p.genero || '--') + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Fecha Nac.</span><span>' + AdminApp.fmtFecha(p.FechaNacimiento || p.fechanacimiento) + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Notas</span><span>' + (p.NotasAdicionales || p.notasadicionales || '--') + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Estatus</span><span>' + AdminApp.badge(!(p.Bloqueado || p.bloqueado)) + '</span></div>';
-                $('#dvDetallePasajero').html(h);
-                AdminApp.openModal('modalDetallePasajero');
-            });
-        }
-
-        function toggleBloqueo(id, estadoActual) {
-            var nuevoEstado = !estadoActual;
-            var msg = nuevoEstado ? '¿Bloquear este pasajero?' : '¿Desbloquear este pasajero?';
-            if (!confirm(msg)) return;
-            AdminApp.ajax('admin/SuspenderPasajero', 'POST', { idPasajero: id, bloqueado: nuevoEstado, motivo: nuevoEstado ? 'Bloqueo administrativo' : '' }, function (res) {
-                AdminApp.Toast.success(nuevoEstado ? 'Pasajero bloqueado' : 'Pasajero desbloqueado');
-                cargar();
+        function toggleBloqueo(id,estadoActual) {
+            var n=!estadoActual;
+            AdminApp.ajax('admin/SuspenderPasajero','POST',{idPasajero:id,bloqueado:n,motivo:n?'Bloqueo administrativo':''},function(){
+                AdminApp.Toast.success(n?'Pasajero bloqueado':'Pasajero desbloqueado'); cargar();
             });
         }
     </script>

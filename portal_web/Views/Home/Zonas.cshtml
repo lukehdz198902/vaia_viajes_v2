@@ -3,241 +3,609 @@
 }
 
 @section Styles {
-    <link href="~/Content/css/admin.css" rel="stylesheet" />
-    <style>
-        .comision-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-body); border-radius: var(--radius-sm); margin-bottom: 6px; }
-        .comision-item .comision-label { font-weight: 500; font-size: 0.85rem; }
-        .comision-item .comision-val { font-size: 0.85rem; color: var(--text-muted); }
-    </style>
+    <link href="~/css/pages/zonas.css?v=3" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@@1.9.4/dist/leaflet.css" />
 }
 
-<div id="dvZonas">
-    <div class="section-header">
-        <h4><i class="fas fa-map-marked-alt"></i> Zonas de Cobertura</h4>
-        <button class="btn-soft primary" onclick="Zonas.nuevo()"><i class="fas fa-plus"></i> Nueva Zona</button>
-    </div>
+<div class="list-page" id="dvZonas">
 
-    <div class="card-custom">
-        <div class="card-body-custom">
-            <div class="filters-row">
-                <select class="input-soft" id="selActivo">
-                    <option value="">Todas</option>
-                    <option value="1">Activas</option>
-                    <option value="0">Inactivas</option>
-                </select>
-                <button class="btn-soft primary" onclick="Zonas.filtrar()"><i class="fas fa-search"></i> Buscar</button>
-            </div>
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">Zonas de cobertura</h2>
+            <p class="page-header__subtitle">Areas geograficas donde se ofrece el servicio y sus comisiones</p>
+        </div>
+        <div class="page-header__actions">
+            <button type="button" class="btn btn--ghost btn--sm" id="btnReloadZonas">
+                <i class="fas fa-rotate"></i> Recargar
+            </button>
+            <button type="button" class="btn btn--primary btn--sm" id="btnNuevaZona">
+                <i class="fas fa-plus"></i> Nueva zona
+            </button>
+        </div>
+    </header>
+
+    <div class="zonas-toolbar">
+        <div class="zonas-toolbar__left">
+            <span class="zonas-toolbar__hint"><i class="fas fa-circle-info"></i> Click en una zona para centrarla en el mapa</span>
+        </div>
+        <div class="zonas-toolbar__right">
+            <button type="button" class="btn btn--ghost btn--sm" id="btnMostrarTodas" style="display:none;">
+                <i class="fas fa-layer-group"></i> Mostrar todas
+            </button>
+            <label class="form-check zonas-toolbar__toggle">
+                <input type="checkbox" id="chkMostrarGeocercas" />
+                <span><i class="fas fa-draw-polygon"></i> Mostrar geocercas en mapa</span>
+            </label>
         </div>
     </div>
 
-    <div class="card-custom mt-3">
-        <div class="card-body-custom p-0">
-            <div class="table-wrap">
-                <table class="table-custom">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Descripcion</th>
-                            <th>Latitud</th>
-                            <th>Longitud</th>
-                            <th>Radio</th>
-                            <th>Comision</th>
-                            <th>Activo</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbZonas"></tbody>
-                </table>
-            </div>
-            <div class="pagination-wrap" id="dvPaginador"></div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade modal-soft" id="modalZona" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-map-marked-alt me-2" style="color:var(--primary);"></i><span id="lblZonaTitulo">Nueva Zona</span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="txtZonaId" />
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Nombre</label>
-                        <input type="text" class="input-soft" id="txtZonaNombre" name="nombre" />
-                    </div>
-                    <div class="form-group">
-                        <label>Descripcion</label>
-                        <textarea class="input-soft" id="txtZonaDescripcion" name="descripcion" rows="2"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Latitud (centro)</label>
-                        <input type="number" step="any" class="input-soft" id="txtZonaLat" name="latitudcentro" />
-                    </div>
-                    <div class="form-group">
-                        <label>Longitud (centro)</label>
-                        <input type="number" step="any" class="input-soft" id="txtZonaLng" name="longitudcentro" />
-                    </div>
-                    <div class="form-group">
-                        <label>Radio (km)</label>
-                        <input type="number" step="any" class="input-soft" id="txtZonaRadio" name="radio_km" />
-                    </div>
-                    <div class="form-group">
-                        <label>Activo</label>
-                        <select class="input-soft" id="selZonaActivo" name="activo">
-                            <option value="1">Si</option>
-                            <option value="0">No</option>
-                        </select>
-                    </div>
-                    <div class="form-group full-width">
-                        <label>Poligono (GeoJSON)</label>
-                        <textarea class="input-soft" id="txtZonaPoligono" name="poligono" rows="4" placeholder='{"type":"Polygon","coordinates":[[...]]}'></textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-soft outline" data-bs-dismiss="modal">Cancelar</button>
-                <button class="btn-soft primary" onclick="Zonas.guardar()"><i class="fas fa-save"></i> Guardar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade modal-soft" id="modalComision" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-percentage me-2" style="color:var(--primary);"></i>Comision de Zona</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="txtComisionZonaId" />
-                <div class="form-group mb-3">
-                    <label>Porcentaje (%)</label>
-                    <input type="number" step="0.01" class="input-soft" id="txtComisionPorcentaje" name="porcentaje" />
-                </div>
-                <div class="form-group mb-3">
-                    <label>Comision Minima</label>
-                    <input type="number" step="0.01" class="input-soft" id="txtComisionMinima" name="comisionminima" />
-                </div>
-                <div class="form-group mb-3">
-                    <label>Comision Maxima</label>
-                    <input type="number" step="0.01" class="input-soft" id="txtComisionMaxima" name="comisionmaxima" />
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-soft outline" data-bs-dismiss="modal">Cancelar</button>
-                <button class="btn-soft primary" onclick="Zonas.guardarComision()"><i class="fas fa-save"></i> Guardar</button>
-            </div>
+    <div class="zonas-layout">
+        <div class="zonas-list" id="dvZonasList" aria-live="polite"></div>
+        <div class="zonas-map-wrap">
+            <div id="zonasMap"></div>
         </div>
     </div>
 </div>
 
 @section Scripts {
+    <script src="https://unpkg.com/leaflet@@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@@1.0.4/dist/leaflet.draw.js"></script>
+    <script src="https://unpkg.com/leaflet-geometryutil@@0.9.3/src/Leaflet.GeometryUtil.js"></script>
+    <script src="https://unpkg.com/@@turf/turf@@7.1.0/turf.min.js"></script>
     <script src="~/Scripts/admin.js"></script>
     <script>
-        var Zonas = (function () {
-            var state = { pagina: 1, tamano: 20 };
+        window.VaiaZonas = (function () {
+            var DATA = [];
+            var mapPrincipal = null;
+            var layerZonas = null;
+            var layerMarcadores = null;
+            var poligonosPorZona = {};
+            var circulosPorZona = {};
+            var marcadoresPorZona = {};
+            var mostrarGeocercas = false;
+            var zonaAislada = null;
+
+            function getVal(obj, key) {
+                if (!obj || !key) return undefined;
+                var k = key.toLowerCase();
+                for (var p in obj) {
+                    if (p.toLowerCase() === k) return obj[p];
+                }
+                return undefined;
+            }
+            function escapeHtml(s) {
+                if (s == null) return '';
+                return String(s).replace(/[&<>"']/g, function (m) {
+                    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
+                });
+            }
+            function fmtNum(v, d) {
+                d = d == null ? 2 : d;
+                return Number(v || 0).toLocaleString('es-MX', { minimumFractionDigits: d, maximumFractionDigits: d });
+            }
+            function tienePoligono(z) {
+                if (!z.coordenadapoligono) return false;
+                try {
+                    var geo = JSON.parse(z.coordenadapoligono);
+                    return geo && geo.type === 'Polygon' && Array.isArray(geo.coordinates) && geo.coordinates[0].length >= 3;
+                } catch (e) { return false; }
+            }
+
+            function initMap() {
+                if (mapPrincipal) return;
+                mapPrincipal = L.map('zonasMap', { zoomControl: true }).setView([26.0923, -98.2789], 11);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }).addTo(mapPrincipal);
+                layerZonas = L.layerGroup().addTo(mapPrincipal);
+                layerMarcadores = L.layerGroup().addTo(mapPrincipal);
+
+                setTimeout(function () { mapPrincipal.invalidateSize(); }, 200);
+            }
+
+            function pintarGeocercas() {
+                if (!mapPrincipal || !layerZonas) return;
+                layerZonas.clearLayers();
+                poligonosPorZona = {};
+
+                if (!mostrarGeocercas) return;
+
+                DATA.forEach(function (z) {
+                    if (zonaAislada && z.id != zonaAislada) return;
+                    if (!tienePoligono(z)) return;
+                    try {
+                        var geo = JSON.parse(z.coordenadapoligono);
+                        var latlngs = geo.coordinates[0].map(function (c) { return [c[1], c[0]]; });
+                        var poly = L.polygon(latlngs, {
+                            color: '#0D9488',
+                            weight: 2.5,
+                            opacity: 0.9,
+                            fillColor: '#14B8A6',
+                            fillOpacity: 0.18,
+                            interactive: true
+                        }).addTo(layerZonas);
+                        poly.bindPopup('<strong>' + escapeHtml(z.nombrezona) + '</strong><br><i class="fas fa-draw-polygon"></i> Poligono (' + (geo.coordinates[0].length - 1) + ' vertices)');
+                        poligonosPorZona[z.id] = poly;
+                    } catch (e) { /* silent */ }
+                });
+            }
+
+            function pintarMarcadores() {
+                if (!mapPrincipal || !layerMarcadores) return;
+                layerMarcadores.clearLayers();
+                marcadoresPorZona = {};
+
+                DATA.forEach(function (z) {
+                    if (zonaAislada && z.id != zonaAislada) return;
+                    var lat = parseFloat(z.latitudcentro);
+                    var lng = parseFloat(z.longitudcentro);
+                    if (isNaN(lat) || isNaN(lng)) return;
+                    var marker = L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            className: 'zona-marker',
+                            html: '<div class="zona-marker__dot"></div><div class="zona-marker__label">' + escapeHtml(z.nombrezona) + '</div>',
+                            iconSize: [120, 36],
+                            iconAnchor: [60, 18]
+                        })
+                    }).addTo(layerMarcadores);
+                    marker.bindPopup('<strong>' + escapeHtml(z.nombrezona) + '</strong><br>' + (z.descripcion || 'Sin descripcion'));
+                    marcadoresPorZona[z.id] = marker;
+                });
+            }
+
+            function pintarZonas() {
+                pintarMarcadores();
+                pintarGeocercas();
+            }
+
+            function aislarZona(id) {
+                zonaAislada = (zonaAislada === id) ? null : id;
+                $('#btnMostrarTodas').toggle(zonaAislada !== null);
+                $('.zona-card').removeClass('is-active is-isolated');
+                if (zonaAislada) {
+                    $('[data-id="' + zonaAislada + '"]').addClass('is-isolated');
+                    var z = DATA.find(function (r) { return r.id == zonaAislada; });
+                    if (z) {
+                        if (tienePoligono(z)) {
+                            var geo = JSON.parse(z.coordenadapoligono);
+                            var latlngs = geo.coordinates[0].map(function (c) { return [c[1], c[0]]; });
+                            mapPrincipal.fitBounds(L.polygon(latlngs).getBounds(), { padding: [60, 60] });
+                        } else {
+                            var lat = parseFloat(z.latitudcentro);
+                            var lng = parseFloat(z.longitudcentro);
+                            if (!isNaN(lat) && !isNaN(lng)) mapPrincipal.setView([lat, lng], 14);
+                        }
+                    }
+                }
+                pintarZonas();
+            }
 
             function cargar() {
-                var activo = $('#selActivo').val();
-                AdminApp.ajax('admin/ListarZonasCobertura', 'GET', { activo: activo || '', pagina: state.pagina, tamano: state.tamano }, function (res) {
-                    var data = Array.isArray(res) ? res : (res.data || []);
-                    var total = res.totalregistros || res.total || data.length;
-                    renderTabla(data);
-                    $('#dvPaginador').html(AdminApp.paginador(total, state.pagina, state.tamano, function (p) { state.pagina = p; cargar(); }));
+                initMap();
+                $('#dvZonasList').html('<div class="zona-chip zona-chip--skeleton"></div>'.repeat(5));
+                AdminApp.ajax('admin/ListarZonasCobertura', 'GET', null, function (res) {
+                    var raw = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+                    if (raw.length) console.log('[VaiaZonas] Primer item del API:', raw[0]);
+                    DATA = raw.map(function (z) {
+                        var coord = getVal(z, 'coordenadapoligono');
+                        return {
+                            id: getVal(z, 'id'),
+                            nombrezona: getVal(z, 'nombrezona') || 'Sin nombre',
+                            descripcion: getVal(z, 'descripcion') || '',
+                            latitudcentro: getVal(z, 'latitudcentro'),
+                            longitudcentro: getVal(z, 'longitudcentro'),
+                            radio_km: getVal(z, 'radio_km'),
+                            comision: getVal(z, 'comision'),
+                            comisionminima: getVal(z, 'comisionminima'),
+                            comisionmaxima: getVal(z, 'comisionmaxima'),
+                            coordenadapoligono: coord,
+                            _tienePoligono: !!(coord && (coord + '').length > 10)
+                        };
+                    });
+                    console.log('[VaiaZonas] DATA procesada:', DATA.map(function (d) { return { id: d.id, nombre: d.nombrezona, tienePoligono: d._tienePoligono, longitudPoligono: (d.coordenadapoligono || '').length }; }));
+                    renderLista();
+                    pintarZonas();
+                }, function () {
+                    $('#dvZonasList').html('<div class="empty-state"><div class="empty-state__icon"><i class="fas fa-triangle-exclamation"></i></div><h4 class="empty-state__title">No se pudieron cargar las zonas</h4></div>');
                 });
             }
 
-            function renderTabla(data) {
-                var h = '';
-                if (!data.length) { h = '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-map-marked-alt"></i><p>No hay zonas</p></div></td></tr>'; }
-                else { data.forEach(function (r) {
-                    var activo = r.activo === true || r.activo === 1 || r.activo === 'true';
-                    h += '<tr><td>' + AdminApp.getVal(r, 'id') + '</td><td>' + AdminApp.getVal(r, 'nombre') + '</td><td>' + AdminApp.getVal(r, 'descripcion') + '</td><td>' + AdminApp.getVal(r, 'latitudcentro') + '</td><td>' + AdminApp.getVal(r, 'longitudcentro') + '</td><td>' + AdminApp.getVal(r, 'radio_km') + '</td><td>' + AdminApp.getVal(r, 'comision_porcentaje') + '%</td><td>' + AdminApp.badge(activo) + '</td><td class="accion-cell"><button class="view" title="Comision" onclick="Zonas.comision(' + AdminApp.getVal(r, 'id') + ')"><i class="fas fa-percentage"></i></button><button class="edit" title="Editar" onclick="Zonas.editar(' + AdminApp.getVal(r, 'id') + ')"><i class="fas fa-edit"></i></button><button class="del" title="Eliminar" onclick="Zonas.eliminar(' + AdminApp.getVal(r, 'id') + ')"><i class="fas fa-trash"></i></button></td></tr>';
-                }); }
-                $('#tbZonas').html(h);
+            function renderLista() {
+                if (!DATA.length) {
+                    $('#dvZonasList').html('<div class="empty-state"><div class="empty-state__icon"><i class="fas fa-map-location-dot"></i></div><h4 class="empty-state__title">Sin zonas registradas</h4><p class="empty-state__message">Crea la primera zona con el boton "+ Nueva zona".</p></div>');
+                    return;
+                }
+                var html = '';
+                DATA.forEach(function (z) {
+                    var conPoligono = tienePoligono(z);
+                    var tipoIcon = conPoligono ? 'fa-draw-polygon' : 'fa-circle';
+                    var tipoLabel = conPoligono ? 'Poligono' : 'Circular';
+                    html += '<article class="zona-chip" data-id="' + z.id + '">';
+                    html += '  <button type="button" class="zona-chip__main" data-action="click" data-id="' + z.id + '">';
+                    html += '    <div class="zona-chip__head">';
+                    html += '      <span class="zona-chip__name">' + escapeHtml(z.nombrezona) + '</span>';
+                    html += '      <span class="zona-chip__id">#' + z.id + '</span>';
+                    html += '    </div>';
+                    html += '    <div class="zona-chip__meta">';
+                    html += '      <span class="zona-chip__tipo" title="' + tipoLabel + '"><i class="fas ' + tipoIcon + '"></i> ' + tipoLabel + '</span>';
+                    html += '      <span class="zona-chip__comision"><i class="fas fa-percent"></i> ' + (z.comision ? fmtNum(z.comision) : '3.00') + '%</span>';
+                    html += '    </div>';
+                    html += '  </button>';
+                    html += '  <div class="zona-chip__actions">';
+                    html += '    <button type="button" data-action="aislar" data-id="' + z.id + '" title="Aislar en mapa"><i class="fas fa-eye"></i></button>';
+                    html += '    <button type="button" data-action="comision" data-id="' + z.id + '" title="Comision"><i class="fas fa-percent"></i></button>';
+                    html += '    <button type="button" data-action="editar" data-id="' + z.id + '" title="Editar"><i class="fas fa-pen"></i></button>';
+                    html += '    <button type="button" data-action="eliminar" data-id="' + z.id + '" title="Eliminar"><i class="fas fa-trash"></i></button>';
+                    html += '  </div>';
+                    html += '</article>';
+                });
+                $('#dvZonasList').html(html);
             }
 
-            function nuevo() {
-                $('#lblZonaTitulo').text('Nueva Zona');
-                $('#txtZonaId').val('');
-                $('#modalZona [name]').val('');
-                $('#selZonaActivo').val('1');
-                AdminApp.openModal('modalZona');
+            function centrarEn(z) {
+                if (!mapPrincipal) return;
+                var lat = parseFloat(z.latitudcentro);
+                var lng = parseFloat(z.longitudcentro);
+                $('.zona-chip').removeClass('is-active');
+                $('[data-id="' + z.id + '"]').addClass('is-active');
+                if (tienePoligono(z) && poligonosPorZona[z.id]) {
+                    poligonosPorZona[z.id].openPopup();
+                } else if (marcadoresPorZona[z.id]) {
+                    marcadoresPorZona[z.id].openPopup();
+                    if (!isNaN(lat) && !isNaN(lng)) mapPrincipal.setView([lat, lng], 14);
+                }
             }
 
-            function editar(id) {
-                $('#lblZonaTitulo').text('Editar Zona');
-                AdminApp.ajax('admin/ListarZonasCobertura', 'GET', { pagina: 1, tamano: 500 }, function (res) {
-                    var data = Array.isArray(res) ? res : (res.data || []);
-                    var item = data.find(function (x) { return (x.id || x.idZona) == id; });
-                    if (!item) { Toast.error('Zona no encontrada'); return; }
-                    $('#txtZonaId').val(item.id || item.idZona);
-                    $('#txtZonaNombre').val(AdminApp.getVal(item, 'nombre'));
-                    $('#txtZonaDescripcion').val(AdminApp.getVal(item, 'descripcion'));
-                    $('#txtZonaLat').val(AdminApp.getVal(item, 'latitudcentro'));
-                    $('#txtZonaLng').val(AdminApp.getVal(item, 'longitudcentro'));
-                    $('#txtZonaRadio').val(AdminApp.getVal(item, 'radio_km'));
-                    $('#txtZonaPoligono').val(AdminApp.getVal(item, 'poligono'));
-                    $('#selZonaActivo').val(activoVal(item));
-                    AdminApp.openModal('modalZona');
+            function abrirEditor(id) {
+                var item = id ? DATA.find(function (r) { return r.id == id; }) : null;
+                var isNew = !item;
+
+                var latVal = item ? item.latitudcentro : '26.0923';
+                var lngVal = item ? item.longitudcentro : '-98.2789';
+                var polyVal = item ? (item.coordenadapoligono || '') : '';
+
+                var sidePanel = '<input type="hidden" id="vaiaZonaId" value="' + (item ? item.id : '') + '">' +
+                    '<input type="hidden" id="vaiaZonaLat" value="' + latVal + '">' +
+                    '<input type="hidden" id="vaiaZonaLng" value="' + lngVal + '">' +
+                    '<input type="hidden" id="vaiaZonaPoligono" value="' + escapeHtml(polyVal) + '">' +
+                    '<div class="form-field">' +
+                    '  <label class="form-label" for="vaiaZonaNombre">Nombre <span class="required-mark">*</span></label>' +
+                    '  <input type="text" class="form-input" id="vaiaZonaNombre" value="' + escapeHtml(item ? item.nombrezona : '') + '" placeholder="Ej. Reynosa Centro" />' +
+                    '</div>' +
+                    '<div class="form-field">' +
+                    '  <label class="form-label" for="vaiaZonaDescripcion">Descripcion</label>' +
+                    '  <textarea class="form-textarea" id="vaiaZonaDescripcion" rows="2" placeholder="Descripcion breve de la zona">' + escapeHtml(item ? item.descripcion : '') + '</textarea>' +
+                    '</div>' +
+                    '<div class="form-field">' +
+                    '  <label class="form-check">' +
+                    '    <input type="checkbox" id="vaiaZonaActivo" ' + (isNew || (item && item.activo !== false) ? 'checked' : '') + '>' +
+                    '    <span>Zona activa</span>' +
+                    '  </label>' +
+                    '</div>';
+
+                var mainPanel = '<div class="zona-polygon-toolbar">' +
+                    '  <button type="button" class="btn btn--primary btn--sm" id="vaiaZonaTrazar"><i class="fas fa-draw-polygon"></i> Trazar poligono</button>' +
+                    '  <button type="button" class="btn btn--soft btn--sm" id="vaiaZonaLimpiarPoly"><i class="fas fa-eraser"></i> Limpiar</button>' +
+                    '  <span class="zona-polygon-stats" id="zonaPolygonStats"></span>' +
+                    '</div>' +
+                    '<div id="zonaEditorMap" class="zona-editor-map zona-editor-map--full"></div>' +
+                    '<div class="zona-polygon-info" id="zonaPolygonInfo"><i class="fas fa-lightbulb"></i> Click en <strong>Trazar poligono</strong> para iniciar. Luego haz click en el mapa para agregar vertices y doble-click para finalizar. Puedes editar vertices arrastrandolos.</div>';
+
+                var body = '<div class="modal-full-layout">' +
+                    '<aside class="modal-full-layout__side">' + sidePanel + '</aside>' +
+                    '<section class="modal-full-layout__main">' + mainPanel + '</section>' +
+                    '</div>';
+
+                var m = window.VaiaUI.modal({
+                    title: (isNew ? '<i class="fas fa-plus" style="color:var(--accent);margin-right:8px;"></i>Nueva zona de cobertura' : '<i class="fas fa-pen" style="color:var(--accent);margin-right:8px;"></i>Editar zona'),
+                    titleHtml: true,
+                    body: body,
+                    fullscreen: true,
+                    footer:
+                        '<button type="button" class="btn btn--ghost" data-close>Cancelar</button>' +
+                        '<button type="button" class="btn btn--primary" id="vaiaZonaGuardar"><i class="fas fa-save"></i> Guardar zona</button>'
+                });
+
+                setTimeout(function () {
+                    var startLat = parseFloat(latVal) || 26.0923;
+                    var startLng = parseFloat(lngVal) || -98.2789;
+                    var editorMap = L.map('zonaEditorMap', { zoomControl: true }).setView([startLat, startLng], 12);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(editorMap);
+
+                    var drawnItems = new L.FeatureGroup().addTo(editorMap);
+                    var drawControl = new L.Control.Draw({
+                        position: 'topright',
+                        draw: {
+                            polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: '#14B8A6', weight: 2, fillOpacity: 0.20 } },
+                            polyline: false, rectangle: false, circle: false, circlemarker: false, marker: false
+                        },
+                        edit: { featureGroup: drawnItems, remove: true }
+                    });
+                    editorMap.addControl(drawControl);
+
+                    var centerMarker = L.marker([startLat, startLng], { draggable: true }).addTo(editorMap);
+                    centerMarker.bindTooltip('Centro - arrastrame', { permanent: false });
+
+                    function fmtArea(m2) {
+                        if (m2 < 10000) return m2.toFixed(1) + ' m2';
+                        if (m2 < 1000000) return (m2 / 10000).toFixed(2) + ' ha';
+                        return (m2 / 1000000).toFixed(3) + ' km2';
+                    }
+
+                    function actualizarCentro() {
+                        var pos = centerMarker.getLatLng();
+                        $('#vaiaZonaLat').val(pos.lat.toFixed(6));
+                        $('#vaiaZonaLng').val(pos.lng.toFixed(6));
+                    }
+                    function actualizarStats() {
+                        var gj = drawnItems.toGeoJSON();
+                        if (gj.features[0]) {
+                            var pts = gj.features[0].geometry.coordinates[0];
+                            var area = L.GeometryUtil.geodesicArea(gj.features[0].geometry.coordinates[0]);
+                            $('#zonaPolygonStats').html('<i class="fas fa-vector-square"></i> ' + (pts.length - 1) + ' vertices &middot; ' + fmtArea(area));
+                        } else {
+                            $('#zonaPolygonStats').empty();
+                        }
+                    }
+
+                    centerMarker.on('dragend', actualizarCentro);
+
+                    var isDrawing = false;
+                    editorMap.on('draw:drawstart', function () { isDrawing = true; });
+                    editorMap.on('draw:drawstop', function () { setTimeout(function () { isDrawing = false; }, 300); });
+                    editorMap.on('click', function (e) {
+                        if (!isDrawing) {
+                            centerMarker.setLatLng(e.latlng);
+                            editorMap.panTo(e.latlng);
+                            actualizarCentro();
+                        }
+                    });
+
+                    function cargarPoligonoExistente(polyValStr) {
+                        if (!polyValStr) return;
+                        var geo = JSON.parse(polyValStr);
+                        if (geo && geo.type === 'Polygon' && Array.isArray(geo.coordinates) && geo.coordinates[0].length >= 3) {
+                            var latlngs = geo.coordinates[0].map(function (c) { return [c[1], c[0]]; });
+                            var polyLayer = L.polygon(latlngs, { color: '#0D9488', weight: 2, fillColor: '#14B8A6', fillOpacity: 0.18 });
+                            drawnItems.addLayer(polyLayer);
+                            editorMap.fitBounds(polyLayer.getBounds(), { padding: [50, 50] });
+                            var centroid = polyLayer.getBounds().getCenter();
+                            centerMarker.setLatLng(centroid);
+                            actualizarCentro();
+                            actualizarStats();
+                            $('#zonaPolygonInfo').html('<i class="fas fa-check-circle" style="color:var(--state-success);"></i> Poligono existente con <strong>' + (geo.coordinates[0].length - 1) + ' vertices</strong>. Usa el icono de <strong>edicion</strong> en el mapa para ajustar vertices o agregar puntos.');
+                            return true;
+                        }
+                        return false;
+                    }
+
+                    editorMap.on(L.Draw.Event.CREATED, function (e) {
+                        drawnItems.clearLayers();
+                        drawnItems.addLayer(e.layer);
+                        var gj = drawnItems.toGeoJSON();
+                        if (gj.features[0]) {
+                            $('#vaiaZonaPoligono').val(JSON.stringify(gj.features[0].geometry));
+                            var centroid = e.layer.getBounds().getCenter();
+                            centerMarker.setLatLng(centroid);
+                            actualizarCentro();
+                            actualizarStats();
+                            $('#zonaPolygonInfo').html('<i class="fas fa-check-circle" style="color:var(--state-success);"></i> Poligono definido. Usa el icono de <strong>edicion</strong> en el mapa para ajustar vertices.');
+                        }
+                    });
+
+                    editorMap.on(L.Draw.Event.EDITED, function () {
+                        var gj = drawnItems.toGeoJSON();
+                        if (gj.features[0]) {
+                            $('#vaiaZonaPoligono').val(JSON.stringify(gj.features[0].geometry));
+                            var centroid = drawnItems.getBounds().getCenter();
+                            centerMarker.setLatLng(centroid);
+                            actualizarCentro();
+                            actualizarStats();
+                        }
+                    });
+
+                    editorMap.on(L.Draw.Event.DELETED, function () {
+                        $('#vaiaZonaPoligono').val('');
+                        $('#zonaPolygonInfo').html('<i class="fas fa-lightbulb"></i> Click en <strong>Trazar poligono</strong> para iniciar. Luego haz click en el mapa para agregar vertices y doble-click para finalizar.');
+                        actualizarStats();
+                    });
+
+                    var poligonoCargado = false;
+                    if (polyVal) {
+                        try { poligonoCargado = cargarPoligonoExistente(polyVal); }
+                        catch (e) {
+                            console.error('[VaiaZonas] Error parseando poligono:', e, polyVal);
+                            $('#zonaPolygonInfo').html('<i class="fas fa-triangle-exclamation" style="color:var(--state-warning);"></i> Error al cargar el poligono guardado. Traza uno nuevo.');
+                        }
+                    }
+                    if (!poligonoCargado && !isNew) {
+                        $('#zonaPolygonInfo').html('<i class="fas fa-info-circle" style="color:var(--text-soft);"></i> Esta zona no tiene un poligono dibujado. Click en <strong>Trazar poligono</strong> para agregar uno.');
+                    }
+
+                    $('#vaiaZonaTrazar').on('click', function () {
+                        if (drawnItems.getLayers().length > 0) {
+                            window.VaiaUI.confirm('Reemplazar poligono', 'Ya existe un poligono trazado. Al iniciar uno nuevo se reemplazara. Continuar?', function () {
+                                drawnItems.clearLayers();
+                                $('#vaiaZonaPoligono').val('');
+                                actualizarStats();
+                                new L.Draw.Polygon(editorMap, drawControl.options.draw.polygon).enable();
+                            });
+                        } else {
+                            new L.Draw.Polygon(editorMap, drawControl.options.draw.polygon).enable();
+                        }
+                    });
+
+                    $('#vaiaZonaLimpiarPoly').on('click', function () {
+                        drawnItems.clearLayers();
+                        $('#vaiaZonaPoligono').val('');
+                        actualizarStats();
+                        $('#zonaPolygonInfo').html('<i class="fas fa-lightbulb"></i> Click en <strong>Trazar poligono</strong> para iniciar. Luego haz click en el mapa para agregar vertices y doble-click para finalizar.');
+                    });
+
+                    [100, 400, 800].forEach(function (delay) {
+                        setTimeout(function () { editorMap.invalidateSize(); }, delay);
+                    });
+                }, 200);
+
+                $('#vaiaZonaGuardar').on('click', function () {
+                    var data = {
+                        nombre: $('#vaiaZonaNombre').val().trim(),
+                        descripcion: $('#vaiaZonaDescripcion').val(),
+                        latitudcentro: $('#vaiaZonaLat').val(),
+                        longitudcentro: $('#vaiaZonaLng').val(),
+                        activo: $('#vaiaZonaActivo').is(':checked'),
+                        poligono: $('#vaiaZonaPoligono').val()
+                    };
+                    if (!data.nombre) { window.VaiaUI.toast({ type: 'warning', title: 'Falta nombre' }); return; }
+                    if (!data.latitudcentro || !data.longitudcentro) { window.VaiaUI.toast({ type: 'warning', title: 'Coordenadas requeridas' }); return; }
+
+                    var idZona = $('#vaiaZonaId').val();
+
+                    if (data.poligono) {
+                        try {
+                            var nuevaGeo = JSON.parse(data.poligono);
+                            if (nuevaGeo && nuevaGeo.coordinates && nuevaGeo.coordinates[0]) {
+                                var nuevaCoords = [nuevaGeo.coordinates[0].map(function (c) { return c.slice(0, 2); })];
+                                var intersectsCon = [];
+                                DATA.forEach(function (z) {
+                                    if (idZona && z.id == idZona) return;
+                                    if (!z.coordenadapoligono) return;
+                                    try {
+                                        var otraGeo = JSON.parse(z.coordenadapoligono);
+                                        if (!otraGeo || !otraGeo.coordinates || !otraGeo.coordinates[0]) return;
+                                        var otrasCoords = [otraGeo.coordinates[0].map(function (c) { return c.slice(0, 2); })];
+                                        var pNueva = turf.polygon(nuevaCoords);
+                                        var pOtra = turf.polygon(otrasCoords);
+                                        if (turf.booleanIntersects(pNueva, pOtra)) {
+                                            intersectsCon.push(z.nombrezona);
+                                        }
+                                    } catch (e) { /* silent */ }
+                                });
+                                if (intersectsCon.length) {
+                                    window.VaiaUI.toast({
+                                        type: 'danger',
+                                        title: 'Zona se intersecta con otras',
+                                        message: 'Esta geocerca se cruza con: ' + intersectsCon.join(', ') + '. Ajustala para que no se solape con ninguna otra zona.'
+                                    });
+                                    return;
+                                }
+                            }
+                        } catch (e) { console.error('[VaiaZonas] Error validando interseccion:', e); }
+                    } else {
+                        window.VaiaUI.toast({
+                            type: 'warning',
+                            title: 'Geocerca requerida',
+                            message: 'Debes trazar un poligono para definir la geocerca de la zona.'
+                        });
+                        return;
+                    }
+
+                    if (idZona) data.id = idZona;
+                    var url = idZona ? 'admin/EditarZonaCobertura' : 'admin/AgregarZonaCobertura';
+                    AdminApp.ajax(url, 'POST', data, function () {
+                        window.VaiaUI.toast({ type: 'success', title: 'Guardado', message: idZona ? 'Zona actualizada' : 'Zona creada' });
+                        m.close();
+                        cargar();
+                    });
                 });
             }
 
-            function activoVal(r) { return (r.activo === true || r.activo === 1 || r.activo === 'true') ? '1' : '0'; }
+            function editarComision(id) {
+                var item = DATA.find(function (r) { return r.id == id; });
+                if (!item) return;
+                var body = '<input type="hidden" id="vaiaComisionZonaId" value="' + id + '">' +
+                    '<div class="form-field" style="margin-bottom:var(--space-3);">' +
+                    '  <label class="form-label" for="vaiaComisionPorcentaje">Porcentaje de comision (%) <span class="required-mark">*</span></label>' +
+                    '  <input type="number" step="0.01" min="0" max="100" class="form-input" id="vaiaComisionPorcentaje" value="' + (item.comision || 3.00) + '" />' +
+                    '</div>' +
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">' +
+                    '  <div class="form-field">' +
+                    '    <label class="form-label" for="vaiaComisionMinima">Comision minima</label>' +
+                    '    <input type="number" step="0.01" class="form-input" id="vaiaComisionMinima" value="' + (item.comisionminima || 0) + '" />' +
+                    '  </div>' +
+                    '  <div class="form-field">' +
+                    '    <label class="form-label" for="vaiaComisionMaxima">Comision maxima</label>' +
+                    '    <input type="number" step="0.01" class="form-input" id="vaiaComisionMaxima" value="' + (item.comisionmaxima || 0) + '" />' +
+                    '  </div>' +
+                    '</div>';
 
-            function guardar() {
-                var id = $('#txtZonaId').val();
-                var data = AdminApp.formToObj('modalZona');
-                if (!data.nombre) { Toast.warning('El nombre es requerido'); return; }
-                var url = id ? 'admin/EditarZonaCobertura' : 'admin/AgregarZonaCobertura';
-                if (id) data.id = id;
-                AdminApp.ajax(url, 'POST', data, function () {
-                    Toast.success(id ? 'Zona actualizada' : 'Zona creada');
-                    AdminApp.closeModal('modalZona');
-                    cargar();
+                var m = window.VaiaUI.modal({
+                    title: '<i class="fas fa-percentage" style="color:var(--accent);margin-right:8px;"></i>Comision de "' + escapeHtml(item.nombrezona) + '"',
+                    titleHtml: true,
+                    body: body,
+                    fullscreen: true,
+                    footer:
+                        '<button type="button" class="btn btn--ghost" data-close>Cancelar</button>' +
+                        '<button type="button" class="btn btn--primary" id="vaiaComisionGuardar"><i class="fas fa-save"></i> Guardar</button>'
+                });
+
+                $('#vaiaComisionGuardar').on('click', function () {
+                    var pct = parseFloat($('#vaiaComisionPorcentaje').val());
+                    if (isNaN(pct)) { window.VaiaUI.toast({ type: 'warning', title: 'Porcentaje invalido' }); return; }
+                    AdminApp.ajax('admin/ActualizarComisionZona', 'POST', {
+                        idZona: id,
+                        porcentaje: pct,
+                        comisionminima: $('#vaiaComisionMinima').val(),
+                        comisionmaxima: $('#vaiaComisionMaxima').val()
+                    }, function () {
+                        window.VaiaUI.toast({ type: 'success', title: 'Comision actualizada' });
+                        m.close();
+                        cargar();
+                    });
                 });
             }
 
             function eliminar(id) {
-                if (!confirm('Eliminar esta zona?')) return;
-                AdminApp.ajax('admin/EliminarZonaCobertura', 'POST', { id: id }, function () {
-                    Toast.success('Zona eliminada');
-                    cargar();
+                var item = DATA.find(function (r) { return r.id == id; });
+                if (!item) return;
+                window.VaiaUI.confirm('Eliminar zona', 'Se eliminara "' + item.nombrezona + '". Esta seguro?', function () {
+                    AdminApp.ajax('admin/EliminarZonaCobertura', 'POST', { id: id }, function () {
+                        window.VaiaUI.toast({ type: 'success', title: 'Zona eliminada' });
+                        cargar();
+                    });
                 });
             }
 
-            function comision(id) {
-                $('#txtComisionZonaId').val(id);
-                AdminApp.ajax('admin/ObtenerComisionesZona', 'GET', { idZona: id }, function (res) {
-                    var d = Array.isArray(res) ? res[0] : res;
-                    $('#txtComisionPorcentaje').val(AdminApp.getVal(d, 'porcentaje'));
-                    $('#txtComisionMinima').val(AdminApp.getVal(d, 'comisionminima'));
-                    $('#txtComisionMaxima').val(AdminApp.getVal(d, 'comisionmaxima'));
-                    AdminApp.openModal('modalComision');
+            function initEventos() {
+                $('#btnNuevaZona').on('click', function () { abrirEditor(null); });
+                $('#btnReloadZonas').on('click', cargar);
+                $('#chkMostrarGeocercas').on('change', function () {
+                    mostrarGeocercas = $(this).is(':checked');
+                    pintarGeocercas();
                 });
+                $('#btnMostrarTodas').on('click', function () {
+                    zonaAislada = null;
+                    $(this).hide();
+                    $('.zona-chip').removeClass('is-active is-isolated');
+                    pintarZonas();
+                });
+                $('#dvZonasList').on('click', '[data-action]', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var id = $(this).data('id');
+                    var action = $(this).data('action');
+                    var z = DATA.find(function (r) { return r.id == id; });
+                    if (action === 'click' && z) {
+                        $('.zona-chip').removeClass('is-active');
+                        $(this).closest('.zona-chip').addClass('is-active');
+                        centrarEn(z);
+                    } else if (action === 'aislar' && z) {
+                        aislarZona(id);
+                    } else if (action === 'editar') {
+                        abrirEditor(id);
+                    } else if (action === 'comision') {
+                        editarComision(id);
+                    } else if (action === 'eliminar') {
+                        eliminar(id);
+                    }
+                });
+                window.addEventListener('resize', function () { if (mapPrincipal) mapPrincipal.invalidateSize(); });
             }
 
-            function guardarComision() {
-                var idZona = $('#txtComisionZonaId').val();
-                var data = { idZona: idZona, porcentaje: $('#txtComisionPorcentaje').val(), comisionminima: $('#txtComisionMinima').val(), comisionmaxima: $('#txtComisionMaxima').val() };
-                AdminApp.ajax('admin/ActualizarComisionZona', 'POST', data, function () {
-                    Toast.success('Comision actualizada');
-                    AdminApp.closeModal('modalComision');
-                    cargar();
-                });
-            }
-
-            function filtrar() { state.pagina = 1; cargar(); }
-
-            function init() { cargar(); }
-
-            return { init: init, cargar: cargar, filtrar: filtrar, nuevo: nuevo, editar: editar, guardar: guardar, eliminar: eliminar, comision: comision, guardarComision: guardarComision };
+            return { init: function () { cargar(); initEventos(); } };
         })();
-        $(document).ready(function () { Zonas.init(); });
+
+        $(document).ready(function () { window.VaiaZonas.init(); });
     </script>
 }

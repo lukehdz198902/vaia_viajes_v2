@@ -3,154 +3,328 @@
 }
 
 @section Styles {
-    <link href="~/Content/css/admin.css" rel="stylesheet" />
-    <style>
-        .config-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
-        .config-item:last-child { border-bottom: none; }
-        .config-item .config-label { min-width: 180px; font-weight: 500; font-size: 0.88rem; color: var(--text-dark); text-transform: capitalize; }
-        .config-item .config-input { flex: 1; }
-        .config-item .config-input .input-soft { width: 100%; }
-        .config-item .config-action { min-width: 80px; }
-        .cost-form { display: grid; grid-template-columns: 1fr; gap: 16px; }
-        .cost-form .form-group { margin-bottom: 0; }
-    </style>
+    <link href="~/css/pages/configuracion.css?v=2" rel="stylesheet" />
 }
 
-<div id="dvConfiguracion">
-    <div class="section-header">
-        <h4><i class="fas fa-cog"></i> Configuracion del Sistema</h4>
+<div class="config-page" id="dvConfiguracion">
+
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">Configuracion</h2>
+            <p class="page-header__subtitle">Ajustes generales del sistema Vaia Viajes</p>
+        </div>
+        <div class="page-header__actions">
+            <button type="button" class="btn btn--ghost btn--sm" id="btnReloadConfig" title="Recargar">
+                <i class="fas fa-rotate"></i> Recargar
+            </button>
+        </div>
+    </header>
+
+    <div class="config-toolbar">
+        <div class="config-toolbar__search input-icon">
+            <i class="fas fa-search input-icon__icon"></i>
+            <input type="text" class="form-input" id="txtBuscarConfig" placeholder="Buscar por clave, valor o descripcion..." aria-label="Buscar configuracion" />
+        </div>
+        <div class="config-toolbar__actions">
+            <span class="config-summary" id="lblResumen">
+                <i class="fas fa-circle-info"></i>
+                <span id="lblResumenTexto">Cargando...</span>
+            </span>
+        </div>
     </div>
 
-    <div class="row g-4">
-        <div class="col-lg-7">
-            <div class="card-custom">
-                <div class="card-header-custom">
-                    <h6><i class="fas fa-sliders-h me-2" style="color:var(--primary);"></i>Configuracion General</h6>
-                    <button class="btn-soft primary btn-sm" onclick="Configuracion.guardarGeneral()"><i class="fas fa-save"></i> Guardar Todo</button>
-                </div>
-                <div class="card-body-custom" id="dvConfigGeneral">
-                    <div class="loader"></div>
-                </div>
-            </div>
-        </div>
+    <nav class="config-tabs" id="dvTabs" role="tablist" aria-label="Categorias de configuracion"></nav>
 
-        <div class="col-lg-5">
-            <div class="card-custom">
-                <div class="card-header-custom">
-                    <h6><i class="fas fa-road me-2" style="color:var(--primary);"></i>Costos por Km</h6>
-                </div>
-                <div class="card-body-custom">
-                    <form id="frmCostos">
-                        <div class="cost-form">
-                            <div class="form-group">
-                                <label>Costo Minimo</label>
-                                <input type="number" step="0.01" class="input-soft" id="txtCostoMinimo" name="costominimo" />
-                            </div>
-                            <div class="form-group">
-                                <label>Costo por Km</label>
-                                <input type="number" step="0.01" class="input-soft" id="txtCostoPorKm" name="costoporkm" />
-                            </div>
-                            <div class="form-group">
-                                <label>Costo por Minuto</label>
-                                <input type="number" step="0.01" class="input-soft" id="txtCostoPorMinuto" name="costoporminuto" />
-                            </div>
-                        </div>
-                    </form>
-                    <div class="d-flex justify-content-end gap-2 mt-3">
-                        <button class="btn-soft outline" onclick="Configuracion.cancelarCostos()">Cancelar</button>
-                        <button class="btn-soft primary" onclick="Configuracion.guardarCostos()"><i class="fas fa-save"></i> Guardar Costos</button>
-                    </div>
-                </div>
+    <div class="config-grid" id="dvCards" aria-live="polite"></div>
+</div>
+
+<!-- Plantilla reutilizable para modal de edicion de campos largos -->
+<div class="modal" id="vaiaEditModal" style="display:none;">
+    <div class="modal-dialog">
+        <header class="modal-header">
+            <h3 class="modal-title" id="vaiaEditTitle">Editar configuracion</h3>
+            <button type="button" class="modal-close" aria-label="Cerrar" data-close>
+                <i class="fas fa-xmark"></i>
+            </button>
+        </header>
+        <div class="modal-body">
+            <div class="form-field">
+                <label class="form-label" for="vaiaEditValue">Valor</label>
+                <textarea class="form-textarea" id="vaiaEditValue" rows="6"></textarea>
             </div>
         </div>
+        <footer class="modal-footer">
+            <button type="button" class="btn btn--ghost" data-close>Cancelar</button>
+            <button type="button" class="btn btn--primary" id="vaiaEditSave">
+                <span class="btn-label">Guardar</span>
+            </button>
+        </footer>
     </div>
 </div>
 
 @section Scripts {
     <script src="~/Scripts/admin.js"></script>
     <script>
-        var Configuracion = (function () {
-            var configData = [];
+        window.VaiaConfig = (function () {
+            var ALL = [];
+            var FILTRO_CAT = 'todas';
+            var BUSQUEDA = '';
+            var MODIFICADAS = {};
 
-            function cargarGeneral() {
+            var CATEGORIAS = [
+                { id: 'app',         label: 'Aplicacion',  icon: 'fa-mobile-screen',  match: /^(APP_|DEFAULT_L)/ },
+                { id: 'seguridad',   label: 'Seguridad',   icon: 'fa-shield-halved',  match: /^(MAX_INTENTOS|TIEMPO_BLOQUEO|TIEMPO_EXPIRACION|TOKEN_EXPIRATION)/ },
+                { id: 'operacion',   label: 'Operacion',   icon: 'fa-gears',          match: /^(DISTANCIA_|RADIO_|MAXIMO_|INTERVALO_)/ },
+                { id: 'finanzas',    label: 'Finanzas',    icon: 'fa-coins',          match: /^(COMISION_|MINSPARA)/ },
+                { id: 'contacto',    label: 'Contacto',    icon: 'fa-address-book',   match: /^(EMAIL_|TELEFONO_|URL_)/ }
+            ];
+
+            function clasificar(clave) {
+                for (var i = 0; i < CATEGORIAS.length; i++) {
+                    if (CATEGORIAS[i].match.test(clave || '')) return CATEGORIAS[i].id;
+                }
+                return 'general';
+            }
+
+            function getField(obj, key) {
+                if (!obj || !key) return undefined;
+                var k = key.toLowerCase();
+                for (var p in obj) {
+                    if (p.toLowerCase() === k) return obj[p];
+                }
+                return undefined;
+            }
+
+            function escapeHtml(str) {
+                if (str == null) return '';
+                return String(str).replace(/[&<>"']/g, function (m) {
+                    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
+                });
+            }
+
+            function detectarTipo(valor) {
+                var v = String(valor == null ? '' : valor).trim();
+                if (/^(true|false)$/i.test(v)) return 'boolean';
+                if (/^-?\d+(\.\d+)?$/.test(v)) return 'number';
+                if (v.length > 60 || v.indexOf('\n') >= 0) return 'longtext';
+                return 'text';
+            }
+
+            function cargar() {
+                var $cards = $('#dvCards');
+                $cards.html('<div class="config-card"><div class="config-card__body"><div class="config-card__skeleton" style="height:140px;"></div></div></div>'.repeat(4));
                 AdminApp.ajax('admin/ObtenerConfiguracion', 'GET', null, function (res) {
-                    var data = Array.isArray(res) ? res : (res.data || []);
-                    configData = data;
-                    renderGeneral(data);
-                });
-            }
-
-            function renderGeneral(data) {
-                var h = '';
-                if (!data.length) { h = '<p class="text-muted">Sin configuraciones</p>'; }
-                else { data.forEach(function (r, i) {
-                    var clave = r.clave || r.Clave;
-                    var valor = r.valor !== undefined && r.valor !== null ? r.valor : (r.Valor || '');
-                    h += '<div class="config-item" data-index="' + i + '">';
-                    h += '<div class="config-label">' + clave + '</div>';
-                    h += '<div class="config-input"><input type="text" class="input-soft" id="cfg_' + i + '" value="' + $('<span>').text(valor).html() + '" /></div>';
-                    h += '<div class="config-action"><button class="btn-soft primary btn-sm" onclick="Configuracion.guardarItem(' + i + ')"><i class="fas fa-check"></i></button></div>';
-                    h += '</div>';
-                }); }
-                $('#dvConfigGeneral').html(h);
-            }
-
-            function guardarItem(i) {
-                var item = configData[i];
-                if (!item) return;
-                var clave = item.clave || item.Clave;
-                var valor = $('#cfg_' + i).val();
-                AdminApp.ajax('admin/GuardarConfiguracion', 'POST', { clave: clave, valor: valor }, function () {
-                    Toast.success(clave + ' actualizado');
-                    item.valor = valor;
-                });
-            }
-
-            function guardarGeneral() {
-                var items = [];
-                configData.forEach(function (item, i) {
-                    var clave = item.clave || item.Clave;
-                    var valor = $('#cfg_' + i).val();
-                    items.push({ clave: clave, valor: valor });
-                });
-                AdminApp.ajax('admin/GuardarConfiguracion', 'POST', { items: items }, function () {
-                    Toast.success('Configuracion general guardada');
+                    var data = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+                    ALL = data.map(function (r) {
+                        var clave = getField(r, 'claveconfiguracion') || getField(r, 'ClaveConfiguracion');
+                        var valor = getField(r, 'valorconfiguracion');
+                        if (valor === undefined || valor === null) valor = getField(r, 'ValorConfiguracion');
+                        if (valor === undefined || valor === null) valor = '';
+                        var desc = getField(r, 'descripcion') || getField(r, 'Descripcion') || '';
+                        var id = getField(r, 'id') || getField(r, 'Id');
+                        return { id: id, clave: clave, valor: String(valor), descripcion: desc, categoria: clasificar(clave) };
+                    });
+                    MODIFICADAS = {};
+                    renderTabs();
+                    renderCards();
                 }, function () {
-                    items.forEach(function (item) { AdminApp.ajax('admin/GuardarConfiguracion', 'POST', item, null, null); });
-                    Toast.success('Configuracion general guardada');
+                    $cards.html('<div class="config-empty"><div class="config-empty__icon"><i class="fas fa-triangle-exclamation"></i></div><h4 class="config-empty__title">No se pudieron cargar las configuraciones</h4><p class="config-empty__message">Verifica la conexion con el servidor e intenta de nuevo.</p></div>');
+                    if (window.VaiaUI) window.VaiaUI.toast({ type: 'danger', title: 'Error', message: 'No se pudo cargar la configuracion' });
                 });
             }
 
-            function cargarCostos() {
-                AdminApp.ajax('admin/ObtenerConfiguracion', 'GET', null, function (res) {
-                    var data = Array.isArray(res) ? res : (res.data || []);
-                    var findVal = function (clave) {
-                        var item = data.find(function (x) { return (x.clave || x.Clave) === clave; });
-                        return item ? (item.valor !== undefined ? item.valor : item.Valor) : '';
-                    };
-                    $('#txtCostoMinimo').val(findVal('costominimo'));
-                    $('#txtCostoPorKm').val(findVal('costoporkm'));
-                    $('#txtCostoPorMinuto').val(findVal('costoporminuto'));
+            function renderTabs() {
+                var counts = { todas: ALL.length };
+                CATEGORIAS.forEach(function (c) { counts[c.id] = 0; });
+                counts.general = 0;
+                ALL.forEach(function (r) { counts[r.categoria] = (counts[r.categoria] || 0) + 1; });
+
+                var html = '';
+                html += '<button type="button" class="config-tab ' + (FILTRO_CAT === 'todas' ? 'active' : '') + '" data-cat="todas" role="tab">Todas <span class="config-tab__count">' + counts.todas + '</span></button>';
+                CATEGORIAS.forEach(function (c) {
+                    if (!counts[c.id]) return;
+                    html += '<button type="button" class="config-tab ' + (FILTRO_CAT === c.id ? 'active' : '') + '" data-cat="' + c.id + '" role="tab"><i class="fas ' + c.icon + '"></i> ' + c.label + ' <span class="config-tab__count">' + counts[c.id] + '</span></button>';
                 });
+                if (counts.general) {
+                    html += '<button type="button" class="config-tab ' + (FILTRO_CAT === 'general' ? 'active' : '') + '" data-cat="general" role="tab"><i class="fas fa-sliders"></i> General <span class="config-tab__count">' + counts.general + '</span></button>';
+                }
+                $('#dvTabs').html(html);
             }
 
-            function guardarCostos() {
-                var data = {
-                    costominimo: $('#txtCostoMinimo').val(),
-                    costoporkm: $('#txtCostoPorKm').val(),
-                    costoporminuto: $('#txtCostoPorMinuto').val()
-                };
-                AdminApp.ajax('admin/ActualizarConfiguracionCosto', 'POST', data, function () {
-                    Toast.success('Costos actualizados');
+            function renderCards() {
+                var visibles = ALL.filter(function (r) {
+                    if (FILTRO_CAT !== 'todas' && r.categoria !== FILTRO_CAT) return false;
+                    if (BUSQUEDA) {
+                        var t = (r.clave + ' ' + r.valor + ' ' + r.descripcion).toLowerCase();
+                        if (t.indexOf(BUSQUEDA.toLowerCase()) < 0) return false;
+                    }
+                    return true;
                 });
+
+                $('#lblResumenTexto').text(visibles.length + ' de ' + ALL.length + ' configuraciones');
+
+                if (!visibles.length) {
+                    $('#dvCards').html('<div class="config-empty"><div class="config-empty__icon"><i class="fas fa-magnifying-glass"></i></div><h4 class="config-empty__title">Sin configuraciones</h4><p class="config-empty__message">' + (BUSQUEDA ? 'No hay configuraciones que coincidan con "' + escapeHtml(BUSQUEDA) + '".' : 'No hay configuraciones en esta categoria.') + '</p></div>');
+                    return;
+                }
+
+                var grupos = {};
+                visibles.forEach(function (r) {
+                    if (!grupos[r.categoria]) grupos[r.categoria] = [];
+                    grupos[r.categoria].push(r);
+                });
+
+                var html = '';
+                Object.keys(grupos).forEach(function (catId) {
+                    var cat = CATEGORIAS.find(function (c) { return c.id === catId; });
+                    if (!cat) cat = { id: 'general', label: 'General', icon: 'fa-sliders' };
+                    var items = grupos[catId];
+                    html += '<article class="config-card" data-cat="' + catId + '">';
+                    html += '  <header class="config-card__header">';
+                    html += '    <div class="config-card__icon"><i class="fas ' + cat.icon + '"></i></div>';
+                    html += '    <div style="flex:1; min-width:0;">';
+                    html += '      <h3 class="config-card__title">' + escapeHtml(cat.label) + '</h3>';
+                    html += '      <p class="config-card__subtitle">' + items.length + ' parametro' + (items.length !== 1 ? 's' : '') + '</p>';
+                    html += '    </div>';
+                    html += '    <span class="config-card__count">' + items.length + '</span>';
+                    html += '  </header>';
+                    html += '  <div class="config-card__body">';
+                    items.forEach(function (r) {
+                        html += renderRow(r);
+                    });
+                    html += '  </div>';
+                    html += '  <footer class="config-card__footer">';
+                    html += '    <span class="config-summary" data-pending-for="' + catId + '"><i class="fas fa-circle-info"></i> Sin cambios</span>';
+                    html += '    <button type="button" class="btn btn--soft primary btn-sm" data-save-cat="' + catId + '" disabled><i class="fas fa-save"></i> Guardar</button>';
+                    html += '  </footer>';
+                    html += '</article>';
+                });
+
+                $('#dvCards').html(html);
             }
 
-            function cancelarCostos() { cargarCostos(); }
+            function renderRow(r) {
+                var tipo = detectarTipo(r.valor);
+                var inputHtml = '';
+                if (tipo === 'boolean') {
+                    var checked = /^true$/i.test(r.valor) ? ' checked' : '';
+                    inputHtml = '<label class="form-check" style="margin: 0;"><input type="checkbox" data-input="' + r.id + '" ' + checked + '><span>' + (checked ? 'Activado' : 'Desactivado') + '</span></label>';
+                } else if (tipo === 'longtext') {
+                    inputHtml = '<div class="config-row__input-wrap"><textarea class="form-textarea" data-input="' + r.id + '" rows="2" style="min-height: 60px; max-height: 200px;">' + escapeHtml(r.valor) + '</textarea></div>';
+                } else {
+                    inputHtml = '<div class="config-row__input-wrap"><input type="' + (tipo === 'number' ? 'number' : 'text') + '" class="form-input" data-input="' + r.id + '" value="' + escapeHtml(r.valor) + '" /></div>';
+                }
+                return '<div class="config-row" data-row-id="' + r.id + '" data-row-cat="' + r.categoria + '">' +
+                            '<div class="config-row__head">' +
+                                '<span class="config-row__label"><code>' + escapeHtml(r.clave) + '</code></span>' +
+                                '<span class="config-row__modified" data-modified-for="' + r.id + '"><i class="fas fa-circle"></i> Modificado</span>' +
+                            '</div>' +
+                            (r.descripcion ? '<p class="config-row__desc">' + escapeHtml(r.descripcion) + '</p>' : '') +
+                            inputHtml +
+                        '</div>';
+            }
 
-            function init() { cargarGeneral(); cargarCostos(); }
+            function marcarModificado(id, nuevoValor) {
+                var item = ALL.find(function (r) { return r.id === id; });
+                if (!item) return;
+                var cambiado = String(item.valor) !== String(nuevoValor);
+                if (cambiado) {
+                    MODIFICADAS[id] = nuevoValor;
+                    $('[data-modified-for="' + id + '"]').addClass('is-visible');
+                } else {
+                    delete MODIFICADAS[id];
+                    $('[data-modified-for="' + id + '"]').removeClass('is-visible');
+                }
+                actualizarEstadoCategoria(item.categoria);
+            }
 
-            return { init: init, cargarGeneral: cargarGeneral, guardarItem: guardarItem, guardarGeneral: guardarGeneral, cargarCostos: cargarCostos, guardarCostos: guardarCostos, cancelarCostos: cancelarCostos };
+            function actualizarEstadoCategoria(catId) {
+                var pendientes = ALL.filter(function (r) {
+                    return r.categoria === catId && MODIFICADAS.hasOwnProperty(r.id);
+                }).length;
+                var $footer = $('[data-pending-for="' + catId + '"]');
+                var $btn = $('[data-save-cat="' + catId + '"]');
+                if (pendientes > 0) {
+                    $footer.html('<i class="fas fa-pen" style="color:var(--state-warning);"></i> ' + pendientes + ' cambio' + (pendientes !== 1 ? 's' : '') + ' pendiente' + (pendientes !== 1 ? 's' : ''));
+                    $btn.prop('disabled', false);
+                } else {
+                    $footer.html('<i class="fas fa-circle-info"></i> Sin cambios');
+                    $btn.prop('disabled', true);
+                }
+            }
+
+            function guardarCategoria(catId) {
+                var items = ALL.filter(function (r) {
+                    return r.categoria === catId && MODIFICADAS.hasOwnProperty(r.id);
+                });
+                if (!items.length) return;
+
+                var $btn = $('[data-save-cat="' + catId + '"]');
+                var $label = $btn.find('.btn-label');
+                $btn.prop('disabled', true);
+                var originalLabel = $btn.find('i').length ? $btn.contents().filter(function () { return this.nodeType === 3; }).text().trim() || 'Guardar' : 'Guardar';
+                $btn.html('<span class="spinner" style="width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:vaia-spin 0.7s linear infinite;display:inline-block;"></span> Guardando');
+
+                var pendientes = items.length;
+                var errores = 0;
+
+                items.forEach(function (item) {
+                    AdminApp.ajax('admin/GuardarConfiguracion', 'POST', { clave: item.clave, valor: MODIFICADAS[item.id] }, function () {
+                        item.valor = String(MODIFICADAS[item.id]);
+                        delete MODIFICADAS[item.id];
+                        $('[data-modified-for="' + item.id + '"]').removeClass('is-visible');
+                        pendientes--;
+                        if (pendientes === 0) finalizar();
+                    }, function () {
+                        errores++;
+                        pendientes--;
+                        if (pendientes === 0) finalizar();
+                    });
+                });
+
+                function finalizar() {
+                    $btn.html('<i class="fas fa-save"></i> Guardar');
+                    actualizarEstadoCategoria(catId);
+                    if (errores === 0) {
+                        if (window.VaiaUI) window.VaiaUI.toast({ type: 'success', title: 'Guardado', message: items.length + ' configuracion' + (items.length !== 1 ? 'es' : '') + ' actualizada' + (items.length !== 1 ? 's' : '') });
+                    } else {
+                        if (window.VaiaUI) window.VaiaUI.toast({ type: 'danger', title: 'Error parcial', message: errores + ' cambio' + (errores !== 1 ? 's' : '') + ' no se pudieron guardar' });
+                    }
+                }
+            }
+
+            function initEventos() {
+                $('#dvTabs').on('click', '.config-tab', function () {
+                    FILTRO_CAT = $(this).data('cat');
+                    $('.config-tab').removeClass('active');
+                    $(this).addClass('active');
+                    renderCards();
+                });
+
+                $('#txtBuscarConfig').on('input', function () {
+                    BUSQUEDA = $(this).val().trim();
+                    renderCards();
+                });
+
+                $('#dvCards').on('input change', '[data-input]', function () {
+                    var $el = $(this);
+                    var id = parseInt($el.data('input'), 10);
+                    var val;
+                    if ($el.is(':checkbox')) val = $el.is(':checked') ? 'true' : 'false';
+                    else val = $el.val();
+                    marcarModificado(id, val);
+                });
+
+                $('#dvCards').on('click', '[data-save-cat]', function () {
+                    guardarCategoria($(this).data('save-cat'));
+                });
+
+                $('#btnReloadConfig').on('click', cargar);
+            }
+
+            return { init: function () { cargar(); initEventos(); } };
         })();
-        $(document).ready(function () { Configuracion.init(); });
+
+        $(document).ready(function () { window.VaiaConfig.init(); });
     </script>
 }

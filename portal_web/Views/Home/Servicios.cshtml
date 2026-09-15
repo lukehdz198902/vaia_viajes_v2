@@ -2,9 +2,7 @@
     ViewBag.Title = "Servicios";
 }
 
-@section Styles {
-    <link href="~/Content/section.css" rel="stylesheet" />
-}
+@section Styles {}
 
 <div id="dvServicios">
     <div class="section-header">
@@ -86,21 +84,23 @@
                 h += '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-route"></i><h5>No hay servicios</h5></div></td></tr>';
             } else {
                 data.forEach(function (s) {
-                    var id = s.IdServicio || s.idServicio || 0;
-                    var pasajero = s.NombrePasajero || s.pasajero || s.Pasajero || '--';
-                    var conductor = s.NombreConductor || s.conductor || s.Conductor || '--';
-                    var origen = s.DirOrigen || s.origen || s.Origen || '--';
-                    var destino = s.DirDestino || s.destino || s.Destino || '--';
-                    var monto = s.MontoTotal || s.monto || s.Monto || 0;
-                    var estatus = s.EstatusViaje || s.estatus || s.Estatus || '--';
-                    var fecha = s.FechaServicio || s.fecha || s.Fecha || null;
-                    var statusClass = estatus === 'Completado' ? 'active' : estatus === 'Cancelado' ? 'inactive' : estatus === 'En Proceso' ? 'info' : 'pending';
+                    var id = s.Id || s.id || s.IdServicio || s.idServicio || 0;
+                    var pNombre = s.P_nombre || s.p_nombre || s.NombrePasajero || s.pasajero || s.Pasajero || '';
+                    var pApe = s.P_appaterno || s.p_appaterno || '';
+                    var cNombre = s.C_nombre || s.c_nombre || s.NombreConductor || s.conductor || s.Conductor || '';
+                    var cApe = s.C_appaterno || s.c_appaterno || '';
+                    var origen = s.Direccionorigen || s.direccionorigen || s.DirOrigen || s.origen || s.Origen || '--';
+                    var destino = s.Direcciondestination || s.direcciondestination || s.DirDestino || s.destino || s.Destino || '--';
+                    var monto = s.Costoestimado || s.costoestimado || s.MontoTotal || s.monto || s.Monto || 0;
+                    var estatus = s.Estatus || s.estatus || s.EstatusViaje || '--';
+                    var fecha = s.Fechacreacion || s.fechacreacion || s.FechaServicio || s.fecha || s.Fecha || null;
+                    var statusClass = estatus.toLowerCase().indexOf('complet')>=0 ? 'active' : estatus.toLowerCase().indexOf('cancel')>=0 ? 'inactive' : estatus.toLowerCase().indexOf('camino')>=0 || estatus.toLowerCase().indexOf('viaje')>=0 ? 'info' : 'pending';
                     h += '<tr>';
                     h += '<td><strong>#' + id + '</strong></td>';
-                    h += '<td>' + pasajero + '</td>';
-                    h += '<td>' + conductor + '</td>';
-                    h += '<td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + origen + '</td>';
-                    h += '<td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + destino + '</td>';
+                    h += '<td>' + (pNombre + ' ' + pApe).trim() || '--' + '</td>';
+                    h += '<td>' + (cNombre + ' ' + cApe).trim() || '--' + '</td>';
+                    h += '<td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + origen + '">' + origen + '</td>';
+                    h += '<td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + destino + '">' + destino + '</td>';
                     h += '<td><strong>' + AdminApp.fmtMoneda(monto) + '</strong></td>';
                     h += '<td><span class="status-badge ' + statusClass + '">' + estatus + '</span></td>';
                     h += '<td>' + AdminApp.fmtFecha(fecha) + '</td>';
@@ -123,45 +123,45 @@
 
         function verDetalle(id) {
             servicioActualId = id;
-            AdminApp.ajax('admin/DetalleServicio', 'GET', { idServicio: id }, function (s) {
-                var pasajero = s.Pasajero || s.pasajero || {};
-                var conductor = s.Conductor || s.conductor || {};
+            AdminApp.ajax('admin/DetalleServicio', 'GET', { idServicio: id }, function (arr) {
+                var s = (Array.isArray(arr) && arr.length) ? arr[0] : arr;
+                if (!s || !s.Id) { AdminApp.Toast.error('Servicio no encontrado'); return; }
                 var h = '';
                 h += '<div class="detail-section"><h6><i class="fas fa-user me-2"></i>Pasajero</h6>';
-                h += '<div class="detail-row"><span class="label">Nombre</span><span>' + (pasajero.Nombre || pasajero.nombre || '--') + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Correo</span><span>' + (pasajero.Correo || pasajero.correo || '--') + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Teléfono</span><span>' + (pasajero.Telefono || pasajero.telefono || '--') + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Nombre</span><span>' + ((s.P_nombre || s.p_nombre || '') + ' ' + (s.P_appaterno || s.p_appaterno || '')).trim() || '--' + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Correo</span><span>' + (s.P_email || s.p_email || s.P_correo || s.p_correo || '--') + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Teléfono</span><span>' + (s.P_tel || s.p_tel || s.P_telefono || s.p_telefono || '--') + '</span></div>';
                 h += '</div>';
                 h += '<div class="detail-section"><h6><i class="fas fa-id-card me-2"></i>Conductor</h6>';
-                h += '<div class="detail-row"><span class="label">Nombre</span><span>' + (conductor.Nombre || conductor.nombre || '--') + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Correo</span><span>' + (conductor.Correo || conductor.correo || '--') + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Teléfono</span><span>' + (conductor.Telefono || conductor.telefono || '--') + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Nombre</span><span>' + ((s.C_nombre || s.c_nombre || '') + ' ' + (s.C_appaterno || s.c_appaterno || '')).trim() || '--' + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Correo</span><span>' + (s.C_email || s.c_email || s.C_correo || s.c_correo || '--') + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Teléfono</span><span>' + (s.C_tel || s.c_tel || s.C_telefono || s.c_telefono || '--') + '</span></div>';
                 h += '</div>';
                 h += '<div class="detail-section"><h6><i class="fas fa-map-marker-alt me-2"></i>Ruta</h6>';
-                h += '<div class="detail-row"><span class="label">Origen</span><span>' + (s.DirOrigen || s.origen || s.Origen || '--') + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Destino</span><span>' + (s.DirDestino || s.destino || s.Destino || '--') + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Origen</span><span>' + (s.Direccionorigen || s.direccionorigen || s.DirOrigen || s.origen || s.Origen || '--') + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Destino</span><span>' + (s.Direcciondestination || s.direcciondestination || s.DirDestino || s.destino || s.Destino || '--') + '</span></div>';
                 h += '</div>';
                 h += '<div class="detail-section"><h6><i class="fas fa-dollar-sign me-2"></i>Financiero</h6>';
-                h += '<div class="detail-row"><span class="label">Costo Total</span><span>' + AdminApp.fmtMoneda(s.MontoTotal || s.monto || s.Monto || s.Costo || s.costo || 0) + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Ganancia Conductor</span><span>' + AdminApp.fmtMoneda(s.GananciaConductor || s.gananciaConductor || 0) + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Comisión</span><span>' + AdminApp.fmtMoneda(s.Comision || s.comision || 0) + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Costo Total</span><span>' + AdminApp.fmtMoneda(s.Costoestimado || s.costoestimado || s.MontoTotal || s.monto || s.Monto || s.Costo || s.costo || 0) + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Ganancia Conductor</span><span>' + AdminApp.fmtMoneda(s.Gananciaconductor || s.gananciaconductor || s.GananciaConductor || 0) + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Comisión</span><span>' + AdminApp.fmtMoneda(s.Comisionaplicada || s.comisionaplicada || s.Comision || s.comision || 0) + '</span></div>';
                 h += '</div>';
                 h += '<div class="detail-section"><h6><i class="fas fa-clock me-2"></i>Estatus</h6>';
-                h += '<div class="detail-row"><span class="label">Actual</span><span>' + AdminApp.badge(true, s.EstatusViaje || s.estatus || s.Estatus || '--') + '</span></div>';
-                h += '<div class="detail-row"><span class="label">Fecha</span><span>' + AdminApp.fmtFecha(s.FechaServicio || s.fecha || s.Fecha) + '</span></div>';
-                if (s.EstatusViaje || s.estatus || s.Estatus) {
+                h += '<div class="detail-row"><span class="label">Actual</span><span>' + AdminApp.badge(true, s.Estatus || s.estatus || s.EstatusViaje || '--') + '</span></div>';
+                h += '<div class="detail-row"><span class="label">Fecha</span><span>' + AdminApp.fmtFecha(s.Fechacreacion || s.fechacreacion || s.FechaServicio || s.fecha || s.Fecha) + '</span></div>';
+                if (s.Estatus || s.estatus || s.EstatusViaje) {
                     h += '<div class="timeline mt-3" id="dvTimelineEstatus"></div>';
                 }
                 h += '</div>';
                 $('#dvDetalleServicio').html(h);
-                var estatus = (s.EstatusViaje || s.estatus || s.Estatus || '').toLowerCase();
-                $('#btnCancelarServicio').toggle(estatus !== 'completado' && estatus !== 'cancelado');
+                var estatus = (s.Estatus || s.estatus || s.EstatusViaje || '').toLowerCase();
+                $('#btnCancelarServicio').toggle(estatus.indexOf('complet')===-1 && estatus.indexOf('cancel')===-1 && estatus !== '');
                 AdminApp.openModal('modalDetalleServicio');
             });
         }
 
         function cancelarServicio() {
-            if (!confirm('¿Cancelar este servicio?')) return;
+            AdminApp.confirm('Cancelar servicio','Esta seguro de cancelar este servicio?',function(){
             AdminApp.ajax('admin/GestionarServicio', 'POST', { idServicio: servicioActualId, accion: 'cancelar' }, function (res) {
                 AdminApp.closeModal('modalDetalleServicio');
                 AdminApp.Toast.success('Servicio cancelado');

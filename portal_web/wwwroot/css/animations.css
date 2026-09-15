@@ -1,0 +1,106 @@
+@keyframes vaia-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes vaia-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes vaia-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes vaia-slide-down {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes vaia-slide-right {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes vaia-slide-left {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes vaia-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes vaia-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+@keyframes vaia-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 var(--accent-glow); }
+  70%  { box-shadow: 0 0 0 12px rgba(20, 184, 166, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0); }
+}
+
+@keyframes vaia-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes vaia-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes vaia-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(30px, -30px) scale(1.05); }
+  66%      { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+@keyframes vaia-float-slow {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(40px, -25px); }
+}
+
+@keyframes vaia-float-fast {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(-30px, 35px); }
+}
+
+@keyframes vaia-glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
+  50%      { box-shadow: 0 0 40px var(--accent-glow); }
+}
+
+@keyframes vaia-count-up {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.vaia-anim-fade-in   { animation: vaia-fade-in var(--transition-slow) var(--easing-smooth) both; }
+.vaia-anim-slide-up  { animation: vaia-slide-up 350ms var(--easing-smooth) both; }
+.vaia-anim-slide-down{ animation: vaia-slide-down 350ms var(--easing-smooth) both; }
+.vaia-anim-scale-in  { animation: vaia-scale-in 300ms var(--easing-spring) both; }
+.vaia-anim-pulse     { animation: vaia-pulse 2s ease-in-out infinite; }
+
+.vaia-stagger > * { animation: vaia-slide-up 400ms var(--easing-smooth) both; }
+.vaia-stagger > *:nth-child(1) { animation-delay: 40ms; }
+.vaia-stagger > *:nth-child(2) { animation-delay: 80ms; }
+.vaia-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.vaia-stagger > *:nth-child(4) { animation-delay: 160ms; }
+.vaia-stagger > *:nth-child(5) { animation-delay: 200ms; }
+.vaia-stagger > *:nth-child(6) { animation-delay: 240ms; }
+.vaia-stagger > *:nth-child(7) { animation-delay: 280ms; }
+.vaia-stagger > *:nth-child(8) { animation-delay: 320ms; }
+
+.vaia-skeleton {
+  background: linear-gradient(90deg,
+    var(--surface-2) 0%,
+    var(--surface-3) 50%,
+    var(--surface-2) 100%);
+  background-size: 200% 100%;
+  animation: vaia-shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}
