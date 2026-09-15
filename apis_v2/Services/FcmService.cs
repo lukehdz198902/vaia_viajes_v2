@@ -159,5 +159,21 @@ namespace VaiaViajes.Api.Services
             }
             catch { return new List<string>(); }
         }
+
+        /// <summary>Envia una notificacion push al pasajero indicado (resuelve el token).</summary>
+        public async Task<bool> EnviarNotificacionPasajero(long idPasajero, string titulo, string cuerpo, object data = null)
+        {
+            var token = await GetPasajeroTokenAsync(idPasajero);
+            if (string.IsNullOrEmpty(token)) return false;
+            return await SendToTokenAsync(token, titulo, cuerpo, data);
+        }
+
+        /// <summary>Envia una notificacion push al conductor indicado (resuelve el token).</summary>
+        public async Task<bool> EnviarNotificacionConductor(int idConductor, string titulo, string cuerpo, object data = null)
+        {
+            var token = await GetConductorTokenAsync(idConductor);
+            if (string.IsNullOrEmpty(token)) return false;
+            return await SendToTokenAsync(token, titulo, cuerpo, data);
+        }
     }
 }

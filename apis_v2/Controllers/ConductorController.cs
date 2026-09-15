@@ -9,6 +9,7 @@ using VaiaViajes.Api.Services;
 public class ConductorController : ControllerBase
 {
     private FcmService Fcm => HttpContext.RequestServices.GetRequiredService<FcmService>();
+    private VaiaViajes.Api.Services.RealtimeNotifier Notifier => HttpContext.RequestServices.GetRequiredService<VaiaViajes.Api.Services.RealtimeNotifier>();
 
     [HttpPost("Registrar")]
     public async Task<IActionResult> Registrar([FromBody] dynamic p)
@@ -86,7 +87,28 @@ public class ConductorController : ControllerBase
     [HttpPost("CambiarEstatus")]
     public async Task<IActionResult> CambiarEstatus([FromBody] dynamic p)
     {
-        return await SpExecutor.SingleAsync("sp_conductor_CambiarEstatus", p, "Estatus actualizado");
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_CambiarEstatus", d);
+        object boxed = result;
+
+        int idConductor = d.ContainsKey("idConductor") ? System.Convert.ToInt32(d["idConductor"]) : 0;
+        string estatus = d.ContainsKey("estatus") ? d["estatus"]?.ToString() : "";
+        if (idConductor > 0)
+        {
+            await Notifier.NotificarConductor(idConductor, "EstatusCambiado", new { idConductor, estatus });
+            // Notificar a admins el cambio de disponibilidad
+            await Notifier.NotificarConductor(idConductor, "DisponibilidadActualizada", new
+            {
+                idConductor,
+                estatus,
+                disponible = estatus == "Disponible",
+                lat = d.ContainsKey("lat") ? d["lat"]?.ToString() : null,
+                lng = d.ContainsKey("lng") ? d["lng"]?.ToString() : null
+            });
+        }
+
+        return ApiResultExtensions.VaiaSingleFromSp(boxed, "Estatus actualizado");
     }
 
     [HttpPost("AceptarServicio")]
@@ -118,8 +140,37 @@ public class ConductorController : ControllerBase
                         });
                 }
             }
+            // Notificar por WebSocket
+            await Notifier.NotificarServicioAceptado(idServicio, pasajeroId, new
+            {
+                idServicio,
+                idConductor,
+                estatus = "En Camino",
+                conductorNombre = await Fcm.GetConductorNameAsync(idConductor),
+                fecha = System.DateTime.UtcNow.ToString("o")
+            });
         }
         return ApiResultExtensions.VaiaSingleFromSp(boxed, "Servicio aceptado");
+    }
+
+    [HttpPost("RechazarServicio")]
+    public async Task<IActionResult> RechazarServicio([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_RechazarServicio", d);
+        object boxed = result;
+
+        // Notificar a admins para trazabilidad
+        long idServicio = d.ContainsKey("idservicio") ? System.Convert.ToInt64(d["idservicio"]) : 0;
+        int idConductor = d.ContainsKey("idconductor") ? System.Convert.ToInt32(d["idconductor"]) : 0;
+        if (idServicio > 0)
+        {
+            var notifier = HttpContext.RequestServices.GetRequiredService<VaiaViajes.Api.Services.RealtimeNotifier>();
+            await notifier.NotificarConductor(idConductor, "ServicioRechazado", new { idServicio });
+        }
+        return ApiResultExtensions.VaiaSingleFromSp(boxed, "Servicio rechazado");
     }
 
     [HttpPost("LlegarAlOrigen")]
@@ -149,6 +200,7 @@ public class ConductorController : ControllerBase
                         });
                 }
             }
+            await Notifier.NotificarEstatusCambiado(idServicio, "Llego al Origen");
         }
         return ApiResultExtensions.VaiaSingleFromSp(boxed, "Llegada registrada");
     }
@@ -180,6 +232,7 @@ public class ConductorController : ControllerBase
                         });
                 }
             }
+            await Notifier.NotificarEstatusCambiado(idServicio, "En Viaje");
         }
         return ApiResultExtensions.VaiaSingleFromSp(boxed, "Viaje iniciado");
     }
@@ -219,6 +272,8 @@ public class ConductorController : ControllerBase
                         });
                 }
             }
+            await Notifier.NotificarEstatusCambiado(idServicio, "Finalizado");
+            await Notifier.NotificarEstatusAdmin(idServicio, "Finalizado");
         }
         return ApiResultExtensions.VaiaSingleFromSp(boxed, "Viaje finalizado");
     }
@@ -309,6 +364,15 @@ public class ConductorController : ControllerBase
                         });
                 }
             }
+            var nombreCond = await Fcm.GetConductorNameAsync(idConductor);
+            await Notifier.NotificarMensajeChat(idServicio, new
+            {
+                idServicio,
+                emisor = "conductor",
+                mensaje = d.ContainsKey("mensaje") ? d["mensaje"]?.ToString() : "",
+                nombreEmisor = nombreCond,
+                fecha = System.DateTime.UtcNow.ToString("o")
+            });
         }
         return ApiResultExtensions.VaiaSingleFromSp(boxed, "Mensaje enviado");
     }

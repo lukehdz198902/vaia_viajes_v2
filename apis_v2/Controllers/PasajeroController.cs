@@ -9,6 +9,7 @@ using VaiaViajes.Api.Services;
 public class PasajeroController : ControllerBase
 {
     private FcmService Fcm => HttpContext.RequestServices.GetRequiredService<FcmService>();
+    private VaiaViajes.Api.Services.RealtimeNotifier Notifier => HttpContext.RequestServices.GetRequiredService<VaiaViajes.Api.Services.RealtimeNotifier>();
 
     [HttpPost("Registrar")]
     public async Task<IActionResult> Registrar([FromBody] dynamic p)
@@ -101,6 +102,7 @@ public class PasajeroController : ControllerBase
         var result = await DatabaseHelper.QueryAsync<object>("sp_pasajero_SolicitarServicio", d);
         object boxed = result;
 
+        long idServicioCreado = 0;
         var list = boxed as System.Collections.IEnumerable;
         if (list != null)
         {
@@ -109,6 +111,8 @@ public class PasajeroController : ControllerBase
                 var dict = item as System.Collections.Generic.IDictionary<string, object>;
                 if (dict != null)
                 {
+                    if (dict.ContainsKey("idservicio") && dict["idservicio"] != null)
+                        idServicioCreado = System.Convert.ToInt64(dict["idservicio"]);
                     var idCompania = dict.ContainsKey("idcompania") ? dict["idcompania"] : (d.ContainsKey("idCompania") ? d["idCompania"] : null);
                     if (idCompania != null)
                     {
@@ -118,7 +122,7 @@ public class PasajeroController : ControllerBase
                             var data = new System.Collections.Generic.Dictionary<string, string>
                             {
                                 ["type"] = "new_ride",
-                                ["idservicio"] = dict.ContainsKey("idservicio") ? (dict["idservicio"]?.ToString() ?? "0") : "0",
+                                ["idservicio"] = idServicioCreado.ToString(),
                             };
                             _ = Fcm.SendToMultipleTokensAsync(tokens, "Nuevo servicio disponible",
                                 "Hay un nuevo viaje solicitado cerca de tu ubicacion", data);
@@ -128,6 +132,24 @@ public class PasajeroController : ControllerBase
                 }
             }
         }
+
+        // Notificar por WebSocket a conductores y admins
+        if (idServicioCreado > 0)
+        {
+            var payload = new
+            {
+                idServicio = idServicioCreado,
+                idPasajero = d.ContainsKey("idPasajero") ? d["idPasajero"] : null,
+                direccionOrigen = d.ContainsKey("dirOrigen") ? d["dirOrigen"]?.ToString() : "",
+                direccionDestino = d.ContainsKey("dirDestino") ? d["dirDestino"]?.ToString() : "",
+                latOrigen = d.ContainsKey("latOrigen") ? d["latOrigen"]?.ToString() : "",
+                lngOrigen = d.ContainsKey("lngOrigen") ? d["lngOrigen"]?.ToString() : "",
+                fecha = System.DateTime.UtcNow.ToString("o")
+            };
+            await Notifier.NotificarNuevoServicio(payload);
+            await Notifier.NotificarNuevoServicioAdmin(payload);
+        }
+
         return ApiResultExtensions.VaiaSingleFromSp(boxed, "Servicio solicitado");
     }
 
@@ -172,6 +194,10 @@ public class PasajeroController : ControllerBase
                         });
                 }
             }
+            // Notificar por WebSocket
+            var motivo = d.ContainsKey("motivo") ? d["motivo"]?.ToString() : "";
+            await Notifier.NotificarServicioCancelado(idServicio, motivo, "pasajero");
+            await Notifier.NotificarEstatusAdmin(idServicio, "Cancelado por Pasajero");
         }
         return ApiResultExtensions.VaiaSingleFromSp(boxed, "Servicio cancelado");
     }
@@ -333,6 +359,17 @@ public class PasajeroController : ControllerBase
                         });
                 }
             }
+
+            // Notificar por WebSocket al chat del servicio
+            var nombrePasajero = await Fcm.GetPasajeroNameAsync(idPasajero);
+            await Notifier.NotificarMensajeChat(idServicio, new
+            {
+                idServicio,
+                emisor = "pasajero",
+                mensaje = d.ContainsKey("mensaje") ? d["mensaje"]?.ToString() : "",
+                nombreEmisor = nombrePasajero,
+                fecha = System.DateTime.UtcNow.ToString("o")
+            });
         }
         return ApiResultExtensions.VaiaSingleFromSp(boxed, "Mensaje enviado");
     }

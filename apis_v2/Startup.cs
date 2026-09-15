@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using VaiaViajes.Api.BackgroundServices;
+using VaiaViajes.Api.Hubs;
 using VaiaViajes.Api.Middleware;
 using VaiaViajes.Api.Services;
 
@@ -22,6 +25,17 @@ namespace VaiaViajes.Api
                 p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
             services.AddSingleton<FcmService>();
+            services.AddSingleton<RealtimeNotifier>();
+
+            // SignalR (WebSocket) para tiempo real
+            services.AddSignalR(opts =>
+            {
+                opts.EnableDetailedErrors = true;
+            });
+
+            // Servicios en background
+            services.AddSingleton<IHostedService, AssignmentService>();
+            services.AddSingleton<IHostedService, SchedulerService>();
 
             services.AddMvc()
                 .AddJsonOptions(opts =>
@@ -31,7 +45,7 @@ namespace VaiaViajes.Api
                 });
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, Microsoft.AspNetCore.Hosting.IHostingEnvironment env)
         {
             DatabaseHelper.Configure(Configuration);
 
@@ -42,6 +56,15 @@ namespace VaiaViajes.Api
 
             app.UseVaiaErrorHandling();
             app.UseCors("AllowAll");
+
+            // Hubs de SignalR
+            app.UseSignalR(routes =>
+            {
+                routes.MapHub<ServicioHub>("/hubs/servicio");
+                routes.MapHub<ChatHub>("/hubs/chat");
+                routes.MapHub<SoporteHub>("/hubs/soporte");
+            });
+
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
