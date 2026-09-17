@@ -39,7 +39,12 @@
             contentType: 'application/json',
             data: JSON.stringify({ account: account, pass: pass }),
             success: function (res) {
-                var data = Array.isArray(res) ? res[0] : res;
+                // El API responde con envoltura { success, data, message, code }.
+                // Se mantiene compatibilidad con respuestas planas/arreglos anteriores.
+                var payload = (res && typeof res === 'object' && !Array.isArray(res) && res.data !== undefined)
+                    ? res.data
+                    : res;
+                var data = Array.isArray(payload) ? payload[0] : payload;
                 if (data && data.id && data.id > 0) {
                     sessionStorage.setItem('usr_id', data.id);
                     sessionStorage.setItem('usr_nombre', data.nombre || '');
@@ -51,13 +56,16 @@
                     sessionStorage.setItem('usr_idCompania', data.idcompania || data.idCompania || '');
                     window.location.href = '/Home/Index';
                 } else {
-                    mostrarError(data && data.mensaje ? data.mensaje : 'Credenciales invalidas');
+                    var msg = (data && (data.mensaje || data.message))
+                        || (res && (res.message || res.mensaje))
+                        || 'Credenciales invalidas';
+                    mostrarError(msg);
                 }
             },
             error: function (xhr) {
                 try {
                     var msg = JSON.parse(xhr.responseText);
-                    mostrarError(msg.mensaje || msg.message || 'Error del servidor');
+                    mostrarError(msg.message || msg.mensaje || 'Error del servidor');
                 } catch (e) {
                     mostrarError('Error al conectar con el servidor');
                 }

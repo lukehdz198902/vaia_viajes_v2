@@ -25,7 +25,10 @@
             contentType: 'application/json',
             data: JSON.stringify({ account: account, pass: pass }),
             success: function (res) {
-                var data = Array.isArray(res) ? res[0] : res;
+                var payload = (res && typeof res === 'object' && !Array.isArray(res) && res.data !== undefined)
+                    ? res.data
+                    : res;
+                var data = Array.isArray(payload) ? payload[0] : payload;
                 if (data && data.id && data.id > 0) {
                     sessionStorage.setItem('usr_id', data.id);
                     sessionStorage.setItem('usr_nombre', data.nombre || '');
