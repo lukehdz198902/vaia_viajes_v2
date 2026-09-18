@@ -48,6 +48,87 @@ public class AdminController : ControllerBase
         return ApiResultExtensions.VaiaSingleFromSp((object)result, "Sesion cerrada");
     }
 
+    // ─── MONITOREO EN TIEMPO REAL ────────────────────────────────
+
+    [HttpGet("ResumenMonitoreo")]
+    public async Task<IActionResult> ResumenMonitoreo()
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_admin_ResumenMonitoreo");
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Resumen de monitoreo");
+    }
+
+    [HttpGet("ConductoresConectados")]
+    public async Task<IActionResult> ConductoresConectados()
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_admin_ConductoresConectados");
+        return ApiResultExtensions.VaiaFromSp((object)result, "Conductores conectados");
+    }
+
+    [HttpGet("PasajerosConectados")]
+    public async Task<IActionResult> PasajerosConectados()
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_admin_PasajerosConectados");
+        return ApiResultExtensions.VaiaFromSp((object)result, "Pasajeros conectados");
+    }
+
+    [HttpGet("OrigenesPorZona")]
+    public async Task<IActionResult> OrigenesPorZona(int dias = 7)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_admin_OrigenesPorZona", new { dias });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Origenes por zona");
+    }
+
+    [HttpGet("SolicitudesPorHora")]
+    public async Task<IActionResult> SolicitudesPorHora(int dias = 7)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_admin_SolicitudesPorHora", new { dias });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Solicitudes por hora");
+    }
+
+    [HttpGet("PasajerosActivosPorPeriodo")]
+    public async Task<IActionResult> PasajerosActivosPorPeriodo(int dias = 7)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_admin_PasajerosActivosPorPeriodo", new { dias });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Pasajeros activos por periodo");
+    }
+
+    // ─── ANALITICA DE ZONAS Y DEMANDA (Fase 5) ──────────────────
+
+    [HttpGet("DemandaPorHoraDia")]
+    public async Task<IActionResult> DemandaPorHoraDia(int dias = 30)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_admin_DemandaPorHoraDia", new { dias });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Demanda por hora y dia");
+    }
+
+    [HttpGet("ZonasRanking")]
+    public async Task<IActionResult> ZonasRanking(int dias = 30)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_admin_ZonasRanking", new { dias });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Ranking de zonas");
+    }
+
+    [HttpGet("OrigenesPuntos")]
+    public async Task<IActionResult> OrigenesPuntos(int dias = 30, int limite = 2000)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_admin_OrigenesPuntos", new { dias, limite });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Puntos de origen");
+    }
+
+    [HttpGet("PrediccionDemanda")]
+    public async Task<IActionResult> PrediccionDemanda(int dias = 30)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_admin_PrediccionDemanda", new { dias });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Prediccion de demanda");
+    }
+
+    [HttpGet("ConductoresPorZona")]
+    public async Task<IActionResult> ConductoresPorZona()
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_admin_ConductoresPorZona");
+        return ApiResultExtensions.VaiaFromSp((object)result, "Conductores por zona");
+    }
+
     [HttpPost("CrearUsuario")]
     public async Task<IActionResult> CrearUsuario([FromBody] dynamic p)
     {

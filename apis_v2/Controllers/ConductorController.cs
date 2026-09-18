@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,7 @@ public class ConductorController : ControllerBase
 {
     private FcmService Fcm => HttpContext.RequestServices.GetRequiredService<FcmService>();
     private VaiaViajes.Api.Services.RealtimeNotifier Notifier => HttpContext.RequestServices.GetRequiredService<VaiaViajes.Api.Services.RealtimeNotifier>();
+    private EmailService Email => HttpContext.RequestServices.GetRequiredService<EmailService>();
 
     [HttpPost("Registrar")]
     public async Task<IActionResult> Registrar([FromBody] dynamic p)
@@ -78,10 +80,33 @@ public class ConductorController : ControllerBase
         return await SpExecutor.SingleAsync("sp_conductor_CambiarPassword", d, "Contrasena actualizada");
     }
 
+    /// <summary>Actualiza el token de push (FCM) del conductor.</summary>
+    [HttpPost("ActualizarToken")]
+    public async Task<IActionResult> ActualizarToken([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        return await SpExecutor.SingleAsync("sp_conductor_ActualizarToken", d, "Token actualizado");
+    }
+
     [HttpPost("ActualizarUbicacion")]
     public async Task<IActionResult> ActualizarUbicacion([FromBody] dynamic p)
     {
-        return await SpExecutor.SingleAsync("sp_conductor_ActualizarUbicacionGPS", p, "Ubicacion actualizada");
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_ActualizarUbicacionGPS", d);
+        object boxed = result;
+
+        int idConductor = d.ContainsKey("idConductor") ? System.Convert.ToInt32(d["idConductor"]) : 0;
+        string lat = d.ContainsKey("lat") ? d["lat"]?.ToString() : null;
+        string lng = d.ContainsKey("lng") ? d["lng"]?.ToString() : null;
+        if (idConductor > 0 && !string.IsNullOrEmpty(lat) && !string.IsNullOrEmpty(lng))
+        {
+            await Notifier.NotificarConductor(idConductor, "UbicacionActualizada", new { idConductor, lat, lng });
+        }
+
+        return ApiResultExtensions.VaiaSingleFromSp(boxed, "Ubicacion actualizada");
     }
 
     [HttpPost("CambiarEstatus")]
@@ -247,7 +272,6 @@ public class ConductorController : ControllerBase
             "rd_s", "durReal",
             "distanciaMetros", "distReal",
             "duracionsegundos", "durReal");
-        d.Remove("costoFinal");
         d.Remove("lat");
         d.Remove("lng");
 
@@ -276,6 +300,111 @@ public class ConductorController : ControllerBase
             await Notifier.NotificarEstatusAdmin(idServicio, "Finalizado");
         }
         return ApiResultExtensions.VaiaSingleFromSp(boxed, "Viaje finalizado");
+    }
+
+    /// <summary>
+    /// Taximetro: el conductor reporta distancia/tiempo acumulados durante el viaje
+    /// y el servidor calcula el costo en vivo, que se difunde a ambas apps.
+    /// </summary>
+    [HttpPost("ActualizarTaximetro")]
+    public async Task<IActionResult> ActualizarTaximetro([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_ActualizarTaximetro", d);
+        object boxed = result;
+
+        var idServicio = d.ContainsKey("idServicio") ? System.Convert.ToInt64(d["idServicio"]) : 0L;
+        int dist = d.ContainsKey("distanciaMetros") ? System.Convert.ToInt32(d["distanciaMetros"]) : 0;
+        int dur = d.ContainsKey("duracionSegundos") ? System.Convert.ToInt32(d["duracionSegundos"]) : 0;
+
+        decimal costo = 0;
+        var first = System.Linq.Enumerable.FirstOrDefault(result as System.Collections.Generic.IEnumerable<object>);
+        var dict = first as System.Collections.Generic.IDictionary<string, object>;
+        if (dict != null && dict.ContainsKey("costo") && dict["costo"] != null)
+            costo = System.Convert.ToDecimal(dict["costo"]);
+
+        if (idServicio > 0 && costo > 0)
+            await Notifier.NotificarCostoActualizado(idServicio, costo, dist, dur);
+
+        return ApiResultExtensions.VaiaSingleFromSp(boxed, "Costo actualizado");
+    }
+
+    /// <summary>
+    /// Registra el pago del servicio (efectivo por defecto) y envia el comprobante
+    /// al correo del pasajero.
+    /// </summary>
+    [HttpPost("RegistrarPago")]
+    public async Task<IActionResult> RegistrarPago([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_RegistrarPago", d);
+        object boxed = result;
+
+        long idServicio = d.ContainsKey("idServicio") ? System.Convert.ToInt64(d["idServicio"]) : 0L;
+        bool ok = false;
+        var first = System.Linq.Enumerable.FirstOrDefault(result as System.Collections.Generic.IEnumerable<object>);
+        var dict = first as System.Collections.Generic.IDictionary<string, object>;
+        if (dict != null && dict.ContainsKey("resultado") && dict["resultado"] != null)
+            ok = System.Convert.ToInt32(dict["resultado"]) > 0;
+
+        if (ok && idServicio > 0)
+        {
+            await Notifier.NotificarEstatusCambiado(idServicio, "Pagado");
+            _ = EnviarComprobanteAsync(idServicio);
+        }
+
+        return ApiResultExtensions.VaiaSingleFromSp(boxed, "Pago registrado");
+    }
+
+    private async Task EnviarComprobanteAsync(long idServicio)
+    {
+        try
+        {
+            var rows = await DatabaseHelper.QueryAsync<object>("sp_servicio_Comprobante", new { idServicio });
+            var first = System.Linq.Enumerable.FirstOrDefault(rows);
+            var c = first as System.Collections.Generic.IDictionary<string, object>;
+            if (c == null) return;
+
+            string correo = c.ContainsKey("pasajero_correo") ? c["pasajero_correo"]?.ToString() : null;
+            if (string.IsNullOrEmpty(correo)) return;
+
+            string nombre = ((c.ContainsKey("pasajero_nombre") ? c["pasajero_nombre"]?.ToString() : "") + " " +
+                             (c.ContainsKey("pasajero_appaterno") ? c["pasajero_appaterno"]?.ToString() : "")).Trim();
+            string costo = (c.ContainsKey("costofinal") && c["costofinal"] != null)
+                ? System.Convert.ToDecimal(c["costofinal"]).ToString("N2") : "0.00";
+            string origen = c.ContainsKey("direccionorigen") ? c["direccionorigen"]?.ToString() : "";
+            string destino = c.ContainsKey("direcciondestination") ? c["direcciondestination"]?.ToString() : "";
+            string metodo = c.ContainsKey("metodopago") ? c["metodopago"]?.ToString() : "";
+            string conductor = ((c.ContainsKey("conductor_nombre") ? c["conductor_nombre"]?.ToString() : "") + " " +
+                                (c.ContainsKey("conductor_appaterno") ? c["conductor_appaterno"]?.ToString() : "")).Trim();
+            string unidad = c.ContainsKey("unidad") ? c["unidad"]?.ToString() : "";
+            string placas = c.ContainsKey("placas") ? c["placas"]?.ToString() : "";
+
+            var html = "<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden\">"
+                + "<div style=\"background:#14B8A6;color:#fff;padding:18px 22px\"><h2 style=\"margin:0\">Vaia Viajes</h2><div style=\"opacity:.9;font-size:13px\">Comprobante de viaje</div></div>"
+                + "<div style=\"padding:20px 22px\">"
+                + "<p style=\"margin:0 0 12px\">Hola " + nombre + ", gracias por viajar con nosotros.</p>"
+                + "<table style=\"width:100%;border-collapse:collapse;font-size:14px\">"
+                + "<tr><td style=\"padding:6px 0;color:#64748b\">Servicio</td><td style=\"text-align:right\"><b>#" + idServicio + "</b></td></tr>"
+                + "<tr><td style=\"padding:6px 0;color:#64748b\">Origen</td><td style=\"text-align:right\">" + origen + "</td></tr>"
+                + "<tr><td style=\"padding:6px 0;color:#64748b\">Destino</td><td style=\"text-align:right\">" + destino + "</td></tr>"
+                + "<tr><td style=\"padding:6px 0;color:#64748b\">Conductor</td><td style=\"text-align:right\">" + conductor + " " + unidad + " " + placas + "</td></tr>"
+                + "<tr><td style=\"padding:6px 0;color:#64748b\">Metodo de pago</td><td style=\"text-align:right\">" + metodo + "</td></tr>"
+                + "<tr><td style=\"padding:10px 0;border-top:1px solid #e2e8f0;font-size:16px\"><b>Total</b></td><td style=\"text-align:right;border-top:1px solid #e2e8f0;font-size:18px\"><b>$" + costo + "</b></td></tr>"
+                + "</table></div>"
+                + "<div style=\"background:#f8fafc;padding:12px 22px;font-size:12px;color:#94a3b8\">Comprobante automatico, no requiere firma.</div>"
+                + "</div>";
+
+            await Email.EnviarAsync(correo, "Comprobante de viaje #" + idServicio + " - Vaia Viajes", html);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("[Conductor] Error enviando comprobante: " + ex.Message);
+        }
     }
 
     [HttpGet("ListarUnidades")]

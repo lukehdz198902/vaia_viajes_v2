@@ -1,0 +1,116 @@
+/* =========================================================
+   Vaia Portal - Refinamientos (compacto / responsivo / moderno)
+   Se carga al final para afinar sobre el sistema base.
+   ========================================================= */
+
+/* ---------- Modales nativos de Bootstrap ---------- */
+.modal:not([data-modal-id]) .modal-dialog {
+  max-height: calc(100vh - 1.5rem);
+}
+.modal:not([data-modal-id]) .modal-content {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-2xl);
+  overflow: hidden;
+  max-height: calc(100vh - 1.5rem);
+}
+.modal:not([data-modal-id]) .modal-header {
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.modal:not([data-modal-id]) .modal-title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal:not([data-modal-id]) .modal-body {
+  padding: 16px 18px;
+  overflow-y: auto;
+}
+.modal:not([data-modal-id]) .modal-footer {
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-subtle);
+  gap: 8px;
+}
+.modal-backdrop.show { opacity: 0.55; }
+
+/* ---------- Modal de confirmacion (AdminApp.confirm) ---------- */
+.confirm-modal { border-radius: var(--radius-xl); }
+.confirm-modal .modal-body {
+  text-align: center;
+  padding: 26px 24px 18px;
+}
+.confirm-modal__icon {
+  width: 56px; height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem;
+}
+.confirm-modal__title {
+  margin: 0 0 6px;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
+}
+.confirm-modal__text {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+}
+.confirm-modal__actions {
+  justify-content: center;
+  border-top: none;
+  background: transparent;
+  padding: 4px 24px 22px;
+}
+.confirm-modal__actions .btn-soft { min-width: 104px; justify-content: center; }
+
+/* ---------- Compactar contenido ---------- */
+.content-area { padding: var(--space-5); }
+.section-header { margin-bottom: 14px; }
+.section-header h4 { font-size: var(--text-md); }
+
+.table-custom thead th { padding: 9px 12px; font-size: 0.66rem; }
+.table-custom tbody td { padding: 9px 12px; font-size: 0.8rem; }
+
+.filters { gap: 8px; margin-bottom: 14px; }
+
+/* Formularios dentro de modales: mas compactos */
+.form-grid-2 { gap: 12px; }
+.form-group label { font-size: 0.74rem; }
+.form-group .input-soft { padding: 7px 10px; font-size: 0.82rem; }
+
+/* ---------- Sidebar ---------- */
+.sidebar { transition: width var(--transition-slow) var(--easing-smooth), transform var(--transition-slow) var(--easing-smooth); }
+.app-shell.collapsed .nav-item { justify-content: center; }
+.app-shell.collapsed .nav-item i { font-size: 1.05rem; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  .content-area { padding: var(--space-4); }
+  .section-header { margin-bottom: 12px; }
+}
+
+@media (max-width: 640px) {
+  .modal:not([data-modal-id]) .modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100vw - 1rem);
+  }
+  .modal:not([data-modal-id]) .modal-body { padding: 14px; }
+  .modal:not([data-modal-id]) .modal-header,
+  .modal:not([data-modal-id]) .modal-footer { padding-left: 14px; padding-right: 14px; }
+  .confirm-modal .modal-body { padding: 20px 16px 14px; }
+}
+
+@media (max-width: 480px) {
+  .content-area { padding: var(--space-3); }
+  .filters .search-box,
+  .filters .input-soft,
+  .filters select.input-soft { width: 100%; max-width: none; }
+}

@@ -12,17 +12,21 @@ namespace VaiaViajes.Api.Services
 {
     public class FcmService
     {
-        private readonly string _serverKey;
+        // Cada app (pasajero / conductor) tiene su propio proyecto de Firebase
+        private readonly string _serverKeyConductor;
+        private readonly string _serverKeyPasajero;
         private static readonly HttpClient _http = new HttpClient();
 
         private const string FcmUrl = "https://fcm.googleapis.com/fcm/send";
 
         public FcmService(IConfiguration config)
         {
-            _serverKey = config["FcmServerKey"] ?? config.GetSection("Fcm")["ServerKey"];
+            var legacy = config["FcmServerKey"] ?? config.GetSection("Fcm")["ServerKey"];
+            _serverKeyConductor = config.GetSection("Fcm:Conductor")["ServerKey"] ?? legacy;
+            _serverKeyPasajero = config.GetSection("Fcm:Pasajero")["ServerKey"] ?? legacy;
         }
 
-        public async Task<bool> SendToTokenAsync(string token, string title, string body, object data = null)
+        public async Task<bool> SendToTokenAsync(string token, string title, string body, object data = null, string serverKey = null)
         {
             if (string.IsNullOrEmpty(token)) return false;
 
@@ -39,7 +43,7 @@ namespace VaiaViajes.Api.Services
                 ["priority"] = "high",
             };
 
-            return await SendAsync(payload);
+            return await SendAsync(payload, serverKey ?? _serverKeyConductor);
         }
 
         public async Task<bool> SendToTopicAsync(string topic, string title, string body, object data = null)
@@ -47,7 +51,7 @@ namespace VaiaViajes.Api.Services
             return await SendToTokenAsync($"/topics/{topic}", title, body, data);
         }
 
-        public async Task<bool> SendToMultipleTokensAsync(List<string> tokens, string title, string body, object data = null)
+        public async Task<bool> SendToMultipleTokensAsync(List<string> tokens, string title, string body, object data = null, string serverKey = null)
         {
             if (tokens == null || tokens.Count == 0) return false;
 
@@ -64,10 +68,10 @@ namespace VaiaViajes.Api.Services
                 ["priority"] = "high",
             };
 
-            return await SendAsync(payload);
+            return await SendAsync(payload, serverKey ?? _serverKeyConductor);
         }
 
-        private async Task<bool> SendAsync(Dictionary<string, object> payload)
+        private async Task<bool> SendAsync(Dictionary<string, object> payload, string serverKey)
         {
             try
             {
@@ -75,7 +79,7 @@ namespace VaiaViajes.Api.Services
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 var request = new HttpRequestMessage(HttpMethod.Post, FcmUrl);
-                request.Headers.TryAddWithoutValidation("Authorization", $"key={_serverKey}");
+                request.Headers.TryAddWithoutValidation("Authorization", $"key={serverKey}");
                 request.Content = content;
 
                 var response = await _http.SendAsync(request);
@@ -165,7 +169,7 @@ namespace VaiaViajes.Api.Services
         {
             var token = await GetPasajeroTokenAsync(idPasajero);
             if (string.IsNullOrEmpty(token)) return false;
-            return await SendToTokenAsync(token, titulo, cuerpo, data);
+            return await SendToTokenAsync(token, titulo, cuerpo, data, _serverKeyPasajero);
         }
 
         /// <summary>Envia una notificacion push al conductor indicado (resuelve el token).</summary>

@@ -1,0 +1,320 @@
+@{
+    ViewBag.Title = "Monitoreo";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@@1.9.4/dist/leaflet.css" />
+    <style>
+        .mon-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:16px; }
+        .mon-kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px 16px; display:flex; align-items:center; gap:12px; box-shadow:var(--shadow-sm); }
+        .mon-kpi__icon { width:42px; height:42px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:1.05rem; flex-shrink:0; }
+        .mon-kpi__value { font-size:1.5rem; font-weight:800; line-height:1; color:var(--text-strong); }
+        .mon-kpi__label { font-size:.74rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; margin-top:2px; }
+        .mon-grid { display:grid; grid-template-columns:1.7fr 1fr; gap:16px; align-items:start; }
+        .mon-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-sm); }
+        .mon-card__head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+        .mon-card__title { margin:0; font-size:.92rem; font-weight:600; display:flex; align-items:center; gap:8px; }
+        #monitorMap { height:480px; width:100%; background:var(--bg-muted); }
+        .mon-list { max-height:480px; overflow-y:auto; }
+        .mon-item { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--border); }
+        .mon-item:last-child { border-bottom:none; }
+        .mon-item__avatar { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.75rem; color:#fff; flex-shrink:0; }
+        .mon-item__body { min-width:0; flex:1; }
+        .mon-item__name { font-size:.84rem; font-weight:600; color:var(--text-strong); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .mon-item__meta { font-size:.72rem; color:var(--text-muted); display:flex; gap:8px; flex-wrap:wrap; }
+        .mon-empty { padding:26px 16px; text-align:center; color:var(--text-muted); font-size:.82rem; }
+        .mon-marker { width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 2px 6px rgba(0,0,0,.3); border:2px solid #fff; }
+        .mon-marker--conductor { background:var(--c,#10B981); }
+        .mon-legend { display:flex; gap:16px; flex-wrap:wrap; padding:10px 16px; border-top:1px solid var(--border); font-size:.75rem; color:var(--text-muted); }
+        .mon-legend span { display:inline-flex; align-items:center; gap:6px; }
+        .mon-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+        .mon-updated { font-size:.72rem; color:var(--text-muted); }
+        .mon-analytics { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+        .mon-period { display:flex; gap:6px; }
+        .mon-period button { border:1px solid var(--border); background:var(--surface); color:var(--text-muted); border-radius:var(--radius-md); padding:4px 10px; font-size:.75rem; cursor:pointer; }
+        .mon-period button.active { background:var(--primary); border-color:var(--primary); color:#fff; font-weight:600; }
+        .mon-chart { padding:14px 16px; height:260px; }
+        @@media (max-width:1100px) { .mon-grid { grid-template-columns:1fr; } #monitorMap { height:400px; } .mon-list { max-height:340px; } .mon-analytics { grid-template-columns:1fr; } }
+    </style>
+}
+
+<div class="section-header">
+    <h4><i class="fas fa-satellite-dish me-2" style="color:var(--primary);"></i>Monitoreo en tiempo real</h4>
+    <div style="display:flex;align-items:center;gap:12px;">
+        <span class="mon-updated" id="monUpdated">--</span>
+        <button class="btn-soft outline" onclick="Monitoreo.cargar(true)"><i class="fas fa-rotate me-1"></i>Recargar</button>
+    </div>
+</div>
+
+<div class="mon-kpis">
+    <div class="mon-kpi">
+        <div class="mon-kpi__icon" style="background:#D1FAE5;color:#059669;"><i class="fas fa-car-side"></i></div>
+        <div><div class="mon-kpi__value" id="kpiConectados">0</div><div class="mon-kpi__label">Conductores conectados</div></div>
+    </div>
+    <div class="mon-kpi">
+        <div class="mon-kpi__icon" style="background:#DBEAFE;color:#2563EB;"><i class="fas fa-circle-check"></i></div>
+        <div><div class="mon-kpi__value" id="kpiDisponibles">0</div><div class="mon-kpi__label">Disponibles</div></div>
+    </div>
+    <div class="mon-kpi">
+        <div class="mon-kpi__icon" style="background:#E0F2FE;color:#0284C7;"><i class="fas fa-user"></i></div>
+        <div><div class="mon-kpi__value" id="kpiPasajeros">0</div><div class="mon-kpi__label">Pasajeros usando la app</div></div>
+    </div>
+    <div class="mon-kpi">
+        <div class="mon-kpi__icon" style="background:#FEF3C7;color:#D97706;"><i class="fas fa-route"></i></div>
+        <div><div class="mon-kpi__value" id="kpiServicios">0</div><div class="mon-kpi__label">Servicios activos</div></div>
+    </div>
+</div>
+
+<div class="mon-grid">
+    <div class="mon-card">
+        <div class="mon-card__head">
+            <h5 class="mon-card__title"><i class="fas fa-map-location-dot" style="color:var(--primary);"></i>Unidades conectadas</h5>
+            <span class="mon-updated" id="monWsEstado">conectando...</span>
+        </div>
+        <div id="monitorMap"></div>
+        <div class="mon-legend">
+            <span><i class="mon-dot" style="background:#10B981;"></i>Disponible</span>
+            <span><i class="mon-dot" style="background:#F59E0B;"></i>Ocupado</span>
+            <span><i class="mon-dot" style="background:#64748B;"></i>Otro</span>
+        </div>
+    </div>
+
+    <div class="mon-card">
+        <div class="mon-card__head">
+            <h5 class="mon-card__title"><i class="fas fa-users" style="color:var(--primary);"></i>Conductores conectados</h5>
+            <span class="status-badge info" id="monCountCond">0</span>
+        </div>
+        <div class="mon-list" id="monListaConductores"></div>
+    </div>
+</div>
+
+<div class="mon-analytics">
+    <div class="mon-card">
+        <div class="mon-card__head">
+            <h5 class="mon-card__title"><i class="fas fa-map-marked-alt" style="color:var(--primary);"></i>Origenes solicitados por zona</h5>
+            <div class="mon-period" id="monPeriodo">
+                <button data-d="1">Hoy</button>
+                <button data-d="7" class="active">7 dias</button>
+                <button data-d="30">30 dias</button>
+            </div>
+        </div>
+        <div class="table-wrap" style="border:none;border-radius:0;">
+            <table class="table-custom">
+                <thead><tr><th>Zona</th><th>Solicitudes</th></tr></thead>
+                <tbody id="monTablaZonas"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mon-card">
+        <div class="mon-card__head">
+            <h5 class="mon-card__title"><i class="fas fa-clock" style="color:var(--primary);"></i>Solicitudes por hora del dia</h5>
+        </div>
+        <div class="mon-chart"><canvas id="monChartHoras"></canvas></div>
+    </div>
+</div>
+
+<div class="mon-analytics" style="grid-template-columns:1fr;">
+    <div class="mon-card">
+        <div class="mon-card__head">
+            <h5 class="mon-card__title"><i class="fas fa-user-clock" style="color:var(--primary);"></i>Pasajeros activos por dia</h5>
+        </div>
+        <div class="table-wrap" style="border:none;border-radius:0;">
+            <table class="table-custom">
+                <thead><tr><th>Dia</th><th>Pasajeros activos</th><th>Sesiones</th></tr></thead>
+                <tbody id="monTablaActivos"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@@6.0.6/dist/browser/signalr.min.js"></script>
+    <script src="~/Scripts/admin.js"></script>
+    <script>
+        window.Monitoreo = (function () {
+            var API = window.__VAIA_API_BASE__ || '';
+            var HUB = API.replace(/\/api\/?$/, '') + '/hubs/servicio';
+
+            var map, capaConductores;
+            var marcadores = {};   // id -> marker
+            var datosConductores = {};
+            var conn = null;
+            var refreshTimer = null;
+            var chartHoras = null;
+            var dias = 7;
+
+            function apiGet(url) { return $.getJSON(API + url); }
+
+            function initMap() {
+                map = L.map('monitorMap').setView([26.0923, -98.2789], 12);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19, attribution: '&copy; OpenStreetMap'
+                }).addTo(map);
+                capaConductores = L.layerGroup().addTo(map);
+            }
+
+            function iconoConductor(estatus) {
+                var color = estatus === 'Disponible' ? '#10B981'
+                          : (estatus === 'Ocupado' ? '#F59E0B' : '#64748B');
+                var html = '<div class="mon-marker mon-marker--conductor" style="--c:' + color + ';"><i class="fas fa-car-side"></i></div>';
+                return L.divIcon({ className: '', html: html, iconSize: [30, 30], iconAnchor: [15, 15] });
+            }
+
+            function fmtMin(m) {
+                m = parseInt(m || 0);
+                if (m < 60) return m + ' min';
+                return Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+            }
+            function iniciales(n, a) {
+                var s = ((n || '') + ' ' + (a || '')).trim();
+                if (!s) return '?';
+                var p = s.split(/\s+/);
+                return ((p[0] || ' ')[0] + (p[1] ? p[1][0] : '')).toUpperCase();
+            }
+            function esc(v) { return $('<div>').text(v == null ? '' : v).html(); }
+
+            // ─── Conductores (mapa + lista) ──────────────────────
+            function pintarConductores(lista) {
+                capaConductores.clearLayers();
+                marcadores = {};
+                datosConductores = {};
+                var html = '';
+                (lista || []).forEach(function (c) {
+                    var id = AdminApp.getVal(c, 'id', 0);
+                    var lat = parseFloat(AdminApp.getVal(c, 'lat'));
+                    var lng = parseFloat(AdminApp.getVal(c, 'lng'));
+                    var estatus = AdminApp.getVal(c, 'estatus', 'Sin estatus');
+                    datosConductores[id] = { lat: lat, lng: lng, estatus: estatus };
+                    if (!isNaN(lat) && !isNaN(lng) && lat !== 0) {
+                        marcadores[id] = L.marker([lat, lng], { icon: iconoConductor(estatus) })
+                            .bindPopup('<b>' + esc(AdminApp.getVal(c, 'nombre')) + ' ' + esc(AdminApp.getVal(c, 'appaterno')) + '</b><br>' + esc(estatus))
+                            .addTo(capaConductores);
+                    }
+                    var color = estatus === 'Disponible' ? '#10B981' : (estatus === 'Ocupado' ? '#F59E0B' : '#64748B');
+                    html += '<div class="mon-item">'
+                        + '<div class="mon-item__avatar" style="background:' + color + ';">' + esc(iniciales(AdminApp.getVal(c, 'nombre'), AdminApp.getVal(c, 'appaterno'))) + '</div>'
+                        + '<div class="mon-item__body">'
+                        + '<div class="mon-item__name">' + esc(AdminApp.getVal(c, 'nombre')) + ' ' + esc(AdminApp.getVal(c, 'appaterno')) + '</div>'
+                        + '<div class="mon-item__meta"><span><i class="fas fa-circle" style="font-size:7px;color:' + color + '"></i> ' + esc(estatus) + '</span>'
+                        + '<span><i class="far fa-clock"></i> ' + fmtMin(AdminApp.getVal(c, 'minutosconectado')) + '</span>'
+                        + (AdminApp.getVal(c, 'nombrezona') ? '<span><i class="fas fa-location-dot"></i> ' + esc(AdminApp.getVal(c, 'nombrezona')) + '</span>' : '')
+                        + '</div></div></div>';
+                });
+                $('#monListaConductores').html(html || '<div class="mon-empty"><i class="fas fa-car-side"></i><br>Sin conductores conectados</div>');
+                $('#monCountCond').text((lista || []).length);
+            }
+
+            function pintarKpis(d) {
+                $('#kpiConectados').text(AdminApp.getVal(d, 'conductoresconectados', 0));
+                $('#kpiDisponibles').text(AdminApp.getVal(d, 'conductoresdisponibles', 0));
+                $('#kpiPasajeros').text(AdminApp.getVal(d, 'pasajerosconectados', 0));
+                $('#kpiServicios').text(AdminApp.getVal(d, 'serviciosactivos', 0));
+            }
+
+            // ─── Analitica ───────────────────────────────────────
+            function pintarZonas(lista) {
+                var html = '';
+                (lista || []).forEach(function (z) {
+                    html += '<tr><td>' + esc(AdminApp.getVal(z, 'nombrezona')) + '</td><td><strong>' + AdminApp.getVal(z, 'solicitudes', 0) + '</strong></td></tr>';
+                });
+                $('#monTablaZonas').html(html || '<tr><td colspan="2"><div class="mon-empty">Sin datos</div></td></tr>');
+            }
+
+            function pintarHoras(lista) {
+                var horas = [], valores = [];
+                for (var h = 0; h < 24; h++) { horas.push(h + ':00'); valores.push(0); }
+                (lista || []).forEach(function (r) {
+                    var h = parseInt(AdminApp.getVal(r, 'hora', -1));
+                    if (h >= 0 && h < 24) valores[h] = AdminApp.getVal(r, 'solicitudes', 0);
+                });
+                if (typeof Chart === 'undefined') return;
+                var ctx = document.getElementById('monChartHoras');
+                if (!ctx) return;
+                if (chartHoras) chartHoras.destroy();
+                chartHoras = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: horas, datasets: [{ label: 'Solicitudes', data: valores, backgroundColor: '#14B8A6', borderRadius: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true } } } }
+                });
+            }
+
+            function pintarActivos(lista) {
+                var html = '';
+                (lista || []).forEach(function (r) {
+                    var f = AdminApp.getVal(r, 'dia', '');
+                    if (f && f.indexOf('T') > -1) f = f.substring(0, 10);
+                    html += '<tr><td>' + esc(f) + '</td><td><strong>' + AdminApp.getVal(r, 'pasajerosactivos', 0) + '</strong></td><td>' + AdminApp.getVal(r, 'sesiones', 0) + '</td></tr>';
+                });
+                $('#monTablaActivos').html(html || '<tr><td colspan="3"><div class="mon-empty">Sin datos</div></td></tr>');
+            }
+
+            function cargarAnalitica() {
+                apiGet('admin/OrigenesPorZona?dias=' + dias).done(function (r) { pintarZonas(AdminApp.unwrap(r) || []); });
+                apiGet('admin/SolicitudesPorHora?dias=' + dias).done(function (r) { pintarHoras(AdminApp.unwrap(r) || []); });
+                apiGet('admin/PasajerosActivosPorPeriodo?dias=' + dias).done(function (r) { pintarActivos(AdminApp.unwrap(r) || []); });
+            }
+
+            function marcaActualizado() {
+                $('#monUpdated').text('Actualizado ' + new Date().toLocaleTimeString('es-MX'));
+            }
+
+            // ─── Carga en vivo (polling, escala) ─────────────────
+            function cargar(manual) {
+                apiGet('admin/ResumenMonitoreo').done(function (r) { pintarKpis(AdminApp.unwrapSingle(r) || {}); });
+                apiGet('admin/ConductoresConectados').done(function (r) { pintarConductores(AdminApp.unwrap(r) || []); });
+                marcaActualizado();
+                if (manual) cargarAnalitica();
+            }
+
+            // ─── SignalR: solo para refrescar el resumen ante eventos ───
+            function conectarWs() {
+                if (typeof signalR === 'undefined') { $('#monWsEstado').text('sin libreria WS'); return; }
+                conn = new signalR.HubConnectionBuilder()
+                    .withUrl(HUB, { withCredentials: false })
+                    .withAutomaticReconnect([0, 2000, 5000, 10000, 20000])
+                    .build();
+
+                function refrescar() {
+                    apiGet('admin/ResumenMonitoreo').done(function (r) { pintarKpis(AdminApp.unwrapSingle(r) || {}); });
+                }
+                conn.on('NuevoServicio', refrescar);
+                conn.on('ServicioAceptado', refrescar);
+                conn.on('EstatusCambiado', refrescar);
+                conn.on('ServicioCancelado', refrescar);
+
+                conn.onreconnecting(function () { $('#monWsEstado').text('reconectando...'); });
+                conn.onreconnected(function () { $('#monWsEstado').text('en vivo'); conn.invoke('RegistrarConexion', 'admin', 0).catch(function () {}); });
+                conn.onclose(function () { $('#monWsEstado').text('desconectado'); });
+
+                conn.start()
+                    .then(function () {
+                        $('#monWsEstado').html('<i class="fas fa-circle" style="color:#10B981;font-size:8px"></i> en vivo');
+                        return conn.invoke('RegistrarConexion', 'admin', 0);
+                    })
+                    .catch(function () { $('#monWsEstado').text('sin conexion'); });
+            }
+
+            function init() {
+                initMap();
+                cargar();
+                cargarAnalitica();
+                conectarWs();
+                // Posiciones por polling (10 s) para soportar miles de conductores
+                refreshTimer = setInterval(cargar, 10000);
+                $('#monPeriodo').on('click', 'button', function () {
+                    $('#monPeriodo button').removeClass('active');
+                    $(this).addClass('active');
+                    dias = parseInt($(this).data('d')) || 7;
+                    cargarAnalitica();
+                });
+            }
+
+            return { init: init, cargar: cargar };
+        })();
+
+        $(function () { Monitoreo.init(); });
+    </script>
+}

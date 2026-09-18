@@ -36,39 +36,39 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>Nombre de la Compania</label>
-                    <input type="text" class="input-soft" id="txtCompaniaNombre" name="companianombre" />
+                    <input type="text" class="input-soft" id="txtCompaniaNombre" name="nombre" />
                 </div>
                 <div class="form-group">
                     <label>Km a la Redonda Mas Cercanos</label>
-                    <input type="number" step="any" class="input-soft" id="txtKmRedonda" name="kmsalaredondamascercanos" />
+                    <input type="number" step="any" class="input-soft" id="txtKmRedonda" name="kms" />
                 </div>
                 <div class="form-group">
                     <label>Seg Espera Toma Servicio</label>
-                    <input type="number" class="input-soft" id="txtSegEsperaToma" name="segesperatomaservicio" />
+                    <input type="number" class="input-soft" id="txtSegEsperaToma" name="segTomar" />
                 </div>
                 <div class="form-group">
                     <label>Seg Espera Salga Pasajero</label>
-                    <input type="number" class="input-soft" id="txtSegEsperaSalga" name="segesperasalgapasajero" />
+                    <input type="number" class="input-soft" id="txtSegEsperaSalga" name="segEspera" />
                 </div>
                 <div class="form-group">
-                    <label>No. Unidades Mas Cercanas</label>
-                    <input type="number" class="input-soft" id="txtNoUnidades" name="nounidadesmascercanas" />
+                    <label>No. Unidades Mas Cercanas (max 5)</label>
+                    <input type="number" min="1" max="5" class="input-soft" id="txtNoUnidades" name="numUnidades" />
                 </div>
                 <div class="form-group">
                     <label>Min para Pago PayPal</label>
-                    <input type="number" step="any" class="input-soft" id="txtMinPaypal" name="minsparapagopaypal" />
+                    <input type="number" step="any" class="input-soft" id="txtMinPaypal" name="minPP" />
                 </div>
                 <div class="form-group">
                     <label>Min para Pago MercadoPago</label>
-                    <input type="number" step="any" class="input-soft" id="txtMinMp" name="minsparapagomercadopago" />
+                    <input type="number" step="any" class="input-soft" id="txtMinMp" name="minMP" />
                 </div>
                 <div class="form-group">
                     <label>Version Pasajero Android</label>
-                    <input type="text" class="input-soft" id="txtVersionPasajero" name="versionpasajeroandroid" />
+                    <input type="text" class="input-soft" id="txtVersionPasajero" name="verPasajero" />
                 </div>
                 <div class="form-group">
                     <label>Version Conductor Android</label>
-                    <input type="text" class="input-soft" id="txtVersionConductor" name="versionconductorandroid" />
+                    <input type="text" class="input-soft" id="txtVersionConductor" name="verConductor" />
                 </div>
             </div>
 
@@ -77,28 +77,28 @@
             <div class="opts-grid">
                 <div class="form-switch-custom">
                     <label class="switch">
-                        <input type="checkbox" id="chkPagoTarjeta" name="pagocontarjetaactivo" />
+                        <input type="checkbox" id="chkPagoTarjeta" name="tarjetaAct" />
                         <span class="slider"></span>
                     </label>
                     <label for="chkPagoTarjeta">Pago con Tarjeta Activo</label>
                 </div>
                 <div class="form-switch-custom">
                     <label class="switch">
-                        <input type="checkbox" id="chkSoloUnidad" name="sololaunidadmascercana" />
+                        <input type="checkbox" id="chkSoloUnidad" name="soloCercana" />
                         <span class="slider"></span>
                     </label>
                     <label for="chkSoloUnidad">Solo la Unidad Mas Cercana</label>
                 </div>
                 <div class="form-switch-custom">
                     <label class="switch">
-                        <input type="checkbox" id="chkPaypal" name="paypalactivo" />
+                        <input type="checkbox" id="chkPaypal" name="paypalAct" />
                         <span class="slider"></span>
                     </label>
                     <label for="chkPaypal">PayPal Activo</label>
                 </div>
                 <div class="form-switch-custom">
                     <label class="switch">
-                        <input type="checkbox" id="chkMercadoPago" name="mercadopagoactivo" />
+                        <input type="checkbox" id="chkMercadoPago" name="mpAct" />
                         <span class="slider"></span>
                     </label>
                     <label for="chkMercadoPago">MercadoPago Activo</label>

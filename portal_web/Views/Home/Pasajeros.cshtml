@@ -143,8 +143,8 @@
             $('#frmPasajero')[0].reset(); $('#chkActivo').prop('checked',true);
             if(id){
                 $('#lblModalTitulo').text('Editar Pasajero');
-                AdminApp.ajax('admin/ObtenerPasajero','GET',{idPasajero:id},function(p){
-                    if(Array.isArray(p)) p=p[0]||{};
+                AdminApp.ajax('admin/ObtenerPasajero','GET',{idPasajero:id},function(res){
+                    var p=AdminApp.unwrapSingle(res)||{};
                     $('#hdnIdPasajero').val(p.IdPasajero||p.idPasajero||id);
                     $('#txtNombre').val(p.Nombre||p.nombre||'');
                     $('#txtAppaterno').val(p.ApellidoPaterno||p.appaterno||'');
@@ -155,7 +155,8 @@
                     $('#txtFechanacimiento').val(fn?fn.substring(0,10):'');
                     $('#selGenero').val(p.Genero||p.genero||'');
                     $('#txtNotasadicionales').val(p.NotasAdicionales||p.notasadicionales||'');
-                    $('#chkActivo').prop('checked',p.Activo!==undefined?(p.Activo===true||p.Activo===1):true);
+                    var act=p.Activo!==undefined?p.Activo:p.activo;
+                    $('#chkActivo').prop('checked',act!==undefined?(act===true||act===1||act==='true'):true);
                 });
             }
             AdminApp.openModal('modalPasajero');

@@ -11,6 +11,8 @@ namespace VaiaViajes.Web.Controllers
         public IActionResult Pasajeros() { ViewBag.Title = "Pasajeros"; return View(); }
         public IActionResult Conductores() { ViewBag.Title = "Conductores"; return View(); }
         public IActionResult Servicios() { ViewBag.Title = "Servicios"; return View(); }
+        public IActionResult Monitoreo() { ViewBag.Title = "Monitoreo"; return View(); }
+        public IActionResult Analitica() { ViewBag.Title = "Analitica"; return View(); }
         public IActionResult Reportes() { ViewBag.Title = "Reportes"; return View(); }
         public IActionResult Incidentes() { ViewBag.Title = "Incidentes"; return View(); }
         public IActionResult Promociones() { ViewBag.Title = "Promociones"; return View(); }

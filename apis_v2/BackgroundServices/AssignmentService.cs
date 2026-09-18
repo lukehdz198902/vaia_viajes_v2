@@ -27,7 +27,7 @@ namespace VaiaViajes.Api.BackgroundServices
         private readonly ILogger<AssignmentService> _logger;
         private Timer _timer;
         private readonly TimeSpan _intervalo = TimeSpan.FromSeconds(10);
-        private const int MAX_INTENTOS = 5;
+        private const int MAX_INTENTOS = 30;
         private const int MINUTOS_EXPIRACION = 5;
 
         public AssignmentService(IServiceScopeFactory scopeFactory, ILogger<AssignmentService> logger)
@@ -62,8 +62,6 @@ namespace VaiaViajes.Api.BackgroundServices
                         long idPasajero = Convert.ToInt64(s["idpasajero"]);
                         short idCompania = s.ContainsKey("idcompania") && s["idcompania"] != null ? Convert.ToInt16(s["idcompania"]) : (short)1;
                         int intentos = s.ContainsKey("intentosasignacion") && s["intentosasignacion"] != null ? Convert.ToInt32(s["intentosasignacion"]) : 0;
-                        int? ultimoConductor = s.ContainsKey("ultimaconductorasignado") && s["ultimaconductorasignado"] != null
-                            ? (int?)Convert.ToInt32(s["ultimaconductorasignado"]) : null;
                         DateTime fecha = s.ContainsKey("fechacreacion") && s["fechacreacion"] != null
                             ? Convert.ToDateTime(s["fechacreacion"]) : DateTime.Now;
 
@@ -91,23 +89,48 @@ namespace VaiaViajes.Api.BackgroundServices
                         string lng = s.ContainsKey("lngorigen") ? s["lngorigen"]?.ToString() : "0";
                         var conductores = await DatabaseHelper.QueryAsync<object>("sp_pasajero_ConductoresDisponibles", new { lat, lng, idZona = (int?)null });
 
-                        // Elegir el mas cercano que no haya rechazado ya
+                        // Conductores ya notificados de este servicio (no repetir)
+                        var notificados = new HashSet<int>();
+                        var listaNotif = await DatabaseHelper.QueryAsync<object>("sp_sistema_ObtenerNotificados", new { idservicio = idServicio });
+                        foreach (var n in listaNotif)
+                        {
+                            var dn = n as IDictionary<string, object>;
+                            if (dn != null && dn.ContainsKey("idconductor") && dn["idconductor"] != null)
+                                notificados.Add(Convert.ToInt32(dn["idconductor"]));
+                        }
+
+                        // Elegir el mas cercano que aun no haya sido notificado
                         IDictionary<string, object> elegido = null;
                         foreach (var c in conductores)
                         {
                             var dict = c as IDictionary<string, object>;
                             if (dict == null) continue;
                             int idC = Convert.ToInt32(dict["id"]);
-                            if (ultimoConductor.HasValue && idC == ultimoConductor.Value) continue;
+                            if (notificados.Contains(idC)) continue;
                             elegido = dict;
                             break;
                         }
 
-                        if (elegido == null) continue;
+                        if (elegido == null)
+                        {
+                            // Todos los conductores cercanos ya fueron notificados
+                            if (notificados.Count > 0)
+                            {
+                                await DatabaseHelper.QueryAsync<object>("sp_sistema_ExpirarSolicitud", new { idservicio = idServicio });
+                                await notifier.NotificarServicioCancelado(idServicio, "Sin conductor disponible", "sistema");
+                                await fcm.EnviarNotificacionPasajero(idPasajero, "Sin conductor disponible",
+                                    "No encontramos conductor para tu servicio. Intenta de nuevo.");
+                                _logger.LogWarning("[Vaia] Servicio {Id} expirado: se notificaron {N} conductores sin respuesta", idServicio, notificados.Count);
+                            }
+                            continue;
+                        }
 
                         int idConductor = Convert.ToInt32(elegido["id"]);
-                        string nombreConductor = (elegido.ContainsKey("nombre") ? elegido["nombre"]?.ToString() : "") + " " +
-                                                 (elegido.ContainsKey("appaterno") ? elegido["appaterno"]?.ToString() : "");
+
+                        // Tiempo de respuesta configurado por el administrador (tbcompania.segesperatomaservicio)
+                        int segundosParaTomar = s.ContainsKey("segundosparatomar") && s["segundosparatomar"] != null
+                            ? Convert.ToInt32(s["segundosparatomar"]) : 30;
+                        if (segundosParaTomar <= 0) segundosParaTomar = 30;
 
                         var payload = new
                         {
@@ -120,6 +143,7 @@ namespace VaiaViajes.Api.BackgroundServices
                             costoEstimado = s.ContainsKey("costoestimado") ? s["costoestimado"] : null,
                             distanciaMetros = s.ContainsKey("distanciametros") ? s["distanciametros"] : null,
                             intento = intentos + 1,
+                            segundosParaTomar,
                             fecha = DateTime.UtcNow.ToString("o")
                         };
 
@@ -141,12 +165,13 @@ namespace VaiaViajes.Api.BackgroundServices
                         }
                         catch { }
 
-                        // Registrar intento
-                        await DatabaseHelper.QueryAsync<object>("sp_sistema_IncrementarIntentoAsignacion", new { idservicio = idServicio, idconductor = idConductor });
+                        // Registrar notificacion (inicia la ventana de respuesta) + log
+                        await DatabaseHelper.QueryAsync<object>("sp_sistema_RegistrarNotificado",
+                            new { idservicio = idServicio, idconductor = idConductor, segundos = segundosParaTomar });
                         await DatabaseHelper.QueryAsync<object>("sp_sistema_RegistrarAsignacionLog",
                             new { idservicio = idServicio, idconductor = idConductor, evento = "NOTIFICADO", detalle = $"Intento {intentos + 1}" });
 
-                        _logger.LogInformation("[Vaia] Servicio {Id} ofrecido a conductor {C}", idServicio, idConductor);
+                        _logger.LogInformation("[Vaia] Servicio {Id} ofrecido a conductor {C} ({S}s para responder)", idServicio, idConductor, segundosParaTomar);
                     }
                 }
             }

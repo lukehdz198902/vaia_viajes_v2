@@ -1,0 +1,260 @@
+@{
+    ViewBag.Title = "Analitica";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@@1.9.4/dist/leaflet.css" />
+    <style>
+        .an-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:16px; }
+        .an-kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px 16px; display:flex; align-items:center; gap:12px; box-shadow:var(--shadow-sm); }
+        .an-kpi__icon { width:42px; height:42px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:1.05rem; flex-shrink:0; }
+        .an-kpi__value { font-size:1.4rem; font-weight:800; line-height:1; color:var(--text-strong); }
+        .an-kpi__label { font-size:.73rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; margin-top:2px; }
+        .an-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-sm); margin-bottom:16px; }
+        .an-card__head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+        .an-card__title { margin:0; font-size:.92rem; font-weight:600; display:flex; align-items:center; gap:8px; }
+        .an-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        #anMap { height:440px; width:100%; background:var(--bg-muted); }
+        .an-chart { padding:14px 16px; height:280px; }
+        .an-period { display:flex; gap:6px; }
+        .an-period button { border:1px solid var(--border); background:var(--surface); color:var(--text-muted); border-radius:var(--radius-md); padding:4px 10px; font-size:.75rem; cursor:pointer; }
+        .an-period button.active { background:var(--primary); border-color:var(--primary); color:#fff; font-weight:600; }
+        .an-bar { height:8px; border-radius:4px; background:var(--primary); }
+        .an-updated { font-size:.72rem; color:var(--text-muted); }
+        @@media (max-width:1100px) { .an-grid { grid-template-columns:1fr; } #anMap { height:360px; } }
+    </style>
+}
+
+<div class="section-header">
+    <h4><i class="fas fa-chart-line me-2" style="color:var(--primary);"></i>Analitica de zonas y demanda</h4>
+    <div style="display:flex;align-items:center;gap:12px;">
+        <span class="an-updated" id="anUpdated">--</span>
+        <div class="an-period" id="anPeriodo">
+            <button data-d="7">7 dias</button>
+            <button data-d="30" class="active">30 dias</button>
+            <button data-d="90">90 dias</button>
+        </div>
+    </div>
+</div>
+
+<div class="an-kpis">
+    <div class="an-kpi">
+        <div class="an-kpi__icon" style="background:#E0F2FE;color:#0284C7;"><i class="fas fa-location-dot"></i></div>
+        <div><div class="an-kpi__value" id="anTotal">0</div><div class="an-kpi__label">Origenes solicitados</div></div>
+    </div>
+    <div class="an-kpi">
+        <div class="an-kpi__icon" style="background:#D1FAE5;color:#059669;"><i class="fas fa-crown"></i></div>
+        <div><div class="an-kpi__value" id="anTopZona">--</div><div class="an-kpi__label">Zona con mas demanda</div></div>
+    </div>
+    <div class="an-kpi">
+        <div class="an-kpi__icon" style="background:#FEF3C7;color:#D97706;"><i class="fas fa-clock"></i></div>
+        <div><div class="an-kpi__value" id="anHoraPico">--</div><div class="an-kpi__label">Hora pico</div></div>
+    </div>
+    <div class="an-kpi">
+        <div class="an-kpi__icon" style="background:#DBEAFE;color:#2563EB;"><i class="fas fa-car-side"></i></div>
+        <div><div class="an-kpi__value" id="anConductores">0</div><div class="an-kpi__label">Conductores disponibles</div></div>
+    </div>
+</div>
+
+<div class="an-card">
+    <div class="an-card__head">
+        <h5 class="an-card__title"><i class="fas fa-fire" style="color:var(--primary);"></i>Mapa de calor de origenes</h5>
+    </div>
+    <div id="anMap"></div>
+</div>
+
+<div class="an-grid">
+    <div class="an-card">
+        <div class="an-card__head">
+            <h5 class="an-card__title"><i class="fas fa-clock" style="color:var(--primary);"></i>Solicitudes por hora del dia</h5>
+        </div>
+        <div class="an-chart"><canvas id="anChartHora"></canvas></div>
+    </div>
+    <div class="an-card">
+        <div class="an-card__head">
+            <h5 class="an-card__title"><i class="fas fa-calendar-day" style="color:var(--primary);"></i>Solicitudes por dia de la semana</h5>
+        </div>
+        <div class="an-chart"><canvas id="anChartDia"></canvas></div>
+    </div>
+</div>
+
+<div class="an-grid">
+    <div class="an-card">
+        <div class="an-card__head">
+            <h5 class="an-card__title"><i class="fas fa-ranking-star" style="color:var(--primary);"></i>Ranking de zonas</h5>
+        </div>
+        <div class="table-wrap" style="border:none;border-radius:0;">
+            <table class="table-custom">
+                <thead><tr><th>Zona</th><th>Solicitudes</th><th>Promedio diario</th><th></th></tr></thead>
+                <tbody id="anTablaZonas"></tbody>
+            </table>
+        </div>
+    </div>
+    <div class="an-card">
+        <div class="an-card__head">
+            <h5 class="an-card__title"><i class="fas fa-lightbulb" style="color:var(--primary);"></i>Prediccion: zonas/horas con mas demanda</h5>
+        </div>
+        <div class="table-wrap" style="border:none;border-radius:0;">
+            <table class="table-custom">
+                <thead><tr><th>Zona</th><th>Hora</th><th>Promedio diario</th></tr></thead>
+                <tbody id="anTablaPrediccion"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="an-card">
+    <div class="an-card__head">
+        <h5 class="an-card__title"><i class="fas fa-car-side" style="color:var(--primary);"></i>Conductores disponibles por zona (oferta vs demanda)</h5>
+    </div>
+    <div class="table-wrap" style="border:none;border-radius:0;">
+        <table class="table-custom">
+            <thead><tr><th>Zona</th><th>Conductores disponibles</th><th>Solicitudes (periodo)</th></tr></thead>
+            <tbody id="anTablaConductores"></tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="~/Scripts/admin.js"></script>
+    <script>
+        window.Analitica = (function () {
+            var API = window.__VAIA_API_BASE__ || '';
+            var dias = 30;
+            var map, heatLayer;
+            var chartHora = null, chartDia = null;
+            var DIAS = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+
+            function apiGet(url) { return $.getJSON(API + url); }
+            function esc(v) { return $('<div>').text(v == null ? '' : v).html(); }
+
+            function initMap() {
+                map = L.map('anMap').setView([26.0923, -98.2789], 12);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19, attribution: '&copy; OpenStreetMap'
+                }).addTo(map);
+            }
+
+            function pintarHeat(puntos) {
+                if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
+                var data = [];
+                (puntos || []).forEach(function (p) {
+                    var lat = parseFloat(p.lat), lng = parseFloat(p.lng);
+                    if (!isNaN(lat) && !isNaN(lng) && lat !== 0) data.push([lat, lng, 0.6]);
+                });
+                if (data.length === 0) return;
+                heatLayer = L.heatLayer(data, { radius: 22, blur: 18, maxZoom: 15 }).addTo(map);
+                map.fitBounds(L.latLngBounds(data.map(function (d) { return [d[0], d[1]]; })), { maxZoom: 14 });
+            }
+
+            function pintarHora(lista) {
+                var horas = [], valores = [];
+                for (var h = 0; h < 24; h++) { horas.push(h + ':00'); valores.push(0); }
+                (lista || []).forEach(function (r) {
+                    var h = parseInt(AdminApp.getVal(r, 'hora', -1));
+                    if (h >= 0 && h < 24) valores[h] += AdminApp.getVal(r, 'solicitudes', 0);
+                });
+                var maxIdx = valores.indexOf(Math.max.apply(null, valores));
+                $('#anHoraPico').text(maxIdx >= 0 && valores[maxIdx] > 0 ? horas[maxIdx] : '--');
+                if (typeof Chart === 'undefined') return;
+                var ctx = document.getElementById('anChartHora');
+                if (chartHora) chartHora.destroy();
+                chartHora = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: horas, datasets: [{ label: 'Solicitudes', data: valores, backgroundColor: '#14B8A6', borderRadius: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true } } } }
+                });
+            }
+
+            function pintarDia(lista) {
+                var valores = [0, 0, 0, 0, 0, 0, 0];
+                (lista || []).forEach(function (r) {
+                    var d = parseInt(AdminApp.getVal(r, 'diassemana', 0));
+                    if (d >= 1 && d <= 7) valores[d - 1] += AdminApp.getVal(r, 'solicitudes', 0);
+                });
+                if (typeof Chart === 'undefined') return;
+                var ctx = document.getElementById('anChartDia');
+                if (chartDia) chartDia.destroy();
+                chartDia = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: DIAS, datasets: [{ label: 'Solicitudes', data: valores, backgroundColor: '#3B82F6', borderRadius: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { ticks: { font: { size: 10 } } } } }
+                });
+            }
+
+            function pintarZonas(lista) {
+                var max = 0;
+                (lista || []).forEach(function (z) { max = Math.max(max, AdminApp.getVal(z, 'solicitudes', 0)); });
+                var html = '';
+                (lista || []).forEach(function (z, i) {
+                    var s = AdminApp.getVal(z, 'solicitudes', 0);
+                    var pct = max > 0 ? Math.round(s * 100 / max) : 0;
+                    html += '<tr><td>' + esc(AdminApp.getVal(z, 'nombrezona')) + '</td>'
+                        + '<td><strong>' + s + '</strong></td>'
+                        + '<td>' + AdminApp.getVal(z, 'promediodiario', 0) + '</td>'
+                        + '<td style="width:40%"><div class="an-bar" style="width:' + pct + '%"></div></td></tr>';
+                    if (i === 0) $('#anTopZona').text(AdminApp.getVal(z, 'nombrezona', '--'));
+                });
+                $('#anTablaZonas').html(html || '<tr><td colspan="4"><div class="mon-empty">Sin datos</div></td></tr>');
+            }
+
+            function pintarPrediccion(lista) {
+                var html = '';
+                (lista || []).slice(0, 12).forEach(function (r) {
+                    var h = AdminApp.getVal(r, 'hora', 0);
+                    html += '<tr><td>' + esc(AdminApp.getVal(r, 'nombrezona')) + '</td><td>' + h + ':00 - ' + (parseInt(h) + 1) + ':00</td>'
+                        + '<td><strong>' + AdminApp.getVal(r, 'promediodiario', 0) + '</strong></td></tr>';
+                });
+                $('#anTablaPrediccion').html(html || '<tr><td colspan="3"><div class="mon-empty">Sin datos suficientes</div></td></tr>');
+            }
+
+            function pintarConductores(lista) {
+                var html = '';
+                var total = 0;
+                (lista || []).forEach(function (r) {
+                    var n = AdminApp.getVal(r, 'conductoresdisponibles', 0);
+                    total += n;
+                    html += '<tr><td>' + esc(AdminApp.getVal(r, 'nombrezona')) + '</td><td><strong>' + n + '</strong></td><td>--</td></tr>';
+                });
+                $('#anTablaConductores').html(html || '<tr><td colspan="3"><div class="mon-empty">Sin datos</div></td></tr>');
+                $('#anConductores').text(total);
+            }
+
+            function cargar() {
+                apiGet('admin/OrigenesPuntos?dias=' + dias + '&limite=2000').done(function (r) {
+                    var d = AdminApp.unwrap(r) || [];
+                    $('#anTotal').text(d.length);
+                    pintarHeat(d);
+                });
+                apiGet('admin/DemandaPorHoraDia?dias=' + dias).done(function (r) {
+                    var d = AdminApp.unwrap(r) || [];
+                    pintarHora(d);
+                    pintarDia(d);
+                });
+                apiGet('admin/ZonasRanking?dias=' + dias).done(function (r) { pintarZonas(AdminApp.unwrap(r) || []); });
+                apiGet('admin/PrediccionDemanda?dias=' + dias).done(function (r) { pintarPrediccion(AdminApp.unwrap(r) || []); });
+                apiGet('admin/ConductoresPorZona').done(function (r) { pintarConductores(AdminApp.unwrap(r) || []); });
+                $('#anUpdated').text('Actualizado ' + new Date().toLocaleTimeString('es-MX'));
+            }
+
+            function init() {
+                initMap();
+                cargar();
+                $('#anPeriodo').on('click', 'button', function () {
+                    $('#anPeriodo button').removeClass('active');
+                    $(this).addClass('active');
+                    dias = parseInt($(this).data('d')) || 30;
+                    cargar();
+                });
+            }
+
+            return { init: init, cargar: cargar };
+        })();
+
+        $(function () { Analitica.init(); });
+    </script>
+}

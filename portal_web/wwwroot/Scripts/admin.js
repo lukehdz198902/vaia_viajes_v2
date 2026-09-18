@@ -111,8 +111,30 @@ var AdminApp = (function () {
         formatDateTimeLocal: function (d) { if (!d) return ''; try { var dt = new Date(d); return isNaN(dt) ? '' : dt.toISOString().slice(0, 16); } catch(e) { return ''; } },
         getVal: function (o, k, def) { var v = getField(o, k); return v !== undefined && v !== null ? v : (def || ''); },
         safeNum: function (v, def) { var n = Number(v); return isNaN(n) ? (def || 0) : n; },
-        openModal: function (id) { $('#' + id).modal('show'); },
-        closeModal: function (id) { $('#' + id).modal('hide'); $('#' + id + ' .modal-body').find('input,textarea,select').val('').trigger('change'); $('#' + id + ' .modal-body input[type=checkbox]').prop('checked', false); },
+        unwrap: function (res) {
+            if (res == null) return res;
+            if (Array.isArray(res)) return res;
+            if (typeof res === 'object' && res.data !== undefined) return res.data;
+            return res;
+        },
+        unwrapSingle: function (res) {
+            var d = this.unwrap(res);
+            return Array.isArray(d) ? (d[0] || null) : d;
+        },
+        openModal: function (id) {
+            var el = document.getElementById(id);
+            if (!el || !window.bootstrap) return;
+            bootstrap.Modal.getOrCreateInstance(el).show();
+        },
+        closeModal: function (id) {
+            var el = document.getElementById(id);
+            if (el && window.bootstrap) {
+                var inst = bootstrap.Modal.getInstance(el);
+                if (inst) inst.hide();
+            }
+            $('#' + id + ' .modal-body').find('input,textarea,select').val('').trigger('change');
+            $('#' + id + ' .modal-body input[type=checkbox]').prop('checked', false);
+        },
         loadSelect: function (url, selId, valField, txtField, selectedVal, emptyOption) {
             var $sel = $('#' + selId); $sel.html(emptyOption !== false ? '<option value="">-- Seleccionar --</option>' : '');
             ajax(url, 'GET', null, function (res) {
@@ -137,19 +159,37 @@ var AdminApp = (function () {
                 }
             });
         },
-        confirm: function (titulo, mensaje, onConfirm) {
-            var id='modalConfirm';
-            if($('#'+id).length)$('#'+id).remove();
-            var h='<div class="modal fade" id="'+id+'" tabindex="-1"><div class="modal-dialog modal-sm modal-dialog-centered"><div class="modal-content" style="border-radius:14px;padding:24px;text-align:center;">';
-            h+='<div style="width:56px;height:56px;border-radius:50%;background:#FFF3E0;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><i class="fas fa-question-circle" style="font-size:28px;color:#FF9800;"></i></div>';
-            h+='<h5 style="margin:0 0 6px;font-weight:600;">'+(titulo||'Confirmar')+'</h5>';
-            h+='<p style="margin:0 0 20px;color:#718096;font-size:0.85rem;">'+(mensaje||'')+'</p>';
-            h+='<div style="display:flex;gap:10px;justify-content:center;"><button class="btn-soft outline" data-bs-dismiss="modal" style="min-width:100px;">Cancelar</button><button id="btnConfirmOk" class="btn-soft" style="min-width:100px;background:var(--primary);color:#fff;">Aceptar</button></div>';
-            h+='</div></div></div>';
+        confirm: function (titulo, mensaje, onConfirm, opciones) {
+            var opts = opciones || {};
+            var id = 'modalConfirm';
+            var prev = window.bootstrap ? bootstrap.Modal.getInstance(document.getElementById(id)) : null;
+            if (prev) prev.dispose();
+            $('#' + id).remove();
+
+            var tipo = opts.tipo || 'question';
+            var iconos = { question: 'fa-circle-question', danger: 'fa-triangle-exclamation', warning: 'fa-triangle-exclamation', success: 'fa-circle-check', info: 'fa-circle-info' };
+            var colores = { question: '#F59E0B', danger: '#EF4444', warning: '#F59E0B', success: '#10B981', info: '#3B82F6' };
+            var ico = iconos[tipo] || iconos.question;
+            var col = colores[tipo] || colores.question;
+            var okCls = tipo === 'danger' ? 'btn-soft danger' : 'btn-soft';
+            var okStyle = tipo === 'danger' ? '' : 'background:var(--primary);color:#fff;';
+
+            var h = '<div class="modal fade" id="' + id + '" tabindex="-1">'
+                + '<div class="modal-dialog modal-dialog-centered" style="max-width:400px;">'
+                + '<div class="modal-content confirm-modal">'
+                + '<div class="modal-body">'
+                + '<div class="confirm-modal__icon" style="background:' + col + '22;color:' + col + ';"><i class="fas ' + ico + '"></i></div>'
+                + '<h5 class="confirm-modal__title">' + (titulo || 'Confirmar') + '</h5>'
+                + '<p class="confirm-modal__text">' + (mensaje || '') + '</p>'
+                + '</div>'
+                + '<div class="modal-footer confirm-modal__actions">'
+                + '<button class="btn-soft outline" data-bs-dismiss="modal">Cancelar</button>'
+                + '<button id="btnConfirmOk" class="' + okCls + '" style="' + okStyle + '">' + (opts.okText || 'Aceptar') + '</button>'
+                + '</div></div></div></div>';
             $('body').append(h);
-            var modal=new bootstrap.Modal(document.getElementById(id));
-            $('#'+id).on('hidden.bs.modal',function(){$(this).remove();});
-            $('#btnConfirmOk').off('click').on('click',function(){modal.hide();if(typeof onConfirm==='function')onConfirm();});
+            var modal = new bootstrap.Modal(document.getElementById(id));
+            $('#' + id).on('hidden.bs.modal', function () { $(this).remove(); });
+            $('#btnConfirmOk').off('click').on('click', function () { modal.hide(); if (typeof onConfirm === 'function') onConfirm(); });
             modal.show();
         },
         initPagination: function (containerId, total, pagina, tamano, callback) {

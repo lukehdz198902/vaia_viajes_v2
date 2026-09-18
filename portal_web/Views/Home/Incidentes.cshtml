@@ -172,10 +172,10 @@
 
             function verDetalle(id) {
                 AdminApp.ajax('admin/DetalleIncidente', 'GET', { idIncidente: id }, function (res) {
-                    var main = Array.isArray(res) ? res[0] : res;
-                    var historial = Array.isArray(res) && res.length > 1 ? res[1] : (Array.isArray(res) ? [] : (res && res.historial ? res.historial : []));
+                    var main = AdminApp.unwrapSingle(res);
+                    var historial = (main && main.historial) ? main.historial : [];
 
-                    if (!main || !main.idIncidente) {
+                    if (!main || (!main.idIncidente && !main.id)) {
                         if (window.VaiaUI) window.VaiaUI.toast({ type: 'danger', title: 'Error', message: 'No se encontro el incidente' });
                         return;
                     }

@@ -186,8 +186,8 @@
             $('#frmConductor')[0].reset();$('#chkActivo').prop('checked',true);
             if(id){
                 $('#lblModalTitulo').text('Editar Conductor');
-                AdminApp.ajax('admin/ObtenerConductor','GET',{idConductor:id},function(c){
-                    if(Array.isArray(c)) c=c[0]||{};
+                AdminApp.ajax('admin/ObtenerConductor','GET',{idConductor:id},function(res){
+                    var c=AdminApp.unwrapSingle(res)||{};
                     $('#hdnIdConductor').val(c.IdConductor||c.idConductor||id);
                     $('#txtNombre').val(c.Nombre||c.nombre||'');
                     $('#txtAppaterno').val(c.ApellidoPaterno||c.appaterno||'');
@@ -204,7 +204,8 @@
                     $('#txtBanco').val(c.Banco||c.banco||'');
                     $('#txtNombretitular').val(c.NombreTitular||c.nombretitular||c.Titular||c.titular||'');
                     $('#txtClabeinterbancaria').val(c.ClabeInterbancaria||c.clabeinterbancaria||c.Clabe||c.clabe||'');
-                    $('#chkActivo').prop('checked',c.Activo!==undefined?(c.Activo===true||c.Activo===1):true);
+                    var act=c.Activo!==undefined?c.Activo:c.activo;
+                    $('#chkActivo').prop('checked',act!==undefined?(act===true||act===1||act==='true'):true);
                 });
             }
             AdminApp.openModal('modalConductor');

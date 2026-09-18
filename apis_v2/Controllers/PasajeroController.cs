@@ -10,6 +10,7 @@ public class PasajeroController : ControllerBase
 {
     private FcmService Fcm => HttpContext.RequestServices.GetRequiredService<FcmService>();
     private VaiaViajes.Api.Services.RealtimeNotifier Notifier => HttpContext.RequestServices.GetRequiredService<VaiaViajes.Api.Services.RealtimeNotifier>();
+    private WhatsAppService WhatsApp => HttpContext.RequestServices.GetRequiredService<WhatsAppService>();
 
     [HttpPost("Registrar")]
     public async Task<IActionResult> Registrar([FromBody] dynamic p)
@@ -56,6 +57,15 @@ public class PasajeroController : ControllerBase
         return await SpExecutor.SingleAsync("sp_pasajero_CambiarPassword", d, "Contrasena actualizada");
     }
 
+    /// <summary>Actualiza el token de push (FCM) del pasajero.</summary>
+    [HttpPost("ActualizarToken")]
+    public async Task<IActionResult> ActualizarToken([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        return await SpExecutor.SingleAsync("sp_pasajero_ActualizarToken", d, "Token actualizado");
+    }
+
     [HttpPost("EnviarCodigoVerificacion")]
     public async Task<IActionResult> EnviarCodigoVerificacion([FromBody] dynamic p)
     {
@@ -78,7 +88,25 @@ public class PasajeroController : ControllerBase
             }
         }
 
-        return await SpExecutor.SingleAsync("sp_pasajero_EnviarCodigoVerificacion", d, "Codigo enviado");
+        var result = await DatabaseHelper.QueryAsync<object>("sp_pasajero_EnviarCodigoVerificacion", d);
+        object boxed = result;
+
+        // Enviar el codigo por WhatsApp (plantilla de autenticacion)
+        try
+        {
+            string telefono = d.ContainsKey("telefono") ? d["telefono"]?.ToString() : null;
+            string codigo = null;
+            var first = System.Linq.Enumerable.FirstOrDefault(result as System.Collections.Generic.IEnumerable<object>);
+            var dict = first as System.Collections.Generic.IDictionary<string, object>;
+            if (dict != null && dict.ContainsKey("codigoverificacion") && dict["codigoverificacion"] != null)
+                codigo = dict["codigoverificacion"].ToString();
+
+            if (!string.IsNullOrEmpty(telefono) && !string.IsNullOrEmpty(codigo))
+                _ = WhatsApp.EnviarCodigoAsync(telefono, codigo);
+        }
+        catch { }
+
+        return ApiResultExtensions.VaiaSingleFromSp(boxed, "Codigo enviado");
     }
 
     [HttpPost("CambiarTelefono")]
@@ -136,6 +164,8 @@ public class PasajeroController : ControllerBase
         // Notificar por WebSocket a conductores y admins
         if (idServicioCreado > 0)
         {
+            // Nota: el origen ya se registra dentro de sp_pasajero_SolicitarServicio
+            // (tbhistoriallatlngconsultadapasajero) para la analitica de zonas.
             var payload = new
             {
                 idServicio = idServicioCreado,

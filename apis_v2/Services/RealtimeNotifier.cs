@@ -87,6 +87,13 @@ namespace VaiaViajes.Api.Services
             return _soporteHub.Clients.Group("soporte").SendAsync("SolicitudActualizada", data);
         }
 
+        // ─── COBRO / TAXIMETRO ───────────────────────────────────────
+
+        /// <summary>Notifica el costo en vivo (taximetro) a los involucrados en el servicio.</summary>
+        public Task NotificarCostoActualizado(long idServicio, decimal costo, int distanciaMetros, int duracionSegundos)
+            => _servicioHub.Clients.Group($"servicio_{idServicio}").SendAsync("CostoActualizado",
+                new { idServicio, costo, distanciaMetros, duracionSegundos, fecha = DateTime.UtcNow.ToString("o") });
+
         // ─── NOTIFICACIONES GENERICAS ────────────────────────────────
 
         public Task NotificarPasajero(long idPasajero, string evento, object payload)

@@ -383,7 +383,9 @@
 }
 .alert--dismissible .alert-close:hover { opacity: 1; }
 
-.modal-backdrop {
+/* Solo aplican a los modales propios de VaiaUI (llevan data-modal-id),
+   para no interferir con los modales nativos de Bootstrap. */
+.modal-backdrop[data-modal-id] {
   position: fixed; inset: 0;
   background: var(--overlay);
   backdrop-filter: blur(6px);
@@ -391,19 +393,19 @@
   z-index: 1040;
   animation: vaia-fade-in 200ms var(--easing-smooth) both;
 }
-.modal {
+.modal[data-modal-id] {
   position: fixed; inset: 0;
   display: flex; align-items: center; justify-content: center;
   z-index: 1050;
   padding: var(--space-4);
   pointer-events: none;
 }
-.modal--full {
+.modal--full[data-modal-id] {
   padding: 24px 5px;
   align-items: center;
   justify-content: center;
 }
-.modal-dialog {
+.modal[data-modal-id] .modal-dialog {
   pointer-events: auto;
   background: var(--surface);
   border-radius: var(--radius-xl);
@@ -416,10 +418,10 @@
   display: flex; flex-direction: column;
   animation: vaia-scale-in 280ms var(--easing-spring) both;
 }
-.modal-dialog--sm { max-width: 380px; }
-.modal-dialog--lg { max-width: 720px; }
-.modal-dialog--xl { max-width: 960px; }
-.modal-dialog--full {
+.modal[data-modal-id] .modal-dialog--sm { max-width: 380px; }
+.modal[data-modal-id] .modal-dialog--lg { max-width: 720px; }
+.modal[data-modal-id] .modal-dialog--xl { max-width: 960px; }
+.modal[data-modal-id] .modal-dialog--full {
   width: 100%;
   height: auto;
   min-height: 480px;
@@ -430,7 +432,7 @@
   box-shadow: var(--shadow-2xl);
   overflow: hidden;
 }
-.modal-dialog--full .modal-header {
+.modal[data-modal-id] .modal-dialog--full .modal-header {
   position: sticky;
   top: 0;
   z-index: 5;
@@ -439,14 +441,14 @@
   padding: var(--space-4) var(--space-6);
   flex-shrink: 0;
 }
-.modal-dialog--full .modal-body {
+.modal[data-modal-id] .modal-dialog--full .modal-body {
   padding: var(--space-6);
   flex: 1 1 auto;
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
 }
-.modal-dialog--full .modal-footer {
+.modal[data-modal-id] .modal-dialog--full .modal-footer {
   position: sticky;
   bottom: 0;
   z-index: 5;
@@ -456,7 +458,7 @@
   flex-shrink: 0;
   box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
 }
-[data-theme="dark"] .modal-dialog--full .modal-footer {
+[data-theme="dark"] .modal[data-modal-id] .modal-dialog--full .modal-footer {
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.30);
 }
 

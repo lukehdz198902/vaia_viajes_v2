@@ -26,6 +26,10 @@ namespace VaiaViajes.Api
 
             services.AddSingleton<FcmService>();
             services.AddSingleton<RealtimeNotifier>();
+            services.AddSingleton<EmailService>();
+            services.AddSingleton<WhatsAppService>();
+            services.AddSingleton<MercadoPagoService>();
+            services.AddSingleton<PayPalService>();
 
             // SignalR (WebSocket) para tiempo real
             services.AddSignalR(opts =>
@@ -36,6 +40,7 @@ namespace VaiaViajes.Api
             // Servicios en background
             services.AddSingleton<IHostedService, AssignmentService>();
             services.AddSingleton<IHostedService, SchedulerService>();
+            services.AddSingleton<IHostedService, PresenceService>();
 
             services.AddMvc()
                 .AddJsonOptions(opts =>
