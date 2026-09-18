@@ -36,6 +36,18 @@ namespace VaiaViajes.Api.Services
             return Base("Verifica tu correo", c);
         }
 
+        /// <summary>Codigo de verificacion de correo para el pasajero (app Vaia).</summary>
+        public static string CodigoVerificacionPasajero(string nombre, string codigo)
+        {
+            var c = "<p style=\"margin:0 0 12px;color:#475569;\">Hola " + nombre + ",</p>"
+                + "<p style=\"margin:0 0 16px;color:#475569;\">Usa el siguiente codigo para verificar tu correo electronico en Vaia:</p>"
+                + "<div style=\"text-align:center;margin:20px 0;\">"
+                + "<span style=\"display:inline-block;background:#E0E7FF;color:#3730A3;font-size:30px;font-weight:800;letter-spacing:8px;padding:14px 24px;border-radius:12px;\">" + codigo + "</span>"
+                + "</div>"
+                + "<p style=\"margin:0;color:#94a3b8;font-size:13px;\">El codigo expira en 15 minutos. Si no lo solicitaste, ignora este mensaje.</p>";
+            return Base("Verifica tu correo", c, "Vaia");
+        }
+
         public static string Bienvenida(string nombre)
         {
             var c = "<p style=\"margin:0 0 12px;color:#475569;\">Hola " + nombre + ",</p>"

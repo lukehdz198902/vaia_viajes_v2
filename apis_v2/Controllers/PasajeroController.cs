@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,6 +12,7 @@ public class PasajeroController : ControllerBase
     private FcmService Fcm => HttpContext.RequestServices.GetRequiredService<FcmService>();
     private VaiaViajes.Api.Services.RealtimeNotifier Notifier => HttpContext.RequestServices.GetRequiredService<VaiaViajes.Api.Services.RealtimeNotifier>();
     private WhatsAppService WhatsApp => HttpContext.RequestServices.GetRequiredService<WhatsAppService>();
+    private EmailService Email => HttpContext.RequestServices.GetRequiredService<EmailService>();
 
     [HttpPost("Registrar")]
     public async Task<IActionResult> Registrar([FromBody] dynamic p)
@@ -116,6 +118,125 @@ public class PasajeroController : ControllerBase
         catch { }
 
         return ApiResultExtensions.VaiaSingleFromSp(boxed, "Codigo enviado");
+    }
+
+    /// <summary>Envia un codigo de verificacion al correo del pasajero (o al correo nuevo).</summary>
+    [HttpPost("EnviarCodigoCorreo")]
+    public async Task<IActionResult> EnviarCodigoCorreo([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+
+        var result = await DatabaseHelper.QueryAsync<object>("sp_pasajero_EnviarCodigoCorreo", d);
+        object boxed = result;
+
+        try
+        {
+            long idPas = d.ContainsKey("idPasajero") && d["idPasajero"] != null ? Convert.ToInt64(d["idPasajero"]) : 0;
+            string correo = null, codigo = null, nombre = "Pasajero";
+
+            var first = System.Linq.Enumerable.FirstOrDefault(result as System.Collections.Generic.IEnumerable<object>);
+            var dict = first as System.Collections.Generic.IDictionary<string, object>;
+            if (dict != null)
+            {
+                if (dict.ContainsKey("correo") && dict["correo"] != null) correo = dict["correo"].ToString();
+                if (dict.ContainsKey("codigoverificacion") && dict["codigoverificacion"] != null) codigo = dict["codigoverificacion"].ToString();
+            }
+
+            if (!string.IsNullOrEmpty(correo) && !string.IsNullOrEmpty(codigo))
+            {
+                try
+                {
+                    var perfil = await DatabaseHelper.QueryAsync<object>("sp_pasajero_ObtenerPerfil", new { idPasajero = idPas });
+                    var pf = System.Linq.Enumerable.FirstOrDefault(perfil as System.Collections.Generic.IEnumerable<object>) as System.Collections.Generic.IDictionary<string, object>;
+                    if (pf != null && pf.ContainsKey("nombre") && pf["nombre"] != null) nombre = pf["nombre"].ToString();
+                }
+                catch { }
+
+                _ = Email.EnviarAsync(correo, "Verifica tu correo - Vaia", EmailTemplates.CodigoVerificacionPasajero(nombre, codigo));
+            }
+        }
+        catch { }
+
+        return ApiResultExtensions.VaiaSingleFromSp(boxed, "Codigo enviado");
+    }
+
+    /// <summary>Valida el codigo de verificacion enviado por correo electronico.</summary>
+    [HttpPost("ValidarCodigoCorreo")]
+    public async Task<IActionResult> ValidarCodigoCorreo([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        return await SpExecutor.SingleAsync("sp_pasajero_ValidarCodigoCorreo", d, "Correo verificado");
+    }
+
+    /// <summary>Cambia el correo del pasajero validando el codigo enviado al correo nuevo.</summary>
+    [HttpPost("CambiarCorreo")]
+    public async Task<IActionResult> CambiarCorreo([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        return await SpExecutor.SingleAsync("sp_pasajero_CambiarCorreo", d, "Correo actualizado");
+    }
+
+    /// <summary>Inicia sesion o registra al pasajero con Google (valida el idToken).</summary>
+    [HttpPost("IniciarSesionGoogle")]
+    public async Task<IActionResult> IniciarSesionGoogle([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+
+        string idToken = d.ContainsKey("idToken") && d["idToken"] != null ? d["idToken"].ToString() : null;
+        if (string.IsNullOrEmpty(idToken)) return "Token de Google requerido".VaiaBadRequest("GOOGLE_TOKEN_REQUIRED");
+
+        try
+        {
+            using (var http = new System.Net.Http.HttpClient())
+            {
+                http.Timeout = TimeSpan.FromSeconds(15);
+                var resp = await http.GetAsync("https://oauth2.googleapis.com/tokeninfo?id_token=" + Uri.EscapeDataString(idToken));
+                if (!resp.IsSuccessStatusCode)
+                    return "No se pudo validar la cuenta de Google".VaiaBadRequest("GOOGLE_TOKEN_INVALID");
+
+                var json = Newtonsoft.Json.Linq.JObject.Parse(await resp.Content.ReadAsStringAsync());
+                string sub = (string)json["sub"];
+                string email = (string)json["email"];
+                string name = (string)json["name"];
+                string picture = (string)json["picture"];
+
+                if (string.IsNullOrEmpty(sub) || string.IsNullOrEmpty(email))
+                    return "La cuenta de Google no tiene correo asociado".VaiaBadRequest("GOOGLE_NO_EMAIL");
+
+                var parts = (name ?? string.Empty).Split(' ');
+                string nombre = parts.Length > 0 && parts[0] != "" ? parts[0] : "Usuario";
+                string appaterno = parts.Length > 1 ? parts[1] : "";
+                string amaterno = parts.Length > 2 ? string.Join(" ", parts, 2, parts.Length - 2) : "";
+
+                var args = new System.Collections.Generic.Dictionary<string, object>
+                {
+                    { "googleuserid", sub },
+                    { "correo", email },
+                    { "nombre", nombre },
+                    { "appaterno", appaterno },
+                    { "apmaterno", amaterno },
+                    { "fotourl", picture },
+                    { "idCompania", d.ContainsKey("idCompania") && d["idCompania"] != null ? d["idCompania"] : (object)1 },
+                    { "googlekey", d.ContainsKey("googlekey") ? d["googlekey"] : null },
+                    { "googlekeyso", d.ContainsKey("googlekeyso") ? d["googlekeyso"] : null },
+                    { "dispositivoinfo", d.ContainsKey("dispositivoinfo") ? d["dispositivoinfo"] : null },
+                    { "sistemaoperativo", d.ContainsKey("sistemaoperativo") ? d["sistemaoperativo"] : null },
+                    { "ipaddress", HttpContext.Connection.RemoteIpAddress != null ? HttpContext.Connection.RemoteIpAddress.ToString() : null },
+                    { "useragent", Request.Headers["User-Agent"].ToString() }
+                };
+
+                var result = await DatabaseHelper.QueryAsync<object>("sp_pasajero_IniciarSesionGoogle", args);
+                return ApiResultExtensions.VaiaSingleFromSp((object)result, "Inicio de sesion exitoso");
+            }
+        }
+        catch (Exception ex)
+        {
+            return ("Error al validar la cuenta de Google: " + ex.Message).VaiaBadRequest("GOOGLE_ERROR");
+        }
     }
 
     [HttpPost("CambiarTelefono")]
