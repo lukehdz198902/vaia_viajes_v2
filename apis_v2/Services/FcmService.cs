@@ -169,7 +169,13 @@ namespace VaiaViajes.Api.Services
         {
             var token = await GetPasajeroTokenAsync(idPasajero);
             if (string.IsNullOrEmpty(token)) return false;
-            return await SendToTokenAsync(token, titulo, cuerpo, data, _serverKeyPasajero);
+
+            // Se intenta con la clave del pasajero; si falla, con la del conductor
+            // (cubre el caso de que el token provenga de otro proyecto de Firebase).
+            var ok = await SendToTokenAsync(token, titulo, cuerpo, data, _serverKeyPasajero);
+            if (!ok && !string.IsNullOrEmpty(_serverKeyConductor) && _serverKeyConductor != _serverKeyPasajero)
+                ok = await SendToTokenAsync(token, titulo, cuerpo, data, _serverKeyConductor);
+            return ok;
         }
 
         /// <summary>Envia una notificacion push al conductor indicado (resuelve el token).</summary>
