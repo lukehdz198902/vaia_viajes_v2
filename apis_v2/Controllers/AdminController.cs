@@ -4,11 +4,14 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using VaiaViajes.Api.Helpers;
+using VaiaViajes.Api.Services;
 
 [Route("api/[controller]")]
 [ApiController]
 public class AdminController : ControllerBase
 {
+    private VaiaViajes.Api.Services.EmailService Email => HttpContext.RequestServices.GetRequiredService<VaiaViajes.Api.Services.EmailService>();
+
     [HttpGet("version")]
     public IActionResult Version()
     {
@@ -332,8 +335,37 @@ public class AdminController : ControllerBase
     [HttpPost("ValidarDocumento")]
     public async Task<IActionResult> ValidarDocumento([FromBody] dynamic p)
     {
-        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_ValidarDocumento", p);
-        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Documento validado");
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_ValidarDocumento", d);
+        object boxed = result;
+
+        // Correo al conductor segun el resultado de la revision
+        try
+        {
+            var first = System.Linq.Enumerable.FirstOrDefault(result as System.Collections.Generic.IEnumerable<object>);
+            var c = first as System.Collections.Generic.IDictionary<string, object>;
+            if (c != null)
+            {
+                string correo = c.ContainsKey("correo") ? c["correo"]?.ToString() : null;
+                string nombre = c.ContainsKey("nombre") ? c["nombre"]?.ToString() : "Conductor";
+                bool aprobada = c.ContainsKey("documentacionaprobada") && c["documentacionaprobada"] != null && Convert.ToBoolean(c["documentacionaprobada"]);
+                bool correccion = d.ContainsKey("correccion") && d["correccion"] != null && Convert.ToBoolean(d["correccion"]);
+                string coment = d.ContainsKey("coment") ? d["coment"]?.ToString() : "";
+
+                if (!string.IsNullOrEmpty(correo))
+                {
+                    if (aprobada)
+                        _ = Email.EnviarAsync(correo, "Documentacion aprobada - Vaia Conductor", EmailTemplates.DocumentacionAprobada(nombre));
+                    else if (correccion)
+                        _ = Email.EnviarAsync(correo, "Correcciones en tu documentacion - Vaia Conductor", EmailTemplates.DocumentacionCorreccion(nombre, coment));
+                }
+            }
+        }
+        catch { }
+
+        return ApiResultExtensions.VaiaSingleFromSp(boxed, "Documento validado");
     }
 
     [HttpGet("ListarDocumentosConductor")]
@@ -341,6 +373,13 @@ public class AdminController : ControllerBase
     {
         var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_ListarDocumentos", new { idConductor });
         return ApiResultExtensions.VaiaFromSp((object)result, "Documentos listados");
+    }
+
+    [HttpGet("ObtenerDocumento")]
+    public async Task<IActionResult> ObtenerDocumento(long idDocumento)
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_ObtenerDocumento", new { idDocumento });
+        return ApiResultExtensions.VaiaSingleFromSp((object)result, "Documento");
     }
 
     [HttpPost("AprobarUnidad")]

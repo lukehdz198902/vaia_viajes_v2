@@ -136,6 +136,10 @@ namespace VaiaViajes.Api.BackgroundServices
                         {
                             idServicio,
                             idPasajero,
+                            pasajeroNombre = s.ContainsKey("pasajeronombre") ? s["pasajeronombre"]?.ToString() : "",
+                            pasajeroAppaterno = s.ContainsKey("pasajeroappaterno") ? s["pasajeroappaterno"]?.ToString() : "",
+                            pasajeroCalificacion = s.ContainsKey("pasajerocalificacion") ? s["pasajerocalificacion"] : null,
+                            pasajeroTotalViajes = s.ContainsKey("pasajerototalviajes") ? s["pasajerototalviajes"] : null,
                             direccionOrigen = s.ContainsKey("direccionorigen") ? s["direccionorigen"]?.ToString() : "",
                             direccionDestino = s.ContainsKey("direcciondestination") ? s["direcciondestination"]?.ToString() : "",
                             latOrigen = lat,

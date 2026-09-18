@@ -24,7 +24,7 @@ namespace VaiaViajes.Api.Services
             get { return !string.IsNullOrEmpty(_config["Smtp:Host"]); }
         }
 
-        public async Task<bool> EnviarAsync(string para, string asunto, string html)
+        public async Task<bool> EnviarAsync(string para, string asunto, string html, bool conLogo = true)
         {
             try
             {
@@ -46,8 +46,19 @@ namespace VaiaViajes.Api.Services
                     msg.From = new MailAddress(desde, nombreDesde);
                     msg.To.Add(para);
                     msg.Subject = asunto;
-                    msg.Body = html;
                     msg.IsBodyHtml = true;
+
+                    var logoPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "logo.png");
+                    if (conLogo && System.IO.File.Exists(logoPath))
+                    {
+                        var view = AlternateView.CreateAlternateViewFromString(html, null, "text/html");
+                        view.LinkedResources.Add(new LinkedResource(logoPath, "image/png") { ContentId = "vaialogo" });
+                        msg.AlternateViews.Add(view);
+                    }
+                    else
+                    {
+                        msg.Body = html;
+                    }
 
                     using (var client = new SmtpClient(host, puerto))
                     {

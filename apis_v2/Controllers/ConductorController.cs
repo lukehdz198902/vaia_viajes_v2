@@ -12,6 +12,7 @@ public class ConductorController : ControllerBase
     private FcmService Fcm => HttpContext.RequestServices.GetRequiredService<FcmService>();
     private VaiaViajes.Api.Services.RealtimeNotifier Notifier => HttpContext.RequestServices.GetRequiredService<VaiaViajes.Api.Services.RealtimeNotifier>();
     private EmailService Email => HttpContext.RequestServices.GetRequiredService<EmailService>();
+    private WhatsAppService WhatsApp => HttpContext.RequestServices.GetRequiredService<WhatsAppService>();
 
     [HttpPost("Registrar")]
     public async Task<IActionResult> Registrar([FromBody] dynamic p)
@@ -29,7 +30,21 @@ public class ConductorController : ControllerBase
             "tipolicencia", "tipoLic",
             "nombretitular", "titular",
             "clabeinterbancaria", "clabe");
-        return await SpExecutor.SingleAsync("sp_conductor_Registrar", d, "Registro exitoso");
+
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_Registrar", d);
+        object boxed = result;
+
+        // Correo de bienvenida
+        try
+        {
+            string correo = d.ContainsKey("correo") ? d["correo"]?.ToString() : null;
+            string nombre = d.ContainsKey("nombre") ? d["nombre"]?.ToString() : "Conductor";
+            if (!string.IsNullOrEmpty(correo))
+                _ = Email.EnviarAsync(correo, "Bienvenido a Vaia Conductor", EmailTemplates.Bienvenida(nombre));
+        }
+        catch { }
+
+        return ApiResultExtensions.VaiaSingleFromSp(boxed, "Registro exitoso");
     }
 
     [HttpPost("IniciarSesion")]
@@ -77,7 +92,118 @@ public class ConductorController : ControllerBase
         var d = ParameterHelper.ToDictionary(p);
         if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
         d["pass"] = ParameterHelper.Sha256Hash((string)d["pass"]);
-        return await SpExecutor.SingleAsync("sp_conductor_CambiarPassword", d, "Contrasena actualizada");
+
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_CambiarPassword", d);
+        object boxed = result;
+
+        // Correo de aviso de cambio de contrasena
+        try
+        {
+            int idConductor = d.ContainsKey("idConductor") ? Convert.ToInt32(d["idConductor"]) : 0;
+            if (idConductor > 0)
+            {
+                var perfil = await DatabaseHelper.QueryAsync<object>("sp_conductor_ObtenerPerfil", new { idConductor });
+                var pf = System.Linq.Enumerable.FirstOrDefault(perfil as System.Collections.Generic.IEnumerable<object>) as System.Collections.Generic.IDictionary<string, object>;
+                if (pf != null)
+                {
+                    string correo = pf.ContainsKey("correo") ? pf["correo"]?.ToString() : null;
+                    string nombre = pf.ContainsKey("nombre") ? pf["nombre"]?.ToString() : "Conductor";
+                    if (!string.IsNullOrEmpty(correo))
+                        _ = Email.EnviarAsync(correo, "Contrasena actualizada - Vaia Conductor", EmailTemplates.CambioPassword(nombre));
+                }
+            }
+        }
+        catch { }
+
+        return ApiResultExtensions.VaiaSingleFromSp(boxed, "Contrasena actualizada");
+    }
+
+    // ─── VERIFICACION DE TELEFONO (WhatsApp) Y CORREO ────────────
+
+    /// <summary>Envia el codigo de verificacion del telefono por WhatsApp.</summary>
+    [HttpPost("EnviarCodigoVerificacion")]
+    public async Task<IActionResult> EnviarCodigoVerificacion([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_EnviarCodigoVerificacion", d);
+        object boxed = result;
+
+        try
+        {
+            string telefono = d.ContainsKey("telefono") ? d["telefono"]?.ToString() : null;
+            string codigo = null;
+            var first = System.Linq.Enumerable.FirstOrDefault(result as System.Collections.Generic.IEnumerable<object>);
+            var dict = first as System.Collections.Generic.IDictionary<string, object>;
+            if (dict != null && dict.ContainsKey("codigoverificacion") && dict["codigoverificacion"] != null)
+                codigo = dict["codigoverificacion"].ToString();
+
+            if (!string.IsNullOrEmpty(telefono) && !string.IsNullOrEmpty(codigo))
+                _ = WhatsApp.EnviarCodigoAsync(telefono, codigo);
+        }
+        catch { }
+
+        return ApiResultExtensions.VaiaSingleFromSp(boxed, "Codigo enviado");
+    }
+
+    [HttpPost("ValidarCodigoVerificacion")]
+    public async Task<IActionResult> ValidarCodigoVerificacion([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        return await SpExecutor.SingleAsync("sp_conductor_ValidarCodigoVerificacion", d, "Telefono verificado");
+    }
+
+    /// <summary>Envia el codigo de verificacion del correo electronico.</summary>
+    [HttpPost("EnviarCodigoCorreo")]
+    public async Task<IActionResult> EnviarCodigoCorreo([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_EnviarCodigoCorreo", d);
+        object boxed = result;
+
+        try
+        {
+            string correo = d.ContainsKey("correo") ? d["correo"]?.ToString() : null;
+            string nombre = "Conductor";
+            if (d.ContainsKey("idConductor") && d["idConductor"] != null)
+            {
+                var perfil = await DatabaseHelper.QueryAsync<object>("sp_conductor_ObtenerPerfil", new { idConductor = System.Convert.ToInt32(d["idConductor"]) });
+                var pf = System.Linq.Enumerable.FirstOrDefault(perfil as System.Collections.Generic.IEnumerable<object>) as System.Collections.Generic.IDictionary<string, object>;
+                if (pf != null && pf.ContainsKey("nombre") && pf["nombre"] != null) nombre = pf["nombre"].ToString();
+            }
+
+            string codigo = null;
+            var first = System.Linq.Enumerable.FirstOrDefault(result as System.Collections.Generic.IEnumerable<object>);
+            var dict = first as System.Collections.Generic.IDictionary<string, object>;
+            if (dict != null && dict.ContainsKey("codigoverificacion") && dict["codigoverificacion"] != null)
+                codigo = dict["codigoverificacion"].ToString();
+
+            if (!string.IsNullOrEmpty(correo) && !string.IsNullOrEmpty(codigo))
+                _ = Email.EnviarAsync(correo, "Verifica tu correo - Vaia Conductor", EmailTemplates.CodigoVerificacion(nombre, codigo));
+        }
+        catch { }
+
+        return ApiResultExtensions.VaiaSingleFromSp(boxed, "Codigo enviado");
+    }
+
+    [HttpPost("ValidarCodigoCorreo")]
+    public async Task<IActionResult> ValidarCodigoCorreo([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        return await SpExecutor.SingleAsync("sp_conductor_ValidarCodigoCorreo", d, "Correo verificado");
+    }
+
+    [HttpPost("ActualizarCorreo")]
+    public async Task<IActionResult> ActualizarCorreo([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        return await SpExecutor.SingleAsync("sp_conductor_ActualizarCorreo", d, "Correo actualizado");
     }
 
     /// <summary>Actualiza el token de push (FCM) del conductor.</summary>
@@ -298,6 +424,32 @@ public class ConductorController : ControllerBase
             }
             await Notifier.NotificarEstatusCambiado(idServicio, "Finalizado");
             await Notifier.NotificarEstatusAdmin(idServicio, "Finalizado");
+
+            // Correo al conductor con el resumen del servicio
+            try
+            {
+                int idConductor = d.ContainsKey("idConductor") ? Convert.ToInt32(d["idConductor"]) : 0;
+                decimal costo = 0;
+                var first = System.Linq.Enumerable.FirstOrDefault(result as System.Collections.Generic.IEnumerable<object>);
+                var dict = first as System.Collections.Generic.IDictionary<string, object>;
+                if (dict != null && dict.ContainsKey("costofinal") && dict["costofinal"] != null)
+                    costo = Convert.ToDecimal(dict["costofinal"]);
+
+                if (idConductor > 0)
+                {
+                    var perfil = await DatabaseHelper.QueryAsync<object>("sp_conductor_ObtenerPerfil", new { idConductor });
+                    var pf = System.Linq.Enumerable.FirstOrDefault(perfil as System.Collections.Generic.IEnumerable<object>) as System.Collections.Generic.IDictionary<string, object>;
+                    if (pf != null)
+                    {
+                        string correo = pf.ContainsKey("correo") ? pf["correo"]?.ToString() : null;
+                        string nombre = pf.ContainsKey("nombre") ? pf["nombre"]?.ToString() : "Conductor";
+                        if (!string.IsNullOrEmpty(correo))
+                            _ = Email.EnviarAsync(correo, "Servicio finalizado #" + idServicio + " - Vaia Conductor",
+                                EmailTemplates.ServicioFinalizado(nombre, idServicio.ToString(), costo.ToString("N2")));
+                    }
+                }
+            }
+            catch { }
         }
         return ApiResultExtensions.VaiaSingleFromSp(boxed, "Viaje finalizado");
     }
@@ -405,6 +557,64 @@ public class ConductorController : ControllerBase
         {
             Console.WriteLine("[Conductor] Error enviando comprobante: " + ex.Message);
         }
+    }
+
+    /// <summary>Resumen del dia: ganancias, servicios realizados y tiempo conectado.</summary>
+    [HttpGet("ResumenDia")]
+    public async Task<IActionResult> ResumenDia(int idConductor)
+    {
+        return await SpExecutor.SingleAsync("sp_conductor_ResumenDia", new { idConductor }, "Resumen del dia");
+    }
+
+    // ─── DOCUMENTOS ──────────────────────────────────────────────
+
+    [HttpGet("ListarTiposDocumento")]
+    public async Task<IActionResult> ListarTiposDocumento(string para = "conductor")
+    {
+        var result = await DatabaseHelper.QueryAsync<object>("sp_conductor_ListarTiposDocumento", new { para });
+        return ApiResultExtensions.VaiaFromSp((object)result, "Tipos de documento");
+    }
+
+    [HttpPost("AgregarDocumento")]
+    public async Task<IActionResult> AgregarDocumento([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        return await SpExecutor.SingleAsync("sp_conductor_AgregarDocumento", d, "Documento cargado");
+    }
+
+    [HttpPost("EliminarDocumento")]
+    public async Task<IActionResult> EliminarDocumento([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        return await SpExecutor.SingleAsync("sp_conductor_EliminarDocumento", d, "Documento eliminado");
+    }
+
+    [HttpGet("ListarDocumentos")]
+    public async Task<IActionResult> ListarDocumentos(int idConductor)
+    {
+        return await SpExecutor.ListAsync("sp_conductor_ListarDocumentos", new { idConductor }, "Documentos");
+    }
+
+    [HttpGet("ObtenerDocumento")]
+    public async Task<IActionResult> ObtenerDocumento(long idDocumento)
+    {
+        return await SpExecutor.SingleAsync("sp_conductor_ObtenerDocumento", new { idDocumento }, "Documento");
+    }
+
+    [HttpPost("AgregarDocumentoUnidad")]
+    public async Task<IActionResult> AgregarDocumentoUnidad([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        return await SpExecutor.SingleAsync("sp_conductor_AgregarDocumentoUnidad", d, "Documento de unidad cargado");
+    }
+
+    [HttpGet("ListarDocumentosUnidad")]
+    public async Task<IActionResult> ListarDocumentosUnidad(int idConductor, int idunidad)
+    {
+        return await SpExecutor.ListAsync("sp_conductor_ListarDocumentosUnidad", new { idConductor, idunidad }, "Documentos de la unidad");
     }
 
     [HttpGet("ListarUnidades")]
