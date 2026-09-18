@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Documentación - Funciones y Procedimientos - Vaia Viajes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        /* ============================================
+           RESET & BASE (Mismo estilo que documentación DB)
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6C63FF;
+            --primary-light: #8B83FF;
+            --primary-dark: #5A52D9;
+            --primary-bg: #F0EEFF;
+            --secondary: #FF6B6B;
+            --success: #2ECC71;
+            --warning: #F39C12;
+            --info: #3498DB;
+
+            --bg-body: #F7F8FC;
+            --bg-card: #FFFFFF;
+            --bg-sidebar: #FFFFFF;
+            --bg-header: #FFFFFF;
+
+            --text-primary: #2D3748;
+            --text-secondary: #4A5568;
+            --text-muted: #A0AEC0;
+            --text-light: #718096;
+
+            --border-color: #E2E8F0;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.12);
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-body);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-light);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* ============================================
+           SIDEBAR
+           ============================================ */
+        .sidebar {
+            width: 280px;
+            min-height: 100vh;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+            padding: 24px 16px 30px;
+            z-index: 100;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 8px 24px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-brand .brand-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+        .sidebar-brand h1 span {
+            color: var(--primary);
+        }
+        .sidebar-brand .subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+            display: block;
+            margin-top: -2px;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .sidebar-nav .nav-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            padding: 12px 12px 6px;
+            font-weight: 600;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: var(--transition);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .sidebar-nav a:hover {
+            background: var(--primary-bg);
+            color: var(--primary);
+        }
+
+        .sidebar-nav a.active {
+            background: var(--primary-bg);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .sidebar-nav a.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            bottom: 8px;
+            width: 3px;
+            background: var(--primary);
+            border-radius: 0 4px 4px 0;
+        }
+
+        .sidebar-nav a i {
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-nav a .badge {
+            margin-left: auto;
+            background: var(--primary-bg);
+            color: var(--primary);
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 20px;
+        }
+
+        /* ============================================
+           MAIN CONTENT
+           ============================================ */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .page-header {
+            background: var(--bg-header);
+            padding: 24px 40px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.85);
+        }
+
+        .page-header .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .page-header h2 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .page-header h2 i {
+            color: var(--primary);
+            font-size: 28px;
+        }
+
+        .page-header .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .page-header .header-meta .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .page-header .header-meta .meta-item i {
+            color: var(--primary-light);
+        }
+
+        .page-header .header-badge {
+            background: var(--primary-bg);
+            color: var(--primary);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            padding: 24px 40px 0;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 18px 22px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-card .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .stat-card .stat-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-card .stat-icon {
+            font-size: 20px;
+            color: var(--primary-light);
+        }
+
+        /* Content Area */
+        .content-area {
+            padding: 24px 40px 60px;
+        }
+
+        /* ============================================
+           PROCEDURE CARDS
+           ============================================ */
+        .proc-section {
+            margin-bottom: 40px;
+        }
+
+        .proc-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0 12px;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .proc-section-header h3 {
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .proc-section-header h3 i {
+            color: var(--primary);
+        }
+
+        .proc-section-header .section-count {
+            font-size: 13px;
+            color: var(--text-muted);
+            background: var(--bg-body);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        /* Procedure Card */
+        .proc-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .proc-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .proc-card .proc-header {
+            padding: 16px 24px;
+            background: var(--bg-body);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            cursor: pointer;
+            user-select: none;
+            transition: var(--transition);
+        }
+
+        .proc-card .proc-header:hover {
+            background: var(--primary-bg);
+        }
+
+        .proc-card .proc-header .proc-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .proc-card .proc-header .proc-title code {
+            background: var(--primary-bg);
+            color: var(--primary);
+            padding: 2px 14px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Inter', monospace;
+        }
+
+        .proc-card .proc-header .proc-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-light);
+            flex-wrap: wrap;
+        }
+
+        .proc-card .proc-header .proc-meta .pill {
+            background: var(--bg-card);
+            padding: 2px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .proc-card .proc-header .proc-meta .pill i {
+            font-size: 11px;
+        }
+
+        .proc-card .proc-body {
+            padding: 0;
+        }
+
+        .proc-card .proc-body .proc-description {
+            padding: 16px 24px 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .proc-card .proc-body .proc-params {
+            padding: 12px 24px;
+            background: var(--bg-body);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .proc-card .proc-body .proc-params .param-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .proc-card .proc-body .proc-params .param-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 4px 16px;
+        }
+
+        .proc-card .proc-body .proc-params .param-item {
+            font-size: 13px;
+            color: var(--text-secondary);
+            padding: 2px 0;
+        }
+
+        .proc-card .proc-body .proc-params .param-item .p-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: 'Inter', monospace;
+            font-size: 12px;
+        }
+
+        .proc-card .proc-body .proc-params .param-item .p-type {
+            color: var(--primary);
+            font-size: 11px;
+        }
+
+        .proc-card .proc-body .proc-code {
+            padding: 16px 24px;
+            background: #1e1e2e;
+            overflow-x: auto;
+        }
+
+        .proc-card .proc-body .proc-code pre {
+            margin: 0;
+            padding: 0;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 12px;
+            line-height: 1.7;
+            color: #cdd6f4;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .proc-card .proc-body .proc-code .sql-keyword {
+            color: #cba6f7;
+        }
+        .proc-card .proc-body .proc-code .sql-string {
+            color: #a6e3a1;
+        }
+        .proc-card .proc-body .proc-code .sql-comment {
+            color: #6c7086;
+            font-style: italic;
+        }
+        .proc-card .proc-body .proc-code .sql-function {
+            color: #89b4fa;
+        }
+        .proc-card .proc-body .proc-code .sql-param {
+            color: #f9e2af;
+        }
+        .proc-card .proc-body .proc-code .sql-operator {
+            color: #89b4fa;
+        }
+        .proc-card .proc-body .proc-code .sql-number {
+            color: #fab387;
+        }
+
+        .proc-card .proc-footer {
+            padding: 10px 24px;
+            background: var(--bg-body);
+            border-top: 1px solid var(--border-color);
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .proc-card .proc-footer .footer-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--bg-card);
+            padding: 2px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-size: 11px;
+        }
+
+        /* ============================================
+           SEARCH / FILTER
+           ============================================ */
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .search-bar input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 18px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            transition: var(--transition);
+            background: var(--bg-card);
+            outline: none;
+        }
+
+        .search-bar input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(108, 99, 255, 0.12);
+        }
+
+        .search-bar input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-bar .search-btn {
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-bar .search-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .filter-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .filter-tabs .tab {
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-tabs .tab:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .filter-tabs .tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .doc-footer {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .doc-footer .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .doc-footer .footer-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .doc-footer .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 240px;
+                padding: 20px 12px;
+            }
+            .main-content {
+                margin-left: 240px;
+            }
+            .page-header {
+                padding: 20px 24px;
+            }
+            .stats-bar {
+                padding: 20px 24px 0;
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            }
+            .content-area {
+                padding: 20px 24px 40px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                min-height: auto;
+                position: relative;
+                padding: 16px;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                box-shadow: var(--shadow-sm);
+            }
+
+            .sidebar-brand {
+                padding-bottom: 16px;
+                margin-bottom: 12px;
+            }
+
+            .sidebar-nav {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+
+            .sidebar-nav .nav-label {
+                display: none;
+            }
+
+            .sidebar-nav a {
+                padding: 8px 14px;
+                font-size: 13px;
+            }
+
+            .sidebar-nav a .badge {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .page-header {
+                padding: 16px 20px;
+                position: relative;
+            }
+
+            .page-header h2 {
+                font-size: 18px;
+            }
+
+            .page-header .header-meta {
+                font-size: 12px;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+
+            .stats-bar {
+                padding: 16px 20px 0;
+                grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+                gap: 10px;
+            }
+
+            .stat-card {
+                padding: 14px 16px;
+            }
+
+            .stat-card .stat-number {
+                font-size: 20px;
+            }
+
+            .content-area {
+                padding: 16px 20px 30px;
+            }
+
+            .proc-card .proc-header {
+                padding: 12px 16px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .proc-card .proc-header .proc-meta {
+                flex-wrap: wrap;
+            }
+
+            .proc-card .proc-body .proc-params .param-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .proc-card .proc-body .proc-code pre {
+                font-size: 11px;
+            }
+
+            .doc-footer {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .page-header .header-top {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .search-bar {
+                flex-direction: column;
+            }
+
+            .search-bar input {
+                width: 100%;
+                min-width: unset;
+            }
+
+            .search-bar .search-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .filter-tabs .tab {
+                font-size: 12px;
+                padding: 4px 14px;
+            }
+
+            .proc-card .proc-body .proc-code {
+                padding: 12px 16px;
+            }
+
+            .proc-card .proc-body .proc-code pre {
+                font-size: 10px;
+            }
+
+            .proc-card .proc-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        }
+
+        /* ============================================
+           ANIMATION
+           ============================================ */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .proc-card {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        .proc-card:nth-child(2) {
+            animation-delay: 0.05s;
+        }
+        .proc-card:nth-child(3) {
+            animation-delay: 0.10s;
+        }
+        .proc-card:nth-child(4) {
+            animation-delay: 0.15s;
+        }
+        .proc-card:nth-child(5) {
+            animation-delay: 0.20s;
+        }
+        .proc-card:nth-child(6) {
+            animation-delay: 0.25s;
+        }
+
+        /* ============================================
+           PRINT STYLES
+           ============================================ */
+        @media print {
+            .sidebar {
+                display: none !important;
+            }
+            .main-content {
+                margin-left: 0 !important;
+            }
+            .page-header {
+                position: static !important;
+                background: white !important;
+                backdrop-filter: none !important;
+            }
+            .stats-bar {
+                display: none !important;
+            }
+            .search-bar {
+                display: none !important;
+            }
+            .filter-tabs {
+                display: none !important;
+            }
+            .proc-card {
+                break-inside: avoid;
+                box-shadow: none !important;
+                border: 1px solid #ddd !important;
+            }
+            .proc-card .proc-header {
+                background: #f5f5f5 !important;
+            }
+            .proc-card .proc-body .proc-code {
+                background: #f8f8f8 !important;
+            }
+            .proc-card .proc-body .proc-code pre {
+                color: #333 !important;
+            }
+            .doc-footer {
+                display: none !important;
+            }
+        }
+
+        /* ============================================
+           BADGE COLORS
+           ============================================ */
+        .badge-funcion {
+            background: #E6F9F0;
+            color: #1a8a4a;
+        }
+        .badge-procedimiento {
+            background: #FEF3E2;
+            color: #b7791f;
+        }
+        .badge-pasajero {
+            background: #E8F0FE;
+            color: #2b6cb0;
+        }
+        .badge-conductor {
+            background: #FDE8E8;
+            color: #c0392b;
+        }
+        .badge-admin {
+            background: #EBE4FF;
+            color: #6C63FF;
+        }
+        .badge-utileria {
+            background: #F0F0F0;
+            color: #4a5568;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==========================================
+    SIDEBAR
+    ========================================== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">V</div>
+            <div>
+                <h1>Vaia<span>SP</span></h1>
+                <span class="subtitle">Funciones y Procedimientos</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-label">Navegación</div>
+            <a href="#" class="active" data-filter="all">
+                <i class="fas fa-code"></i> Todos
+                <span class="badge" id="totalProcs">0</span>
+            </a>
+            <a href="#" data-filter="funcion">
+                <i class="fas fa-calculator"></i> Funciones
+                <span class="badge" id="totalFunciones">0</span>
+            </a>
+            <a href="#" data-filter="procedimiento">
+                <i class="fas fa-database"></i> Procedimientos
+                <span class="badge" id="totalProcedimientos">0</span>
+            </a>
+            <div class="nav-label" style="margin-top:12px;">Por Módulo</div>
+            <a href="#" data-filter="pasajero">
+                <i class="fas fa-user"></i> Pasajero
+            </a>
+            <a href="#" data-filter="conductor">
+                <i class="fas fa-user-tie"></i> Conductor
+            </a>
+            <a href="#" data-filter="admin">
+                <i class="fas fa-users-cog"></i> Administración
+            </a>
+            <a href="#" data-filter="utileria">
+                <i class="fas fa-toolbox"></i> Utilería
+            </a>
+            <div class="nav-label" style="margin-top:12px;">Acciones</div>
+            <a href="#" onclick="window.print(); return false;">
+                <i class="fas fa-print"></i> Imprimir
+            </a>
+            <a href="#" onclick="scrollToTop(); return false;">
+                <i class="fas fa-arrow-up"></i> Subir
+            </a>
+        </nav>
+    </aside>
+
+    <!-- ==========================================
+    MAIN CONTENT
+    ========================================== -->
+    <main class="main-content">
+
+        <!-- Header -->
+        <header class="page-header">
+            <div class="header-top">
+                <div>
+                    <h2>
+                        <i class="fas fa-cogs"></i>
+                        Funciones y Procedimientos
+                    </h2>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:4px;">
+                        <span class="header-badge"><i class="fas fa-check-circle"></i> 38 Procedimientos</span>
+                        <span class="header-badge"><i class="fas fa-calculator"></i> 10 Funciones</span>
+                        <span class="header-badge"><i class="fas fa-tag"></i> 4 Módulos</span>
+                    </div>
+                </div>
+                <div class="header-meta">
+                    <span class="meta-item"><i class="fas fa-calendar-alt"></i> 14 de Julio, 2026</span>
+                    <span class="meta-item"><i class="fas fa-code"></i> MSSQL</span>
+                    <span class="meta-item"><i class="fas fa-user"></i> v1.0.0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-number" id="statTotal">0</div>
+                <div class="stat-label"><span class="stat-icon">📊</span> Total Objetos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statFunciones">0</div>
+                <div class="stat-label"><span class="stat-icon">🧮</span> Funciones</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statProcedimientos">0</div>
+                <div class="stat-label"><span class="stat-icon">⚙️</span> Procedimientos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statPasajero">0</div>
+                <div class="stat-label"><span class="stat-icon">👤</span> App Pasajero</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statConductor">0</div>
+                <div class="stat-label"><span class="stat-icon">🚗</span> App Conductor</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statAdmin">0</div>
+                <div class="stat-label"><span class="stat-icon">👥</span> Web Admin</div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content-area">
+
+            <!-- Search & Filters -->
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="🔍 Buscar función o procedimiento..." oninput="filterProcs()" />
+                <button class="search-btn" onclick="filterProcs()">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+            </div>
+
+            <div class="filter-tabs" id="filterTabs">
+                <span class="tab active" data-filter="all">📁 Todos</span>
+                <span class="tab" data-filter="funcion">🧮 Funciones</span>
+                <span class="tab" data-filter="procedimiento">⚙️ Procedimientos</span>
+                <span class="tab" data-filter="pasajero">👤 Pasajero</span>
+                <span class="tab" data-filter="conductor">🚗 Conductor</span>
+                <span class="tab" data-filter="admin">👥 Administración</span>
+                <span class="tab" data-filter="utileria">🔧 Utilería</span>
+            </div>
+
+            <!-- ==========================================
+            PROCEDURES CONTAINER
+            ========================================== -->
+            <div id="procsContainer"></div>
+
+            <!-- Footer -->
+            <footer class="doc-footer">
+                <span>
+                    <i class="fas fa-code"></i> Vaia Viajes Database &bull; Funciones y Procedimientos &bull; 2026
+                </span>
+                <div class="footer-links">
+                    <a href="#" onclick="scrollToTop(); return false;"><i class="fas fa-arrow-up"></i> Subir</a>
+                    <a href="#" onclick="window.print(); return false;"><i class="fas fa-print"></i> Imprimir</a>
+                    <a href="https://github.com" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+                </div>
+            </footer>
+
+        </div>
+        <!-- end content-area -->
+
+    </main>
+
+    <script>
+        // ============================================
+        // DATA: Funciones y Procedimientos
+        // ============================================
+        const procsData = [{
+            name: 'fn_ObtenerNombreCompletoPasajero',
+            type: 'funcion',
+            module: 'utileria',
+            description: 'Obtiene el nombre completo del pasajero a partir de su ID',
+            params: [{ name: '@idPasajero', type: 'BIGINT' }],
+            returns: 'VARCHAR(200)',
+            code: `RETURNS VARCHAR(200) AS BEGIN
+    DECLARE @n VARCHAR(200);
+    SELECT @n = ISNULL(nombre,'')+' '+ISNULL(appaterno,'')+' '+ISNULL(apmaterno,'') FROM tbpasajero WHERE id=@idPasajero;
+    RETURN LTRIM(RTRIM(@n));
+END`
+        }, {
+            name: 'fn_ObtenerNombreCompletoConductor',
+            type: 'funcion',
+            module: 'utileria',
+            description: 'Obtiene el nombre completo del conductor a partir de su ID',
+            params: [{ name: '@idConductor', type: 'INT' }],
+            returns: 'VARCHAR(200)',
+            code: `RETURNS VARCHAR(200) AS BEGIN
+    DECLARE @n VARCHAR(200);
+    SELECT @n = ISNULL(nombre,'')+' '+ISNULL(appaterno,'')+' '+ISNULL(apmaterno,'') FROM tbconductor WHERE id=@idConductor;
+    RETURN LTRIM(RTRIM(@n));
+END`
+        }, {
+            name: 'fn_ObtenerNombreCompletoUsuario',
+            type: 'funcion',
+            module: 'utileria',
+            description: 'Obtiene el nombre completo del usuario web a partir de su ID',
+            params: [{ name: '@idUsuario', type: 'INT' }],
+            returns: 'VARCHAR(200)',
+            code: `RETURNS VARCHAR(200) AS BEGIN
+    DECLARE @n VARCHAR(200);
+    SELECT @n = ISNULL(nombre,'')+' '+ISNULL(appaterno,'')+' '+ISNULL(apmaterno,'') FROM tbusuario WHERE id=@idUsuario;
+    RETURN LTRIM(RTRIM(@n));
+END`
+        }, {
+            name: 'fn_CalcularDistancia',
+            type: 'funcion',
+            module: 'utileria',
+            description: 'Calcula la distancia en kilómetros entre dos coordenadas usando la fórmula del haversine',
+            params: [
+                { name: '@lat1', type: 'DECIMAL(18,10)' },
+                { name: '@lng1', type: 'DECIMAL(18,10)' },
+                { name: '@lat2', type: 'DECIMAL(18,10)' },
+                { name: '@lng2', type: 'DECIMAL(18,10)' }
+            ],
+            returns: 'DECIMAL(18,2)',
+            code: `RETURNS DECIMAL(18,2) AS BEGIN
+    DECLARE @d DECIMAL(18,2);
+    DECLARE @R DECIMAL(10,2) = 6371;
+    DECLARE @dlat DECIMAL(18,10) = RADIANS(@lat2-@lat1);
+    DECLARE @dlng DECIMAL(18,10) = RADIANS(@lng2-@lng1);
+    DECLARE @a DECIMAL(18,10) = SIN(@dlat/2)*SIN(@dlat/2)+COS(RADIANS(@lat1))*COS(RADIANS(@lat2))*SIN(@dlng/2)*SIN(@dlng/2);
+    DECLARE @c DECIMAL(18,10) = 2*ATN2(SQRT(@a),SQRT(1-@a));
+    SET @d = @R*@c;
+    RETURN ROUND(@d,2);
+END`
+        }, {
+            name: 'fn_ValidarTokenApp',
+            type: 'funcion',
+            module: 'utileria',
+            description: 'Valida si un token de aplicación es válido y no ha expirado',
+            params: [
+                { name: '@appName', type: 'VARCHAR(50)' },
+                { name: '@token', type: 'VARCHAR(MAX)' }
+            ],
+            returns: 'BIT',
+            code: `RETURNS BIT AS BEGIN
+    DECLARE @v BIT = 0;
+    IF EXISTS (SELECT 1 FROM tbTokensApp WHERE appName=@appName AND (token=@token OR tokensecundario=@token) AND (fechaexpira>=GETDATE() OR fechaexpirasecundario>=GETDATE()))
+        SET @v = 1;
+    RETURN @v;
+END`
+        }, {
+            name: 'fn_CalcularCostoViaje',
+            type: 'funcion',
+            module: 'utileria',
+            description: 'Calcula el costo estimado de un viaje basado en distancia, duración y configuración de tarifas',
+            params: [
+                { name: '@idCompania', type: 'SMALLINT' },
+                { name: '@distanciaMetros', type: 'INT' },
+                { name: '@duracionSegundos', type: 'INT' },
+                { name: '@fechaViaje', type: 'DATETIME' }
+            ],
+            returns: 'DECIMAL(18,2)',
+            code: `RETURNS DECIMAL(18,2) AS BEGIN
+    DECLARE @c DECIMAL(18,2)=0, @dia TINYINT=DATEPART(WEEKDAY,@fechaViaje), @hora TIME=CAST(@fechaViaje AS TIME);
+    DECLARE @km DECIMAL(18,2)=@distanciaMetros/1000.0, @min DECIMAL(18,2)=@duracionSegundos/60.0;
+    SELECT TOP 1 @c=costominimo+(@km*costoporkm)+(@min*costoporminuto)
+    FROM tbappviajecostos WHERE idcompania=@idCompania AND numdiasemana=@dia AND @hora BETWEEN horainicio AND horafin
+    ORDER BY costominimo;
+    IF @c IS NULL OR @c=0
+        SELECT TOP 1 @c=costominimo+(@km*costoporkm)+(@min*costoporminuto)
+        FROM tbappviajecostos WHERE idcompania=@idCompania ORDER BY costominimo;
+    RETURN ISNULL(@c,0);
+END`
+        }, {
+            name: 'fn_CalcularComision',
+            type: 'funcion',
+            module: 'utileria',
+            description: 'Calcula la comisión aplicable a un viaje según la zona de cobertura',
+            params: [
+                { name: '@idZonaCobertura', type: 'INT' },
+                { name: '@montoViaje', type: 'DECIMAL(18,2)' }
+            ],
+            returns: 'DECIMAL(18,2)',
+            code: `RETURNS DECIMAL(18,2) AS BEGIN
+    DECLARE @c DECIMAL(18,2)=0, @p DECIMAL(5,2), @min DECIMAL(10,2), @max DECIMAL(10,2);
+    SELECT TOP 1 @p=porcentajecomision,@min=comisionminima,@max=comisionmaxima FROM tbzonacoberturacomision WHERE idzonacobertura=@idZonaCobertura AND activo=1;
+    SET @p=ISNULL(@p,3.00); SET @c=@montoViaje*(@p/100);
+    IF @c<ISNULL(@min,0) SET @c=ISNULL(@min,0);
+    RETURN ROUND(@c,2);
+END`
+        }, {
+            name: 'fn_ValidarCodigoPromocional',
+            type: 'funcion',
+            module: 'utileria',
+            description: 'Valida un código promocional y retorna su información si es válido',
+            params: [
+                { name: '@codigo', type: 'VARCHAR(100)' },
+                { name: '@idPasajero', type: 'BIGINT' },
+                { name: '@montoViaje', type: 'DECIMAL(18,2)' }
+            ],
+            returns: 'TABLE (valido BIT, mensaje VARCHAR(500), montodescuento DECIMAL(18,2), esporcentaje BIT, idcodigopromo INT)',
+            code: `RETURNS @r TABLE (valido BIT, mensaje VARCHAR(500), montodescuento DECIMAL(18,2), esporcentaje BIT, idcodigopromo INT) AS BEGIN
+    DECLARE @id INT, @vh DATETIME, @ep BIT, @md DECIMAL(18,2), @um INT, @ua INT, @mm DECIMAL(10,2), @uu BIGINT, @vd DATETIME;
+    SELECT @id=id,@vh=vigentehasta,@ep=esporcentaje,@md=montodecuento,@um=usosmaximos,@ua=usosactuales,@mm=montominimoviaje,@uu=usuariounicopasajero,@vd=validodesde
+    FROM tbcodigospromo WHERE codigopromocional=@codigo AND activo=1;
+    IF @id IS NULL BEGIN INSERT INTO @r VALUES(0,'Codigo no existe o inactivo',0,0,NULL); RETURN; END
+    IF @vh<GETDATE() BEGIN INSERT INTO @r VALUES(0,'Codigo expirado',0,0,NULL); RETURN; END
+    IF @vd>GETDATE() BEGIN INSERT INTO @r VALUES(0,'Codigo no vigente',0,0,NULL); RETURN; END
+    IF @um>0 AND @ua>=@um BEGIN INSERT INTO @r VALUES(0,'Limite de usos alcanzado',0,0,NULL); RETURN; END
+    IF @uu IS NOT NULL AND @uu<>@idPasajero BEGIN INSERT INTO @r VALUES(0,'No disponible para tu cuenta',0,0,NULL); RETURN; END
+    IF @mm IS NOT NULL AND @montoViaje<@mm BEGIN INSERT INTO @r VALUES(0,'Monto minimo no alcanzado',0,0,NULL); RETURN; END
+    DECLARE @df DECIMAL(18,2); IF @ep=1 SET @df=@montoViaje*(@md/100); ELSE SET @df=@md;
+    IF @df>@montoViaje SET @df=@montoViaje;
+    INSERT INTO @r VALUES(1,'Codigo valido',@df,@ep,@id); RETURN;
+END`
+        }, {
+            name: 'fn_ConductoresCercanos',
+            type: 'funcion',
+            module: 'utileria',
+            description: 'Retorna una tabla con los conductores cercanos a una ubicación dentro de un radio',
+            params: [
+                { name: '@lat', type: 'VARCHAR(50)' },
+                { name: '@lng', type: 'VARCHAR(50)' },
+                { name: '@radioKm', type: 'INT' },
+                { name: '@limite', type: 'INT' },
+                { name: '@idZona', type: 'INT', optional: true }
+            ],
+            returns: 'TABLE',
+            code: `RETURNS TABLE AS RETURN (
+    SELECT TOP(@limite)
+        c.id, c.nombre, c.appaterno, c.apmaterno, c.fotoperfil, c.correo, c.telefono, ISNULL(c.googlekey,'') AS googlekey,
+        g.lat, g.lng,
+        dbo.fn_CalcularDistancia(CAST(ISNULL(NULLIF(@lat,''),'0') AS DECIMAL(18,10)),CAST(ISNULL(NULLIF(@lng,''),'0') AS DECIMAL(18,10)),CAST(ISNULL(NULLIF(g.lat,''),'0') AS DECIMAL(18,10)),CAST(ISNULL(NULLIF(g.lng,''),'0') AS DECIMAL(18,10))) AS distancia_km,
+        u.id AS idunidad, u.unidad, u.alias, u.colorhex, u.colornombre, u.numeroasientos, u.placas,
+        sm.nombresubmarca, m.nombremarca, ce.conductorestatus,
+        ISNULL(c.calificacionpromedio,0) AS calificacionpromedio, ISNULL(c.totalviajes,0) AS totalviajes
+    FROM tbconductor c
+    INNER JOIN tbconductorgps g ON g.idconductor=c.id
+    INNER JOIN tbconductorestatus ce ON ce.id=c.idconductorestatus
+    LEFT JOIN tbconductorunidades cu ON cu.idconductor=c.id AND cu.enuso=1 AND cu.aprobada=1
+    LEFT JOIN tbunidad u ON u.id=cu.idunidad
+    LEFT JOIN tbsubmarca sm ON sm.id=u.idsubmarca
+    LEFT JOIN tbmarca m ON m.id=sm.idmarca
+    WHERE c.activo=1 AND c.bloqueado=0 AND c.documentacionaprobada=1
+      AND ce.conductorestatus='Disponible'
+      AND g.lat IS NOT NULL AND g.lng IS NOT NULL
+      AND (@idZona IS NULL OR c.idzonacobertura=@idZona)
+      AND dbo.fn_CalcularDistancia(CAST(ISNULL(NULLIF(@lat,''),'0') AS DECIMAL(18,10)),CAST(ISNULL(NULLIF(@lng,''),'0') AS DECIMAL(18,10)),CAST(ISNULL(NULLIF(g.lat,''),'0') AS DECIMAL(18,10)),CAST(ISNULL(NULLIF(g.lng,''),'0') AS DECIMAL(18,10)))<=@radioKm
+)`
+        }, {
+            name: 'sp_pasajero_Registrar',
+            type: 'procedimiento',
+            module: 'pasajero',
+            description: 'Registra un nuevo pasajero en el sistema',
+            params: [
+                { name: '@idCompania', type: 'SMALLINT' },
+                { name: '@nombre', type: 'VARCHAR(50)' },
+                { name: '@appaterno', type: 'VARCHAR(50)' },
+                { name: '@apmaterno', type: 'VARCHAR(50)' },
+                { name: '@correo', type: 'VARCHAR(100)' },
+                { name: '@codigopaistel', type: 'VARCHAR(15)', optional: true, default: "'+52'" },
+                { name: '@telefono', type: 'VARCHAR(30)' },
+                { name: '@googlekey', type: 'VARCHAR(MAX)' },
+                { name: '@account', type: 'VARCHAR(50)' },
+                { name: '@pass', type: 'VARCHAR(8000)' },
+                { name: '@idiomapreferido', type: 'SMALLINT', optional: true },
+                { name: '@fechanacimiento', type: 'DATE', optional: true },
+                { name: '@genero', type: 'CHAR(1)', optional: true }
+            ],
+            returns: 'ID del pasajero creado o código de error',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        IF EXISTS(SELECT 1 FROM tbpasajero WHERE account=@account AND activo=1)
+            BEGIN SELECT -1 AS id, 'La cuenta de usuario ya existe' AS mensaje; RETURN; END
+        IF EXISTS(SELECT 1 FROM tbpasajero WHERE correo=@correo AND activo=1)
+            BEGIN SELECT -2 AS id, 'El correo ya esta registrado' AS mensaje; RETURN; END
+        IF EXISTS(SELECT 1 FROM tbpasajero WHERE telefono=@telefono AND activo=1)
+            BEGIN SELECT -3 AS id, 'El telefono ya esta registrado' AS mensaje; RETURN; END
+        INSERT INTO tbpasajero(idcompania,nombre,appaterno,apmaterno,correo,codigopaistel,telefono,googlekey,account,pass,idiomapreferido,fechanacimiento,genero,conectado,ultimaconexionusr)
+        VALUES(@idCompania,@nombre,@appaterno,@apmaterno,@correo,@codigopaistel,@telefono,@googlekey,@account,@pass,@idiomapreferido,@fechanacimiento,@genero,1,GETDATE());
+        DECLARE @nuevoId BIGINT = SCOPE_IDENTITY();
+        SELECT @nuevoId AS id, 'Registro exitoso' AS mensaje;
+    END TRY
+    BEGIN CATCH
+        SELECT -99 AS id, ERROR_MESSAGE() AS mensaje;
+    END CATCH
+END`
+        }, {
+            name: 'sp_pasajero_IniciarSesion',
+            type: 'procedimiento',
+            module: 'pasajero',
+            description: 'Inicia sesión de un pasajero, soporta login normal y con Google',
+            params: [
+                { name: '@account', type: 'VARCHAR(50)' },
+                { name: '@pass', type: 'VARCHAR(8000)' },
+                { name: '@googlekey', type: 'VARCHAR(MAX)', optional: true },
+                { name: '@googlekeyso', type: 'VARCHAR(100)', optional: true },
+                { name: '@dispositivoinfo', type: 'VARCHAR(500)', optional: true },
+                { name: '@sistemaoperativo', type: 'VARCHAR(100)', optional: true },
+                { name: '@ipaddress', type: 'VARCHAR(50)', optional: true },
+                { name: '@useragent', type: 'VARCHAR(500)', optional: true },
+                { name: '@esLoginGoogle', type: 'BIT', optional: true },
+                { name: '@googleuserid', type: 'VARCHAR(255)', optional: true }
+            ],
+            returns: 'Datos del pasajero y UUID de sesión',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        DECLARE @idPasajero BIGINT;
+        IF @esLoginGoogle=1 AND @googleuserid IS NOT NULL
+            SELECT @idPasajero=id FROM tbpasajero WHERE googleuserid=@googleuserid AND activo=1 AND bloqueado=0;
+        ELSE
+            SELECT @idPasajero=id FROM tbpasajero WHERE (account=@account OR correo=@account) AND pass=@pass AND activo=1 AND bloqueado=0;
+        IF @idPasajero IS NULL BEGIN SELECT -1 AS id, 'Credenciales invalidas o cuenta bloqueada' AS mensaje; RETURN; END
+        UPDATE tbpasajero SET conectado=1, ultimaconexionusr=GETDATE(), googlekey=ISNULL(@googlekey,googlekey), googlekeyso=ISNULL(@googlekeyso,googlekeyso) WHERE id=@idPasajero;
+        INSERT INTO tbhistorialconexionespasajero(idpasajero,conectado) VALUES(@idPasajero,1);
+        DECLARE @uuidsesion VARCHAR(1500)=NEWID();
+        INSERT INTO tbsesionusuario(idtipousuario,idpasajero,uuidsesion,fechaconexion,activo,dispositivoinfo,sistemaoperativo,ipaddress,useragent)
+        VALUES(1,@idPasajero,@uuidsesion,GETDATE(),1,@dispositivoinfo,@sistemaoperativo,@ipaddress,@useragent);
+        SELECT p.id,p.idcompania,p.nombre,p.appaterno,p.apmaterno,p.correo,p.correoconfirmado,p.codigopaistel,p.telefono,p.telefonoconfirmado,p.fotoperfil,p.account,
+               p.requierefacturacion,p.bloqueado,p.eslogueadocongoogle,p.googleuserid,p.fotourlgoogle,p.metodopagopreferido,p.idiomapreferido,p.fechanacimiento,p.genero,
+               mp.metodopago,i.idioma,@uuidsesion AS uuidsesion,'Inicio de sesion exitoso' AS mensaje
+        FROM tbpasajero p LEFT JOIN tbmetodopago mp ON mp.id=p.metodopagopreferido LEFT JOIN tbidioma i ON i.id=p.idiomapreferido WHERE p.id=@idPasajero;
+    END TRY
+    BEGIN CATCH SELECT -99 AS id, ERROR_MESSAGE() AS mensaje; END CATCH
+END`
+        }, {
+            name: 'sp_pasajero_CerrarSesion',
+            type: 'procedimiento',
+            module: 'pasajero',
+            description: 'Cierra la sesión de un pasajero',
+            params: [
+                { name: '@idPasajero', type: 'BIGINT' },
+                { name: '@uuidsesion', type: 'VARCHAR(1500)', optional: true }
+            ],
+            returns: 'Resultado de la operación',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        UPDATE tbpasajero SET conectado=0, ultimadesconexionusr=GETDATE() WHERE id=@idPasajero;
+        INSERT INTO tbhistorialconexionespasajero(idpasajero,conectado) VALUES(@idPasajero,0);
+        IF @uuidsesion IS NOT NULL
+            UPDATE tbsesionusuario SET activo=0, fechadesconexion=GETDATE() WHERE uuidsesion=@uuidsesion AND idpasajero=@idPasajero;
+        ELSE
+            UPDATE tbsesionusuario SET activo=0, fechadesconexion=GETDATE() WHERE idpasajero=@idPasajero AND activo=1;
+        SELECT 1 AS resultado, 'Sesion cerrada' AS mensaje;
+    END TRY
+    BEGIN CATCH SELECT -99 AS resultado, ERROR_MESSAGE() AS mensaje; END CATCH
+END`
+        }, {
+            name: 'sp_pasajero_ActualizarPerfil',
+            type: 'procedimiento',
+            module: 'pasajero',
+            description: 'Actualiza los datos del perfil del pasajero',
+            params: [
+                { name: '@idPasajero', type: 'BIGINT' },
+                { name: '@nombre', type: 'VARCHAR(50)', optional: true },
+                { name: '@appaterno', type: 'VARCHAR(50)', optional: true },
+                { name: '@apmaterno', type: 'VARCHAR(50)', optional: true },
+                { name: '@fotoperfil', type: 'VARCHAR(MAX)', optional: true },
+                { name: '@idiomapreferido', type: 'SMALLINT', optional: true },
+                { name: '@fechanacimiento', type: 'DATE', optional: true },
+                { name: '@genero', type: 'CHAR(1)', optional: true },
+                { name: '@notasadicionales', type: 'VARCHAR(500)', optional: true }
+            ],
+            returns: 'Resultado de la operación',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    IF NOT EXISTS(SELECT 1 FROM tbpasajero WHERE id=@idPasajero AND activo=1)
+        BEGIN SELECT -1 AS resultado, 'Pasajero no encontrado' AS mensaje; RETURN; END
+    UPDATE tbpasajero SET nombre=ISNULL(@nombre,nombre),appaterno=ISNULL(@appaterno,appaterno),apmaterno=ISNULL(@apmaterno,apmaterno),
+        fotoperfil=ISNULL(@fotoperfil,fotoperfil),idiomapreferido=ISNULL(@idiomapreferido,idiomapreferido),fechanacimiento=ISNULL(@fechanacimiento,fechanacimiento),
+        genero=ISNULL(@genero,genero),notasadicionales=ISNULL(@notasadicionales,notasadicionales),ultimaactualizacion=GETDATE() WHERE id=@idPasajero;
+    SELECT 1 AS resultado, 'Perfil actualizado' AS mensaje;
+END`
+        }, {
+            name: 'sp_pasajero_CambiarPassword',
+            type: 'procedimiento',
+            module: 'pasajero',
+            description: 'Cambia la contraseña del pasajero verificando la actual',
+            params: [
+                { name: '@idPasajero', type: 'BIGINT' },
+                { name: '@passActual', type: 'VARCHAR(8000)' },
+                { name: '@passNuevo', type: 'VARCHAR(8000)' }
+            ],
+            returns: 'Resultado de la operación',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    IF NOT EXISTS(SELECT 1 FROM tbpasajero WHERE id=@idPasajero AND pass=@passActual AND activo=1)
+        BEGIN SELECT -1 AS resultado, 'Contrasena actual incorrecta' AS mensaje; RETURN; END
+    UPDATE tbpasajero SET pass=@passNuevo, ultimaactualizacion=GETDATE() WHERE id=@idPasajero;
+    SELECT 1 AS resultado, 'Contrasena actualizada' AS mensaje;
+END`
+        }, {
+            name: 'sp_pasajero_SolicitarServicio',
+            type: 'procedimiento',
+            module: 'pasajero',
+            description: 'Solicita un nuevo servicio de viaje',
+            params: [
+                { name: '@idPasajero', type: 'BIGINT' },
+                { name: '@idCompania', type: 'SMALLINT' },
+                { name: '@dirOrigen', type: 'VARCHAR(300)' },
+                { name: '@latOrigen', type: 'VARCHAR(50)' },
+                { name: '@lngOrigen', type: 'VARCHAR(50)' },
+                { name: '@dirDestino', type: 'VARCHAR(300)' },
+                { name: '@latDestino', type: 'VARCHAR(50)' },
+                { name: '@lngDestino', type: 'VARCHAR(50)' },
+                { name: '@distanciaMetros', type: 'INT' },
+                { name: '@idTipoPago', type: 'SMALLINT' },
+                { name: '@codigoPromocional', type: 'VARCHAR(100)', optional: true },
+                { name: '@so', type: 'VARCHAR(100)', optional: true },
+                { name: '@tipoviaje', type: 'VARCHAR(50)', optional: true, default: "'URBANO'" }
+            ],
+            returns: 'ID del servicio y costo estimado',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        DECLARE @costo DECIMAL(18,2), @idCodPromo INT, @desc DECIMAL(18,2)=0, @dur INT=@distanciaMetros/250*60;
+        DECLARE @idZona INT, @kms INT, @numUnid INT;
+        SELECT @kms=kmsalaredondamascercanos,@numUnid=nounidadesmascercanas FROM tbcompania WHERE id=@idCompania;
+        SELECT @idZona=id FROM tbzonacobertura WHERE activo=1 AND dbo.fn_CalcularDistancia(CAST(@latOrigen AS DECIMAL(18,10)),CAST(@lngOrigen AS DECIMAL(18,10)),CAST(ISNULL(latitudcentro,'0') AS DECIMAL(18,10)),CAST(ISNULL(longitudcentro,'0') AS DECIMAL(18,10))) <= radio_km;
+        IF @codigoPromocional IS NOT NULL BEGIN
+            DECLARE @pr TABLE(v BIT,m VARCHAR(500),md DECIMAL(18,2),ep BIT,ic INT);
+            INSERT INTO @pr EXEC sp_pasajero_ValidarCodigoPromocional @codigoPromocional,@idPasajero,@costo;
+            SELECT @idCodPromo=ic,@desc=md FROM @pr WHERE v=1;
+        END
+        SET @costo = dbo.fn_CalcularCostoViaje(@idCompania,@distanciaMetros,@dur,GETDATE())-@desc;
+        IF @costo<0 SET @costo=0;
+        INSERT INTO tbservicios(idconductor,idpasajero,idservicioestatus,direccionorigen,latorigen,lngorigen,direcciondestination,latdestination,lngdestination,costoestimado,distanciametros,idtipopago,idcodigopromo,montodescuento,so,tipoviaje,durationsegundos)
+        VALUES(NULL,@idPasajero,(SELECT id FROM tbservicioestatus WHERE estatus='Solicitado' AND activo=1),@dirOrigen,@latOrigen,@lngOrigen,@dirDestino,@latDestino,@lngDestino,@costo,@distanciaMetros,@idTipoPago,@idCodPromo,@desc,@so,@tipoviaje,@dur);
+        DECLARE @idServ BIGINT=SCOPE_IDENTITY();
+        INSERT INTO tbhistoriallatlngconsultadapasajero(idpasajero,lat,lng) VALUES(@idPasajero,@latOrigen,@lngOrigen);
+        IF @idCodPromo IS NOT NULL BEGIN
+            UPDATE tbcodigospromo SET usosactuales=usosactuales+1 WHERE id=@idCodPromo;
+            INSERT INTO tbcodigospromousados(idpasajero,idcodigopromo,idservicio) VALUES(@idPasajero,@idCodPromo,@idServ);
+        END
+        SELECT @idServ AS idservicio, @costo AS costoestimado, @distanciaMetros AS distanciametros, @dur AS duracionsegundos, @desc AS montodescuento, 'Servicio solicitado' AS mensaje;
+    END TRY
+    BEGIN CATCH SELECT -99 AS idservicio, ERROR_MESSAGE() AS mensaje; END CATCH
+END`
+        }, {
+            name: 'sp_pasajero_ConductoresDisponibles',
+            type: 'procedimiento',
+            module: 'pasajero',
+            description: 'Obtiene la lista de conductores disponibles cercanos',
+            params: [
+                { name: '@lat', type: 'VARCHAR(50)' },
+                { name: '@lng', type: 'VARCHAR(50)' },
+                { name: '@idZona', type: 'INT', optional: true }
+            ],
+            returns: 'Lista de conductores con su distancia y datos de la unidad',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    DECLARE @radio INT; SELECT @radio=kmsalaredondamascercanos FROM tbcompania WHERE activo=1;
+    SELECT * FROM dbo.fn_ConductoresCercanos(@lat,@lng,@radio,20,@idZona) ORDER BY distancia_km;
+END`
+        }, {
+            name: 'sp_pasajero_ObtenerEstadoServicio',
+            type: 'procedimiento',
+            module: 'pasajero',
+            description: 'Obtiene el estado actual de un servicio solicitado',
+            params: [
+                { name: '@idServicio', type: 'BIGINT' },
+                { name: '@idPasajero', type: 'BIGINT' }
+            ],
+            returns: 'Todos los datos del servicio incluyendo conductor y unidad',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    SELECT s.id,s.idservicioestatus,se.estatus,se.estatusdescription,s.direccionorigen,s.latorigen,s.lngorigen,s.direcciondestination,s.latdestination,s.lngdestination,
+           s.costoestimado,s.distanciametros,s.durationsegundos,s.montodescuento,s.servicioiniciado,s.llegoalorigen,s.llegoasudestino,s.fechacreacion,s.fechaservicioiniciado,
+           s.fechallegoalorigen,s.fechallegoasudestino,s.alarmasospasajero,s.alarmasosconductor,s.sesalioderuta,s.motivocancelacion,s.canceladopor,s.fechacancelacion,
+           s.calificacion,s.idconductor,c.nombre AS conductor_nombre,c.appaterno AS conductor_appaterno,c.fotoperfil AS conductor_foto,c.telefono AS conductor_telefono,
+           c.calificacionpromedio AS conductor_calificacion,u.unidad,u.colorhex,u.colornombre,u.numeroasientos,u.placas,sm.nombresubmarca,m.nombremarca,g.lat AS conductor_lat,g.lng AS conductor_lng
+    FROM tbservicios s INNER JOIN tbservicioestatus se ON se.id=s.idservicioestatus
+    LEFT JOIN tbconductor c ON c.id=s.idconductor LEFT JOIN tbconductorunidades cu ON cu.idconductor=c.id AND cu.enuso=1
+    LEFT JOIN tbunidad u ON u.id=cu.idunidad LEFT JOIN tbsubmarca sm ON sm.id=u.idsubmarca
+    LEFT JOIN tbmarca m ON m.id=sm.idmarca LEFT JOIN tbconductorgps g ON g.idconductor=c.id
+    WHERE s.id=@idServicio AND s.idpasajero=@idPasajero;
+END`
+        }, {
+            name: 'sp_pasajero_CalificarViaje',
+            type: 'procedimiento',
+            module: 'pasajero',
+            description: 'Califica un viaje finalizado (1-5)',
+            params: [
+                { name: '@idServicio', type: 'BIGINT' },
+                { name: '@idPasajero', type: 'BIGINT' },
+                { name: '@calificacion', type: 'TINYINT' },
+                { name: '@comentarios', type: 'VARCHAR(500)', optional: true }
+            ],
+            returns: 'Resultado de la operación',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    IF @calificacion<1 OR @calificacion>5 BEGIN SELECT -1 AS resultado, 'Rango 1-5' AS mensaje; RETURN; END
+    DECLARE @fin SMALLINT=(SELECT id FROM tbservicioestatus WHERE estatus='Finalizado' AND activo=1);
+    IF NOT EXISTS(SELECT 1 FROM tbservicios WHERE id=@idServicio AND idpasajero=@idPasajero AND idservicioestatus=@fin)
+        BEGIN SELECT -2 AS resultado, 'Servicio no finalizado' AS mensaje; RETURN; END
+    UPDATE tbservicios SET calificacion=@calificacion, comentarios=@comentarios, ultimaactualizacion=GETDATE() WHERE id=@idServicio;
+    DECLARE @idCond INT; SELECT @idCond=idconductor FROM tbservicios WHERE id=@idServicio;
+    IF @idCond IS NOT NULL
+        UPDATE tbconductor SET calificacionpromedio=(SELECT ROUND(AVG(CAST(calificacion AS DECIMAL(3,1))),1) FROM tbservicios WHERE idconductor=@idCond AND calificacion IS NOT NULL),
+               totalviajes=(SELECT COUNT(*) FROM tbservicios WHERE idconductor=@idCond AND idservicioestatus=@fin) WHERE id=@idCond;
+    SELECT 1 AS resultado, 'Calificacion registrada' AS mensaje;
+END`
+        }, {
+            name: 'sp_pasajero_HistorialViajes',
+            type: 'procedimiento',
+            module: 'pasajero',
+            description: 'Obtiene el historial de viajes del pasajero con paginación',
+            params: [
+                { name: '@idPasajero', type: 'BIGINT' },
+                { name: '@pagina', type: 'INT', optional: true, default: '1' },
+                { name: '@tamano', type: 'INT', optional: true, default: '20' },
+                { name: '@fi', type: 'DATETIME', optional: true },
+                { name: '@ff', type: 'DATETIME', optional: true }
+            ],
+            returns: 'Lista paginada de viajes con total de registros',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    DECLARE @off INT=(@pagina-1)*@tamano;
+    SELECT s.id,s.direccionorigen,s.direcciondestination,s.costoestimado,s.distanciametros,s.durationsegundos,s.fechacreacion,s.fechaservicioiniciado,
+           s.fechallegoasudestino,s.calificacion,s.calificacionpasajero,se.estatus,c.nombre AS cond_nombre,c.appaterno AS cond_appaterno,c.fotoperfil AS cond_foto,
+           u.unidad,sm.nombresubmarca,m.nombremarca,u.colorhex,tp.tipopago,COUNT(*) OVER() AS totalregistros
+    FROM tbservicios s INNER JOIN tbservicioestatus se ON se.id=s.idservicioestatus
+    LEFT JOIN tbconductor c ON c.id=s.idconductor LEFT JOIN tbunidad u ON u.id=s.idunidad
+    LEFT JOIN tbsubmarca sm ON sm.id=u.idsubmarca LEFT JOIN tbmarca m ON m.id=sm.idmarca
+    LEFT JOIN tbtipopago tp ON tp.id=s.idtipopago
+    WHERE s.idpasajero=@idPasajero AND (@fi IS NULL OR s.fechacreacion>=@fi) AND (@ff IS NULL OR s.fechacreacion<=@ff)
+    ORDER BY s.fechacreacion DESC OFFSET @off ROWS FETCH NEXT @tamano ROWS ONLY;
+END`
+        }, {
+            name: 'sp_conductor_Registrar',
+            type: 'procedimiento',
+            module: 'conductor',
+            description: 'Registra un nuevo conductor en el sistema',
+            params: [
+                { name: '@idCompania', type: 'SMALLINT' },
+                { name: '@idZonaCobertura', type: 'INT', optional: true },
+                { name: '@nombre', type: 'VARCHAR(50)' },
+                { name: '@appaterno', type: 'VARCHAR(50)' },
+                { name: '@apmaterno', type: 'VARCHAR(50)' },
+                { name: '@sexo', type: 'CHAR(1)' },
+                { name: '@correo', type: 'VARCHAR(100)' },
+                { name: '@telefono', type: 'VARCHAR(30)' },
+                { name: '@googlekey', type: 'VARCHAR(MAX)' },
+                { name: '@account', type: 'VARCHAR(50)' },
+                { name: '@pass', type: 'VARCHAR(8000)' },
+                { name: '@curp', type: 'VARCHAR(50)', optional: true },
+                { name: '@rfc', type: 'VARCHAR(50)', optional: true },
+                { name: '@licencia', type: 'VARCHAR(50)', optional: true },
+                { name: '@idioma', type: 'SMALLINT', optional: true },
+                { name: '@fechaNac', type: 'DATE', optional: true }
+            ],
+            returns: 'ID del conductor creado',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    IF EXISTS(SELECT 1 FROM tbconductor WHERE account=@account AND activo=1) BEGIN SELECT -1 AS id, 'Cuenta ya existe' AS mensaje; RETURN; END
+    IF EXISTS(SELECT 1 FROM tbconductor WHERE correo=@correo AND activo=1) BEGIN SELECT -2 AS id, 'Correo ya registrado' AS mensaje; RETURN; END
+    IF EXISTS(SELECT 1 FROM tbconductor WHERE telefono=@telefono AND activo=1) BEGIN SELECT -3 AS id, 'Telefono ya registrado' AS mensaje; RETURN; END
+    DECLARE @idEstVal SMALLINT=(SELECT id FROM tbconductorestatus WHERE conductorestatus='En Validacion');
+    DECLARE @idEstDocs INT=(SELECT id FROM tbestatusdocumentacion WHERE nombreestatusdocs='Pendiente');
+    INSERT INTO tbconductor(idcompania,idzonacobertura,nombre,appaterno,apmaterno,idconductorestatus,sexo,correo,telefono,googlekey,account,pass,idestatusdocumentacion,documentacionaprobada,curp,rfc,licenciaconducir,idiomapreferido,fechanacimiento,conectado,ultimaconexionusr)
+    VALUES(@idCompania,@idZonaCobertura,@nombre,@appaterno,@apmaterno,@idEstVal,@sexo,@correo,@telefono,@googlekey,@account,@pass,@idEstDocs,0,@curp,@rfc,@licencia,@idioma,@fechaNac,1,GETDATE());
+    DECLARE @nuevoId INT=SCOPE_IDENTITY();
+    INSERT INTO tbconductorgps(idconductor,lat,lng,lastposition,previouslat,previouslng) VALUES(@nuevoId,'','',GETDATE(),'','');
+    INSERT INTO tbhistorialconexionesconductor(idconductor,conectado) VALUES(@nuevoId,1);
+    SELECT @nuevoId AS id, 'Registro exitoso. Complete su documentacion.' AS mensaje;
+END`
+        }, {
+            name: 'sp_conductor_IniciarSesion',
+            type: 'procedimiento',
+            module: 'conductor',
+            description: 'Inicia sesión de un conductor con soporte para Google',
+            params: [
+                { name: '@account', type: 'VARCHAR(50)' },
+                { name: '@pass', type: 'VARCHAR(8000)' },
+                { name: '@googlekey', type: 'VARCHAR(MAX)', optional: true },
+                { name: '@googlekeyso', type: 'VARCHAR(100)', optional: true },
+                { name: '@dispositivoinfo', type: 'VARCHAR(500)', optional: true },
+                { name: '@sistemaoperativo', type: 'VARCHAR(100)', optional: true },
+                { name: '@ipaddress', type: 'VARCHAR(50)', optional: true },
+                { name: '@useragent', type: 'VARCHAR(500)', optional: true },
+                { name: '@esLoginGoogle', type: 'BIT', optional: true },
+                { name: '@googleuserid', type: 'VARCHAR(255)', optional: true }
+            ],
+            returns: 'Datos del conductor y UUID de sesión',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    DECLARE @idConductor INT;
+    IF @esLoginGoogle=1 AND @googleuserid IS NOT NULL
+        SELECT @idConductor=id FROM tbconductor WHERE googleuserid=@googleuserid AND activo=1 AND bloqueado=0;
+    ELSE
+        SELECT @idConductor=id FROM tbconductor WHERE (account=@account OR correo=@account) AND pass=@pass AND activo=1 AND bloqueado=0;
+    IF @idConductor IS NULL BEGIN SELECT -1 AS id, 'Credenciales invalidas' AS mensaje; RETURN; END
+    UPDATE tbconductor SET conectado=1,ultimaconexionusr=GETDATE(),googlekey=ISNULL(@googlekey,googlekey),googlekeyso=ISNULL(@googlekeyso,googlekeyso) WHERE id=@idConductor;
+    INSERT INTO tbhistorialconexionesconductor(idconductor,conectado) VALUES(@idConductor,1);
+    DECLARE @uuidsesion VARCHAR(1500)=NEWID();
+    INSERT INTO tbsesionusuario(idtipousuario,idconductor,uuidsesion,fechaconexion,activo,dispositivoinfo,sistemaoperativo,ipaddress,useragent)
+    VALUES(2,@idConductor,@uuidsesion,GETDATE(),1,@dispositivoinfo,@sistemaoperativo,@ipaddress,@useragent);
+    SELECT c.id,c.idcompania,c.idzonacobertura,c.nombre,c.appaterno,c.apmaterno,c.sexo,c.correo,c.telefono,c.telefonoconfirmado,c.fotoperfil,c.account,
+           c.idconductorestatus,ce.conductorestatus,c.documentacionaprobada,c.idestatusdocumentacion,ed.nombreestatusdocs,c.bloqueado,c.curp,c.rfc,c.licenciaconducir,
+           c.fechavencimientolicencia,c.eslogueadocongoogle,c.googleuserid,c.fotourlgoogle,c.idiomapreferido,c.calificacionpromedio,c.totalviajes,c.banco,c.nombretitular,c.clabeinterbancaria,
+           zc.nombrezona,i.idioma,@uuidsesion AS uuidsesion,'Inicio exitoso' AS mensaje
+    FROM tbconductor c INNER JOIN tbconductorestatus ce ON ce.id=c.idconductorestatus
+    LEFT JOIN tbestatusdocumentacion ed ON ed.id=c.idestatusdocumentacion
+    LEFT JOIN tbzonacobertura zc ON zc.id=c.idzonacobertura LEFT JOIN tbidioma i ON i.id=c.idiomapreferido WHERE c.id=@idConductor;
+END`
+        }, {
+            name: 'sp_conductor_ActualizarUbicacionGPS',
+            type: 'procedimiento',
+            module: 'conductor',
+            description: 'Actualiza la ubicación GPS del conductor en tiempo real',
+            params: [
+                { name: '@idConductor', type: 'INT' },
+                { name: '@lat', type: 'VARCHAR(50)' },
+                { name: '@lng', type: 'VARCHAR(50)' }
+            ],
+            returns: 'Resultado de la operación',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    DECLARE @pl VARCHAR(50),@pn VARCHAR(50); SELECT @pl=lat,@pn=lng FROM tbconductorgps WHERE idconductor=@idConductor;
+    UPDATE tbconductorgps SET previouslat=ISNULL(@pl,@lat),previouslng=ISNULL(@pn,@lng),lat=@lat,lng=@lng,lastposition=GETDATE(),ultimaactualizacion=GETDATE() WHERE idconductor=@idConductor;
+    INSERT INTO tbconductorgpshistory(idconductor,lat,lng,idconductorestatus) SELECT @idConductor,@lat,@lng,idconductorestatus FROM tbconductor WHERE id=@idConductor;
+    SELECT 1 AS resultado, 'Ubicacion actualizada' AS mensaje;
+END`
+        }, {
+            name: 'sp_conductor_AceptarServicio',
+            type: 'procedimiento',
+            module: 'conductor',
+            description: 'Acepta un servicio solicitado y cambia el estatus del conductor',
+            params: [
+                { name: '@idServicio', type: 'BIGINT' },
+                { name: '@idConductor', type: 'INT' }
+            ],
+            returns: 'Datos del servicio y pasajero',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    DECLARE @sol SMALLINT=(SELECT id FROM tbservicioestatus WHERE estatus='Solicitado' AND activo=1);
+    IF NOT EXISTS(SELECT 1 FROM tbservicios WHERE id=@idServicio AND idservicioestatus=@sol)
+        BEGIN SELECT -1 AS resultado, 'Servicio no disponible' AS mensaje; RETURN; END
+    DECLARE @cam SMALLINT=(SELECT id FROM tbservicioestatus WHERE estatus='En Camino' AND activo=1);
+    DECLARE @ocup SMALLINT=(SELECT id FROM tbconductorestatus WHERE conductorestatus='Ocupado');
+    UPDATE tbservicios SET idconductor=@idConductor,idservicioestatus=@cam,idunidad=(SELECT idunidad FROM tbconductorunidades WHERE idconductor=@idConductor AND enuso=1),ultimaactualizacion=GETDATE() WHERE id=@idServicio;
+    UPDATE tbconductor SET idconductorestatus=@ocup WHERE id=@idConductor;
+    DELETE FROM tbserviciosconductoresnotificados WHERE idservicio=@idServicio;
+    SELECT 1 AS resultado,'Servicio aceptado, dirigete al origen' AS mensaje,s.direccionorigen,s.latorigen,s.lngorigen,s.direcciondestination,s.latdestination,s.lngdestination,s.distanciametros,s.costoestimado,s.tipoviaje,p.nombre AS pas_nombre,p.fotoperfil AS pas_foto,p.telefono AS pas_tel
+    FROM tbservicios s INNER JOIN tbpasajero p ON p.id=s.idpasajero WHERE s.id=@idServicio;
+END`
+        }, {
+            name: 'sp_conductor_FinalizarViaje',
+            type: 'procedimiento',
+            module: 'conductor',
+            description: 'Finaliza un viaje, calcula comisión y guarda la ruta',
+            params: [
+                { name: '@idServicio', type: 'BIGINT' },
+                { name: '@idConductor', type: 'INT' },
+                { name: '@distReal', type: 'INT', optional: true },
+                { name: '@durReal', type: 'INT', optional: true },
+                { name: '@poly', type: 'VARCHAR(MAX)', optional: true },
+                { name: '@puntos', type: 'VARCHAR(MAX)', optional: true }
+            ],
+            returns: 'Resultado de la operación',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    DECLARE @viaje SMALLINT=(SELECT id FROM tbservicioestatus WHERE estatus='En Viaje' AND activo=1);
+    DECLARE @fin SMALLINT=(SELECT id FROM tbservicioestatus WHERE estatus='Finalizado' AND activo=1);
+    DECLARE @disp SMALLINT=(SELECT id FROM tbconductorestatus WHERE conductorestatus='Disponible');
+    UPDATE tbservicios SET idservicioestatus=@fin,llegoasudestino=1,fechallegoasudestino=GETDATE(),distanciametros=ISNULL(@distReal,distanciametros),durationsegundos=ISNULL(@durReal,durationsegundos),ultimaactualizacion=GETDATE(),fechafinalizoconductor=GETDATE() WHERE id=@idServicio AND idconductor=@idConductor AND idservicioestatus=@viaje;
+    UPDATE tbconductor SET idconductorestatus=@disp WHERE id=@idConductor;
+    IF @poly IS NOT NULL OR @puntos IS NOT NULL BEGIN
+        IF EXISTS(SELECT 1 FROM tbrutaasignada WHERE idservicio=@idServicio)
+            UPDATE tbrutaasignada SET polylineruta=ISNULL(@poly,polylineruta),puntosruta=ISNULL(@puntos,puntosruta),distanciametros=ISNULL(@distReal,distanciametros),duracionsegundos=ISNULL(@durReal,duracionsegundos),ultimaactualizacion=GETDATE() WHERE idservicio=@idServicio;
+        ELSE
+            INSERT INTO tbrutaasignada(idservicio,polylineruta,puntosruta,distanciametros,duracionsegundos) VALUES(@idServicio,@poly,@puntos,@distReal,@durReal);
+    END
+    SELECT 1 AS resultado,'Viaje finalizado' AS mensaje;
+END`
+        }, {
+            name: 'sp_usuario_IniciarSesion',
+            type: 'procedimiento',
+            module: 'admin',
+            description: 'Inicia sesión en el portal web de administración',
+            params: [
+                { name: '@account', type: 'VARCHAR(50)' },
+                { name: '@pass', type: 'VARCHAR(8000)' },
+                { name: '@dispositivoinfo', type: 'VARCHAR(500)', optional: true },
+                { name: '@sistemaoperativo', type: 'VARCHAR(100)', optional: true },
+                { name: '@ipaddress', type: 'VARCHAR(50)', optional: true },
+                { name: '@useragent', type: 'VARCHAR(500)', optional: true }
+            ],
+            returns: 'Datos del usuario y UUID de sesión',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    DECLARE @idUsuario INT; SELECT @idUsuario=id FROM tbusuario WHERE (account=@account OR correo=@account) AND pass=@pass AND activo=1;
+    IF @idUsuario IS NULL BEGIN SELECT -1 AS id,'Credenciales invalidas' AS mensaje; RETURN; END
+    DECLARE @uuidsesion VARCHAR(1500)=NEWID();
+    INSERT INTO tbsesionusuario(idtipousuario,idusuario,uuidsesion,fechaconexion,activo,dispositivoinfo,sistemaoperativo,ipaddress,useragent) VALUES(3,@idUsuario,@uuidsesion,GETDATE(),1,@dispositivoinfo,@sistemaoperativo,@ipaddress,@useragent);
+    INSERT INTO tbauditoria(tablaafectada,idregistro,accion,idusuario,ipaddress,useragent) VALUES('tbusuario',CAST(@idUsuario AS VARCHAR),'LOGIN',@idUsuario,@ipaddress,@useragent);
+    SELECT u.id,u.idcompania,u.nombre,u.appaterno,u.apmaterno,u.sexo,u.correo,u.telefono,u.account,u.fotoperfil,u.esusuariopropietario,u.puedeveratodoconductor,u.idrol,r.rolnombre,c.companianombre,@uuidsesion AS uuidsesion,'Inicio exitoso' AS mensaje FROM tbusuario u INNER JOIN tbrol r ON r.id=u.idrol INNER JOIN tbcompania c ON c.id=u.idcompania WHERE u.id=@idUsuario;
+END`
+        }, {
+            name: 'sp_conductor_Listar',
+            type: 'procedimiento',
+            module: 'admin',
+            description: 'Lista conductores con filtros y paginación para administradores',
+            params: [
+                { name: '@idCompania', type: 'SMALLINT', optional: true },
+                { name: '@idZona', type: 'INT', optional: true },
+                { name: '@idEst', type: 'SMALLINT', optional: true },
+                { name: '@docAprob', type: 'BIT', optional: true },
+                { name: '@bloq', type: 'BIT', optional: true },
+                { name: '@search', type: 'VARCHAR(100)', optional: true },
+                { name: '@pagina', type: 'INT', optional: true, default: '1' },
+                { name: '@tamano', type: 'INT', optional: true, default: '50' }
+            ],
+            returns: 'Lista paginada de conductores',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    DECLARE @off INT=(@pagina-1)*@tamano;
+    SELECT c.id,c.nombre,c.appaterno,c.apmaterno,c.sexo,c.correo,c.telefono,c.account,c.fotoperfil,c.curp,c.rfc,c.licenciaconducir,c.idconductorestatus,ce.conductorestatus,c.idestatusdocumentacion,ed.nombreestatusdocs,c.documentacionaprobada,c.bloqueado,c.conectado,c.calificacionpromedio,c.totalviajes,c.idzonacobertura,zc.nombrezona,c.fechacreacion,c.ultimaconexionusr,c.ultimaactualizacion,c.banco,c.clabeinterbancaria,COUNT(*) OVER() AS totalregistros FROM tbconductor c INNER JOIN tbconductorestatus ce ON ce.id=c.idconductorestatus LEFT JOIN tbestatusdocumentacion ed ON ed.id=c.idestatusdocumentacion LEFT JOIN tbzonacobertura zc ON zc.id=c.idzonacobertura WHERE (@idCompania IS NULL OR c.idcompania=@idCompania) AND (@idZona IS NULL OR c.idzonacobertura=@idZona) AND (@idEst IS NULL OR c.idconductorestatus=@idEst) AND (@docAprob IS NULL OR c.documentacionaprobada=@docAprob) AND (@bloq IS NULL OR c.bloqueado=@bloq) AND (@search IS NULL OR c.nombre LIKE '%'+@search+'%' OR c.correo LIKE '%'+@search+'%' OR c.account LIKE '%'+@search+'%' OR c.telefono LIKE '%'+@search+'%') ORDER BY c.fechacreacion DESC OFFSET @off ROWS FETCH NEXT @tamano ROWS ONLY;
+END`
+        }, {
+            name: 'sp_pasajero_Listar',
+            type: 'procedimiento',
+            module: 'admin',
+            description: 'Lista pasajeros con filtros y paginación para administradores',
+            params: [
+                { name: '@idCompania', type: 'SMALLINT', optional: true },
+                { name: '@bloq', type: 'BIT', optional: true },
+                { name: '@search', type: 'VARCHAR(100)', optional: true },
+                { name: '@pagina', type: 'INT', optional: true, default: '1' },
+                { name: '@tamano', type: 'INT', optional: true, default: '50' }
+            ],
+            returns: 'Lista paginada de pasajeros',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    DECLARE @off INT=(@pagina-1)*@tamano;
+    SELECT p.id,p.nombre,p.appaterno,p.apmaterno,p.correo,p.correoconfirmado,p.codigopaistel,p.telefono,p.telefonoconfirmado,p.account,p.bloqueado,p.conectado,p.ultimaconexionusr,p.fechacreacion,p.eslogueadocongoogle,p.metodopagopreferido,mp.metodopago,c.companianombre,(SELECT COUNT(*) FROM tbservicios WHERE idpasajero=p.id) AS totalviajes,COUNT(*) OVER() AS totalregistros FROM tbpasajero p LEFT JOIN tbmetodopago mp ON mp.id=p.metodopagopreferido LEFT JOIN tbcompania c ON c.id=p.idcompania WHERE (@idCompania IS NULL OR p.idcompania=@idCompania) AND (@bloq IS NULL OR p.bloqueado=@bloq) AND (@search IS NULL OR p.nombre LIKE '%'+@search+'%' OR p.correo LIKE '%'+@search+'%' OR p.account LIKE '%'+@search+'%' OR p.telefono LIKE '%'+@search+'%') ORDER BY p.fechacreacion DESC OFFSET @off ROWS FETCH NEXT @tamano ROWS ONLY;
+END`
+        }, {
+            name: 'sp_servicio_Listar',
+            type: 'procedimiento',
+            module: 'admin',
+            description: 'Lista servicios con múltiples filtros para administradores',
+            params: [
+                { name: '@idServicio', type: 'BIGINT', optional: true },
+                { name: '@idConductor', type: 'INT', optional: true },
+                { name: '@idPasajero', type: 'BIGINT', optional: true },
+                { name: '@idEst', type: 'SMALLINT', optional: true },
+                { name: '@fi', type: 'DATETIME', optional: true },
+                { name: '@ff', type: 'DATETIME', optional: true },
+                { name: '@idZona', type: 'INT', optional: true },
+                { name: '@pagina', type: 'INT', optional: true, default: '1' },
+                { name: '@tamano', type: 'INT', optional: true, default: '50' }
+            ],
+            returns: 'Lista paginada de servicios',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    DECLARE @off INT=(@pagina-1)*@tamano;
+    SELECT s.id,s.idconductor,s.idpasajero,s.idservicioestatus,se.estatus,s.direccionorigen,s.direcciondestination,s.costoestimado,s.gananciaconductor,s.comisionaplicada,s.distanciametros,s.durationsegundos,s.calificacion,s.calificacionpasajero,s.servicioiniciado,s.llegoasudestino,s.fechacreacion,s.fechaservicioiniciado,s.fechallegoasudestino,s.montodescuento,s.motivocancelacion,s.canceladopor,s.fechacancelacion,s.alarmasospasajero,s.alarmasosconductor,s.tipoviaje,s.idtipopago,tp.tipopago,c.nombre AS c_nombre,c.appaterno AS c_appaterno,c.telefono AS c_tel,p.nombre AS p_nombre,p.appaterno AS p_appaterno,p.telefono AS p_tel,u.unidad,u.placas,COUNT(*) OVER() AS totalregistros FROM tbservicios s INNER JOIN tbservicioestatus se ON se.id=s.idservicioestatus LEFT JOIN tbconductor c ON c.id=s.idconductor LEFT JOIN tbpasajero p ON p.id=s.idpasajero LEFT JOIN tbunidad u ON u.id=s.idunidad LEFT JOIN tbtipopago tp ON tp.id=s.idtipopago WHERE (@idServicio IS NULL OR s.id=@idServicio) AND (@idConductor IS NULL OR s.idconductor=@idConductor) AND (@idPasajero IS NULL OR s.idpasajero=@idPasajero) AND (@idEst IS NULL OR s.idservicioestatus=@idEst) AND (@fi IS NULL OR s.fechacreacion>=@fi) AND (@ff IS NULL OR s.fechacreacion<=@ff) ORDER BY s.fechacreacion DESC OFFSET @off ROWS FETCH NEXT @tamano ROWS ONLY;
+END`
+        }, {
+            name: 'sp_corte_GenerarCorteSemanal',
+            type: 'procedimiento',
+            module: 'admin',
+            description: 'Genera el corte semanal para un conductor o todos',
+            params: [{ name: '@idConductor', type: 'INT', optional: true }],
+            returns: 'Resultado de la operación',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    DECLARE @iniSem DATE=DATEADD(DAY,-DATEPART(WEEKDAY,GETDATE())+1,CAST(GETDATE() AS DATE));
+    DECLARE @finSem DATE=DATEADD(DAY,7-DATEPART(WEEKDAY,GETDATE()),CAST(GETDATE() AS DATE));
+    DECLARE @pend SMALLINT=(SELECT id FROM tbcortesemanasemanalestatus WHERE nombreestatus='Pendiente');
+    INSERT INTO tbcortesemanasemanal(idconductor,idzonacobertura,semanainicio,semanafin,totalviajes,totalingresos,totalcomision,totalcomisionporcentaje,totalnetoconductor,idestatuscorte)
+    SELECT c.id,c.idzonacobertura,@iniSem,@finSem,COUNT(CASE WHEN se.estatus='Finalizado' THEN 1 END),ISNULL(SUM(s.costoestimado),0),ISNULL(SUM(s.comisionaplicada),0),ISNULL(AVG(s.porcentajecomision),3.00),ISNULL(SUM(s.gananciaconductor),0),@pend
+    FROM tbconductor c INNER JOIN tbservicios s ON s.idconductor=c.id INNER JOIN tbservicioestatus se ON se.id=s.idservicioestatus
+    WHERE (@idConductor IS NULL OR c.id=@idConductor) AND CAST(s.fechacreacion AS DATE) BETWEEN @iniSem AND @finSem AND se.estatus='Finalizado'
+    AND NOT EXISTS(SELECT 1 FROM tbcortesemanasemanal WHERE idconductor=c.id AND semanainicio=@iniSem AND semanafin=@finSem)
+    GROUP BY c.id,c.idzonacobertura;
+    SELECT 1 AS resultado,'Corte generado' AS mensaje; END`
+        }, {
+            name: 'sp_corte_ListarCortes',
+            type: 'procedimiento',
+            module: 'admin',
+            description: 'Lista los cortes semanales generados',
+            params: [
+                { name: '@idConductor', type: 'INT', optional: true },
+                { name: '@idEst', type: 'SMALLINT', optional: true },
+                { name: '@pagina', type: 'INT', optional: true, default: '1' },
+                { name: '@tamano', type: 'INT', optional: true, default: '50' }
+            ],
+            returns: 'Lista paginada de cortes semanales',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    DECLARE @off INT=(@pagina-1)*@tamano;
+    SELECT cs.*,ce.conductorestatus AS cond_estatus,c.nombre AS c_nombre,c.appaterno AS c_appaterno,c.calificacionpromedio,c.totalviajes,zc.nombrezona,es.nombreestatus,COUNT(*) OVER() AS totalregistros FROM tbcortesemanasemanal cs INNER JOIN tbconductor c ON c.id=cs.idconductor LEFT JOIN tbconductorestatus ce ON ce.id=c.idconductorestatus LEFT JOIN tbzonacobertura zc ON zc.id=cs.idzonacobertura LEFT JOIN tbcortesemanasemanalestatus es ON es.id=cs.idestatuscorte WHERE (@idConductor IS NULL OR cs.idconductor=@idConductor) AND (@idEst IS NULL OR cs.idestatuscorte=@idEst) ORDER BY cs.semanainicio DESC OFFSET @off ROWS FETCH NEXT @tamano ROWS ONLY;
+END`
+        }, {
+            name: 'sp_menu_ListarXUsuario',
+            type: 'procedimiento',
+            module: 'admin',
+            description: 'Obtiene el menú asignado a un usuario web',
+            params: [{ name: '@idUsuario', type: 'INT' }],
+            returns: 'Lista de opciones de menú',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    SELECT DISTINCT m.* FROM tbmenu m INNER JOIN tbusuariomenu um ON um.idmenu=m.id AND um.idusuario=@idUsuario
+    UNION
+    SELECT DISTINCT m.* FROM tbmenu m INNER JOIN tbrolmenudefault rmd ON rmd.idmenu=m.id INNER JOIN tbusuario u ON u.idrol=rmd.idrol AND u.id=@idUsuario WHERE m.activo=1 ORDER BY m.ordernumber;
+END`
+        }, {
+            name: 'sp_auditoria_Listar',
+            type: 'procedimiento',
+            module: 'admin',
+            description: 'Lista el historial de auditoría del sistema',
+            params: [
+                { name: '@tabla', type: 'VARCHAR(100)', optional: true },
+                { name: '@accion', type: 'VARCHAR(20)', optional: true },
+                { name: '@fi', type: 'DATETIME', optional: true },
+                { name: '@ff', type: 'DATETIME', optional: true },
+                { name: '@pagina', type: 'INT', optional: true, default: '1' },
+                { name: '@tamano', type: 'INT', optional: true, default: '50' }
+            ],
+            returns: 'Lista paginada de auditoría',
+            code: `AS BEGIN
+    SET NOCOUNT ON;
+    DECLARE @off INT=(@pagina-1)*@tamano;
+    SELECT a.*,u.nombre AS usuario_nombre,u.account AS usuario_account,COUNT(*) OVER() AS totalregistros FROM tbauditoria a LEFT JOIN tbusuario u ON u.id=a.idusuario WHERE (@tabla IS NULL OR a.tablaafectada=@tabla) AND (@accion IS NULL OR a.accion=@accion) AND (@fi IS NULL OR a.fechacreacion>=@fi) AND (@ff IS NULL OR a.fechacreacion<=@ff) ORDER BY a.fechacreacion DESC OFFSET @off ROWS FETCH NEXT @tamano ROWS ONLY;
+END`
+        }];
+
+        // ============================================
+        // FUNCIONES
+        // ============================================
+
+        function updateStats() {
+            const total = procsData.length;
+            const funciones = procsData.filter(p => p.type === 'funcion').length;
+            const procedimientos = procsData.filter(p => p.type === 'procedimiento').length;
+            const pasajero = procsData.filter(p => p.module === 'pasajero').length;
+            const conductor = procsData.filter(p => p.module === 'conductor').length;
+            const admin = procsData.filter(p => p.module === 'admin').length;
+
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statFunciones').textContent = funciones;
+            document.getElementById('statProcedimientos').textContent = procedimientos;
+            document.getElementById('statPasajero').textContent = pasajero;
+            document.getElementById('statConductor').textContent = conductor;
+            document.getElementById('statAdmin').textContent = admin;
+            document.getElementById('totalProcs').textContent = total;
+            document.getElementById('totalFunciones').textContent = funciones;
+            document.getElementById('totalProcedimientos').textContent = procedimientos;
+        }
+
+        function renderProcs(filter = 'all', search = '') {
+            const container = document.getElementById('procsContainer');
+            container.innerHTML = '';
+
+            const filtered = procsData.filter(p => {
+                const matchType = filter === 'all' || p.type === filter || p.module === filter;
+                const matchSearch = !search ||
+                    p.name.toLowerCase().includes(search.toLowerCase()) ||
+                    p.description.toLowerCase().includes(search.toLowerCase()) ||
+                    p.params.some(pr => pr.name.toLowerCase().includes(search.toLowerCase())) ||
+                    p.code.toLowerCase().includes(search.toLowerCase());
+                return matchType && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:60px 20px; background:var(--bg-card); border-radius:var(--radius-md); border:1px dashed var(--border-color);">
+                        <i class="fas fa-search" style="font-size:48px; color:var(--text-muted); margin-bottom:16px;"></i>
+                        <h3 style="color:var(--text-secondary);">No se encontraron objetos</h3>
+                        <p style="color:var(--text-muted);">Intenta con otro filtro o término de búsqueda.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach((proc, index) => {
+                const card = document.createElement('div');
+                card.className = 'proc-card';
+                card.style.animationDelay = (index * 0.04) + 's';
+
+                // Iconos y badges
+                const typeIcon = proc.type === 'funcion' ? '🧮' : '⚙️';
+                const typeLabel = proc.type === 'funcion' ? 'Función' : 'Procedimiento';
+                const typeBadgeClass = proc.type === 'funcion' ? 'badge-funcion' : 'badge-procedimiento';
+
+                const moduleLabels = {
+                    'pasajero': 'App Pasajero',
+                    'conductor': 'App Conductor',
+                    'admin': 'Web Admin',
+                    'utileria': 'Utilería'
+                };
+                const moduleBadgeClasses = {
+                    'pasajero': 'badge-pasajero',
+                    'conductor': 'badge-conductor',
+                    'admin': 'badge-admin',
+                    'utileria': 'badge-utileria'
+                };
+
+                // Parámetros HTML
+                let paramsHTML = '';
+                if (proc.params && proc.params.length > 0) {
+                    paramsHTML = `
+                        <div class="proc-params">
+                            <div class="param-label"><i class="fas fa-arrow-right"></i> Parámetros</div>
+                            <div class="param-grid">
+                                ${proc.params.map(p => `
+                                    <div class="param-item">
+                                        <span class="p-name">${p.name}</span>
+                                        <span class="p-type">${p.type}</span>
+                                        ${p.optional ? '<span style="color:var(--text-muted);font-size:10px;"> opcional</span>' : ''}
+                                        ${p.default ? `<span style="color:var(--text-muted);font-size:10px;"> default: ${p.default}</span>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Return type para funciones
+                let returnHTML = '';
+                if (proc.returns) {
+                    returnHTML = `<span class="pill"><i class="fas fa-undo-alt"></i> Retorna: ${proc.returns}</span>`;
+                }
+
+                // Sintaxis highlight básica
+                let codeHTML = proc.code;
+                codeHTML = codeHTML.replace(/CREATE|ALTER|PROCEDURE|PROC|FUNCTION|AS|BEGIN|END|DECLARE|SET|SELECT|INSERT|UPDATE|DELETE|FROM|WHERE|JOIN|INNER|LEFT|RIGHT|FULL|OUTER|ON|AND|OR|NOT|IN|EXISTS|BETWEEN|LIKE|IS|NULL|CASE|WHEN|THEN|ELSE|END|RETURN|RETURNS|TABLE|VALUES|DEFAULT|GETDATE|DATEADD|DATEDIFF|CONVERT|CAST|ISNULL|COALESCE|COUNT|SUM|AVG|MIN|MAX|ROUND|NEWID|RADIANS|SIN|COS|ATN2|SQRT|TOP|GROUP BY|ORDER BY|OFFSET|FETCH|NEXT|ROWS|IF|ELSE|WHILE|BREAK|CONTINUE|GOTO|TRY|CATCH|RAISERROR|ERROR_MESSAGE|ERROR_PROCEDURE|ERROR_LINE|ERROR_SEVERITY|ERROR_NUMBER|ERROR_STATE|SCOPE_IDENTITY|IDENTITY|PRIMARY|KEY|FOREIGN|REFERENCES|NOCOUNT|ON|OFF|EXEC|EXECUTE|OUTPUT|INTO|MERGE|WHEN|MATCHED|NOT MATCHED|UNION|ALL|EXCEPT|INTERSECT|DISTINCT|AS|WITH|NOLOCK|READPAST|UPDLOCK|ROWLOCK|TABLOCK|HOLDLOCK|NOWAIT|PAGLOCK|XLOCK|SNAPSHOT|READCOMMITTED|READUNCOMMITTED|REPEATABLEREAD|SERIALIZABLE|TRANSACTION|COMMIT|ROLLBACK|SAVE|PROCEDURE|FUNCTION|TRIGGER|VIEW|INDEX|CONSTRAINT|DEFAULT|CHECK|UNIQUE|CLUSTERED|NONCLUSTERED|INCLUDE|FILESTREAM|FILETABLE|SPARSE|COLUMN_SET|PERIOD|SYSTEM_VERSIONING|HISTORY|LEDGER|APPROX|COUNT|BIGINT|INT|SMALLINT|TINYINT|BIT|DECIMAL|NUMERIC|MONEY|SMALLMONEY|FLOAT|REAL|DATE|DATETIME|DATETIME2|SMALLDATETIME|TIME|TIMESTAMP|CHAR|VARCHAR|TEXT|NCHAR|NVARCHAR|NTEXT|BINARY|VARBINARY|IMAGE|HIERARCHYID|UNIQUEIDENTIFIER|XML|JSON|GEOMETRY|GEOGRAPHY|CURSOR|TABLE|VARCHAR|MAX|GO/g, match => `<span class="sql-keyword">${match}</span>`);
+                codeHTML = codeHTML.replace(/'([^']*)'/g, match => `<span class="sql-string">${match}</span>`);
+                codeHTML = codeHTML.replace(/\/\*.*?\*\//gs, match => `<span class="sql-comment">${match}</span>`);
+                codeHTML = codeHTML.replace(/--.*$/gm, match => `<span class="sql-comment">${match}</span>`);
+                codeHTML = codeHTML.replace(/\b(@\w+)\b/g, match => `<span class="sql-param">${match}</span>`);
+                codeHTML = codeHTML.replace(/\b(\d+\.\d+|\d+)\b/g, match => `<span class="sql-number">${match}</span>`);
+
+                card.innerHTML = `
+                    <div class="proc-header" onclick="toggleProc(this)">
+                        <div class="proc-title">
+                            <span>${typeIcon}</span>
+                            <code>${proc.name}</code>
+                            <span style="font-weight:400; color:var(--text-light); font-size:13px;">${proc.description}</span>
+                        </div>
+                        <div class="proc-meta">
+                            <span class="pill ${typeBadgeClass}">${typeLabel}</span>
+                            <span class="pill ${moduleBadgeClasses[proc.module] || 'badge-utileria'}"><i class="fas fa-folder"></i> ${moduleLabels[proc.module] || proc.module}</span>
+                            ${returnHTML}
+                            <span class="toggle-icon"><i class="fas fa-chevron-up"></i></span>
+                        </div>
+                    </div>
+                    <div class="proc-body">
+                        ${paramsHTML}
+                        <div class="proc-code">
+                            <pre>${codeHTML}</pre>
+                        </div>
+                    </div>
+                    <div class="proc-footer">
+                        <span class="footer-tag"><i class="fas fa-tag"></i> ${proc.type === 'funcion' ? 'Función' : 'Procedimiento'}</span>
+                        <span class="footer-tag"><i class="fas fa-folder"></i> ${moduleLabels[proc.module] || proc.module}</span>
+                        <span style="margin-left:auto; font-size:11px;">MSSQL • 2026</span>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        // Toggle procedure collapse
+        function toggleProc(header) {
+            const card = header.closest('.proc-card');
+            card.classList.toggle('collapsed');
+            const icon = header.querySelector('.toggle-icon i');
+            if (icon) {
+                icon.className = card.classList.contains('collapsed') ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+            }
+        }
+
+        // Filter functions
+        function filterProcs() {
+            const activeTab = document.querySelector('.filter-tabs .tab.active');
+            const filter = activeTab ? activeTab.dataset.filter : 'all';
+            const search = document.getElementById('searchInput').value;
+            renderProcs(filter, search);
+        }
+
+        // Filter tabs click
+        document.querySelectorAll('.filter-tabs .tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.filter-tabs .tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                filterProcs();
+            });
+        });
+
+        // Sidebar navigation
+        document.querySelectorAll('.sidebar-nav a[data-filter]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+                this.classList.add('active');
+
+                const filter = this.dataset.filter;
+                const tab = document.querySelector(`.filter-tabs .tab[data-filter="${filter}"]`);
+                if (tab) {
+                    document.querySelectorAll('.filter-tabs .tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                } else {
+                    // Si no hay tab correspondiente, buscar por módulo
+                    const moduleTab = document.querySelector(`.filter-tabs .tab[data-filter="${filter}"]`);
+                    if (moduleTab) {
+                        document.querySelectorAll('.filter-tabs .tab').forEach(t => t.classList.remove('active'));
+                        moduleTab.classList.add('active');
+                    }
+                }
+                document.getElementById('searchInput').value = '';
+                renderProcs(filter, '');
+            });
+        });
+
+        // Search with Enter key
+        document.getElementById('searchInput').addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                filterProcs();
+            }
+        });
+
+        // Scroll to top
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ============================================
+        // INIT
+        // ============================================
+        updateStats();
+        renderProcs('all', '');
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📋 VAIA VIAJES · Precarga de información</title>
+  <!-- Google Font & clean icons (Font Awesome) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #f5f3f0;
+      font-family: 'Inter', sans-serif;
+      color: #2d3e4f;
+      padding: 2rem 1.5rem;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      background: #ffffffdd;
+      backdrop-filter: blur(2px);
+      background: #ffffff;
+      border-radius: 2.5rem;
+      box-shadow: 0 20px 40px -12px rgba(0, 20, 30, 0.15), 0 8px 24px -6px rgba(0,0,0,0.02);
+      padding: 2.5rem 2.8rem;
+      transition: all 0.2s;
+    }
+
+    /* encabezado */
+    .doc-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #eae6e1;
+      padding-bottom: 1.8rem;
+      margin-bottom: 2.2rem;
+    }
+
+    .doc-header h1 {
+      font-weight: 600;
+      font-size: 2.2rem;
+      letter-spacing: -0.02em;
+      color: #1b2c3a;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .doc-header h1 i {
+      color: #8ba8b9;
+      font-size: 2rem;
+    }
+
+    .badge-version {
+      background: #eef3f6;
+      padding: 0.45rem 1.1rem;
+      border-radius: 60px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #3b5a6f;
+      letter-spacing: 0.3px;
+      border: 1px solid #dde4e9;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge-version i {
+      color: #7493a8;
+    }
+
+    .meta-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.8rem 3rem;
+      background: #f7f5f2;
+      padding: 1.2rem 1.8rem;
+      border-radius: 1.8rem;
+      margin-bottom: 2.5rem;
+      border: 1px solid #ece8e3;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+    }
+
+    .meta-item i {
+      color: #7999ae;
+      width: 1.4rem;
+      font-size: 1rem;
+    }
+
+    .meta-item strong {
+      font-weight: 600;
+      color: #1e3443;
+    }
+
+    .meta-item span {
+      color: #3f5b6e;
+    }
+
+    /* secciones */
+    .section {
+      margin-bottom: 2.8rem;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1f3849;
+      margin-bottom: 1.2rem;
+      letter-spacing: -0.3px;
+      border-left: 6px solid #b8cfdb;
+      padding-left: 1rem;
+    }
+
+    .section-title i {
+      color: #6f92a7;
+      font-size: 1.4rem;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .chip-catalog {
+      background: #f6f4f1;
+      padding: 0.6rem 1.2rem;
+      border-radius: 60px;
+      font-size: 0.85rem;
+      font-weight: 450;
+      color: #1f3a4b;
+      border: 1px solid #e3ddd6;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: 0.1s ease;
+      white-space: nowrap;
+    }
+
+    .chip-catalog i {
+      color: #7192a5;
+      font-size: 0.8rem;
+    }
+
+    .chip-catalog:hover {
+      background: #edebe8;
+      border-color: #cbd7df;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      background: #faf9f7;
+      border-radius: 1.4rem;
+      border: 1px solid #e8e3dd;
+      padding: 0.2rem 0.2rem 0.2rem 0.2rem;
+      margin-top: 0.8rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th {
+      text-align: left;
+      padding: 0.9rem 1rem;
+      background: #edebe7;
+      color: #1d3443;
+      font-weight: 600;
+      border-bottom: 1px solid #dad3cb;
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #e5dfd8;
+      color: #2a4153;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .highlight-box {
+      background: #f2f1ee;
+      border-radius: 1.2rem;
+      padding: 1.6rem 2rem;
+      border-left: 6px solid #b1cad9;
+      margin: 1.8rem 0 0.8rem 0;
+    }
+
+    .highlight-box strong {
+      color: #1b3547;
+    }
+
+    .flex-badge-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin: 0.8rem 0 0.2rem;
+    }
+
+    .credencial-card {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem 1.8rem;
+      background: #f3f1ed;
+      border-radius: 1.4rem;
+      padding: 1.4rem 2rem;
+      border: 1px solid #e1dad3;
+    }
+
+    .credencial-item {
+      display: flex;
+      align-items: baseline;
+      gap: 0.35rem 0.8rem;
+      flex-wrap: wrap;
+    }
+
+    .credencial-item .label {
+      font-weight: 500;
+      color: #426072;
+      font-size: 0.85rem;
+      letter-spacing: 0.3px;
+    }
+
+    .credencial-item .value {
+      font-weight: 600;
+      color: #153242;
+      background: white;
+      padding: 0.1rem 0.9rem;
+      border-radius: 30px;
+      border: 1px solid #d7d0c8;
+      font-size: 0.85rem;
+    }
+
+    .footer-note {
+      margin-top: 2.8rem;
+      border-top: 2px solid #e1dad2;
+      padding-top: 1.8rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 1rem;
+      color: #5f7889;
+      font-size: 0.9rem;
+    }
+
+    .footer-note i {
+      color: #839faf;
+      margin-right: 0.4rem;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #e3ddd6;
+      margin: 1rem 0 1.8rem;
+    }
+
+    .subtitle-soft {
+      color: #4b6b7e;
+      font-weight: 400;
+      font-size: 0.95rem;
+      margin-top: -0.2rem;
+      margin-bottom: 0.8rem;
+    }
+
+    @media (max-width: 700px) {
+      .container { padding: 1.2rem; }
+      .doc-header h1 { font-size: 1.7rem; }
+      .meta-grid { flex-direction: column; gap: 0.5rem; }
+      .card-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <!-- header -->
+  <div class="doc-header">
+    <h1><i class="fas fa-database"></i> Precarga · VAIA VIAJES</h1>
+    <div class="badge-version">
+      <i class="fas fa-code-branch"></i> versión 1.0 · 2026
+    </div>
+  </div>
+
+  <!-- meta -->
+  <div class="meta-grid">
+    <div class="meta-item"><i class="fas fa-user-astronaut"></i> <strong>Autor</strong> <span>Ing. Luis Enrique Hernandez Ballesteros</span></div>
+    <div class="meta-item"><i class="fas fa-calendar-alt"></i> <strong>Fecha</strong> <span>2026</span></div>
+    <div class="meta-item"><i class="fas fa-server"></i> <strong>Base de datos</strong> <span><code style="background:#eae5df; padding:0.15rem 0.7rem; border-radius:30px;">vaia_viajes</code></span></div>
+    <div class="meta-item"><i class="fas fa-tasks"></i> <strong>Propósito</strong> <span>Catálogos + usuarios + configuración inicial</span></div>
+  </div>
+
+  <!-- 1. CATÁLOGOS BÁSICOS -->
+  <div class="section">
+    <div class="section-title"><i class="fas fa-tag"></i> 1. Catálogos básicos</div>
+    <p class="subtitle-soft">Tablas de estatus, tipos y roles para el funcionamiento del sistema.</p>
+    <div class="card-grid">
+      <span class="chip-catalog"><i class="fas fa-user-shield"></i> tbrol (8 roles)</span>
+      <span class="chip-catalog"><i class="fas fa-user-clock"></i> tbconductorestatus (8)</span>
+      <span class="chip-catalog"><i class="fas fa-file-alt"></i> tbestatusdocumentacion (6)</span>
+      <span class="chip-catalog"><i class="fas fa-file-invoice"></i> tbestatusfacturacion (5)</span>
+      <span class="chip-catalog"><i class="fas fa-exclamation-triangle"></i> tbestatusincidente (5)</span>
+      <span class="chip-catalog"><i class="fas fa-bolt"></i> tbtipoincidente (7)</span>
+      <span class="chip-catalog"><i class="fas fa-folder-open"></i> tbtipoarchivo (10)</span>
+      <span class="chip-catalog"><i class="fas fa-car"></i> tbtipoarchivounidad (6)</span>
+      <span class="chip-catalog"><i class="fas fa-gas-pump"></i> tbtipocombustible (7)</span>
+      <span class="chip-catalog"><i class="fas fa-cogs"></i> tbtransmision (5)</span>
+      <span class="chip-catalog"><i class="fas fa-credit-card"></i> tbtipopago (6)</span>
+      <span class="chip-catalog"><i class="fas fa-hand-holding-usd"></i> tbmetodopago (5)</span>
+      <span class="chip-catalog"><i class="fas fa-hourglass-half"></i> tbestatuspago (6)</span>
+      <span class="chip-catalog"><i class="fas fa-route"></i> tbservicioestatus (11)</span>
+      <span class="chip-catalog"><i class="fas fa-chart-pie"></i> tbcortesemanasemanalestatus (5)</span>
+      <span class="chip-catalog"><i class="fas fa-percent"></i> tbtipocomision (2)</span>
+      <span class="chip-catalog"><i class="fas fa-language"></i> tbidioma (3)</span>
+    </div>
+  </div>
+
+  <!-- 2. COMPAÑÍA + CONFIGURACIONES -->
+  <div class="section">
+    <div class="section-title"><i class="fas fa-building"></i> 2. Compañía &amp; configuraciones</div>
+    <div class="table-wrap">
+      <table>
+        <tr><th style="width:30%">Tabla</th><th>Descripción</th><th style="width:25%">Detalle</th></tr>
+        <tr><td><strong>tbcompania</strong></td><td>Compañía principal “Vaia Viajes México”</td><td>Pago con tarjeta, PayPal, Mercado Pago, versión apps, radio búsqueda, tiempos</td></tr>
+        <tr><td><strong>tbconfiguracionsistema</strong></td><td>Variables de sistema (clave-valor)</td><td>19 configuraciones: APP_NAME, TIMEZONE, comisión default, etc.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3. ZONAS DE COBERTURA -->
+  <div class="section">
+    <div class="section-title"><i class="fas fa-map-pin"></i> 3. Zonas de cobertura</div>
+    <div class="flex-badge-group">
+      <span class="chip-catalog"><i class="fas fa-location-dot"></i> tbzonacobertura (6 zonas)</span>
+      <span class="chip-catalog"><i class="fas fa-coins"></i> tbzonacoberturacomision (6 comisiones 3% default)</span>
+    </div>
+    <div style="background:#f5f2ee; border-radius:1.2rem; padding:0.8rem 1.2rem; margin-top:0.5rem; font-size:0.9rem;">
+      <i class="fas fa-circle-info" style="color:#7090a3;"></i> <strong>Zonas:</strong> Reynosa Centro, Conurbada, Norte, Sur, Este, Oeste. Radio 10–25 km.
+    </div>
+  </div>
+
+  <!-- 4. USUARIOS ADMIN -->
+  <div class="section">
+    <div class="section-title"><i class="fas fa-users-cog"></i> 4. Usuarios administradores</div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Usuario</th><th>Rol</th><th>Correo</th><th>Contraseña (hash)</th></tr>
+        <tr><td>superadmin</td><td>Super Administrador</td><td>superadmin@vaiaviajes.com</td><td><code>admin123</code> (SHA256)</td></tr>
+        <tr><td>admin</td><td>Administrador</td><td>admin@vaiaviajes.com</td><td><code>admin123</code></td></tr>
+        <tr><td>soporte</td><td>Soporte</td><td>soporte@vaiaviajes.com</td><td><code>admin123</code></td></tr>
+        <tr><td>contabilidad</td><td>Contabilidad</td><td>contabilidad@vaiaviajes.com</td><td><code>admin123</code></td></tr>
+        <tr><td>marketing</td><td>Marketing</td><td>marketing@vaiaviajes.com</td><td><code>admin123</code></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 5. MENÚ + ROLES -->
+  <div class="section">
+    <div class="section-title"><i class="fas fa-bars"></i> 5. Menú del sistema &amp; asignación por rol</div>
+    <div><span class="chip-catalog"><i class="fas fa-sitemap"></i> tbmenu · 11 headers + 32 submenús</span></div>
+    <div style="margin-top:0.6rem;"><span class="chip-catalog"><i class="fas fa-user-tag"></i> tbrolmenudefault · asignación a SuperAdmin, Admin, Gerente, Supervisor, Soporte</span></div>
+    <div style="background:#f2efe9; border-radius:1.2rem; padding:0.5rem 1.2rem; margin-top:0.6rem; font-size:0.9rem;">
+      <i class="fas fa-check-circle" style="color:#5e8b9e;"></i> <strong>Módulos principales:</strong> Dashboard, Usuarios, Conductores, Pasajeros, Viajes, Finanzas, Reportes, Configuración, Incidentes, Promociones, Seguridad.
+    </div>
+  </div>
+
+  <!-- 6. COSTOS + TOKENS + AVISOS + PROMOS -->
+  <div class="section">
+    <div class="section-title"><i class="fas fa-calculator"></i> 6. Configuración operativa</div>
+    <div style="display:flex; flex-wrap:wrap; gap:1.2rem;">
+      <div style="flex:1; min-width:180px; background:#f7f4f0; border-radius:1.4rem; padding:0.8rem 1.2rem; border:1px solid #e2dad2;">
+        <i class="fas fa-road" style="color:#618296;"></i> <strong>tbappviajecostos</strong><br>
+        <span style="font-size:0.9rem;">Costo mínimo $50 · $8/km · $2/min · horario 00:00–23:59 · todos los días</span>
+      </div>
+      <div style="flex:1; min-width:150px; background:#f7f4f0; border-radius:1.4rem; padding:0.8rem 1.2rem; border:1px solid #e2dad2;">
+        <i class="fas fa-key" style="color:#618296;"></i> <strong>tbTokensApp</strong><br>
+        <span style="font-size:0.9rem;">appPasajero, appConductor, appVaiaAdmin (token + expiración)</span>
+      </div>
+      <div style="flex:1; min-width:150px; background:#f7f4f0; border-radius:1.4rem; padding:0.8rem 1.2rem; border:1px solid #e2dad2;">
+        <i class="fas fa-bullhorn" style="color:#618296;"></i> <strong>tbavisosapp</strong><br>
+        <span style="font-size:0.9rem;">3 avisos: bienvenida pasajero, conductor, actualización sistema</span>
+      </div>
+      <div style="flex:1; min-width:150px; background:#f7f4f0; border-radius:1.4rem; padding:0.8rem 1.2rem; border:1px solid #e2dad2;">
+        <i class="fas fa-ticket-alt" style="color:#618296;"></i> <strong>tbcodigospromo</strong><br>
+        <span style="font-size:0.9rem;">5 códigos: VIAJE10, VIAJE20, PORCENTAJE10, VIAJEGRATIS, BIENVENIDA</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. MARCAS / SUBMARCAS / PLANTILLAS -->
+  <div class="section">
+    <div class="section-title"><i class="fas fa-car-side"></i> 7. Marcas, submarcas &amp; plantillas de correo</div>
+    <div><span class="chip-catalog"><i class="fas fa-trademark"></i> tbmarca (15 marcas)</span> <span class="chip-catalog"><i class="fas fa-chevron-right"></i> tbsubmarca (23 modelos)</span> <span class="chip-catalog"><i class="fas fa-envelope-open-text"></i> tbplantillascorreohtml (3 plantillas)</span></div>
+    <div style="background:#f5f2ed; border-radius:1.4rem; padding:0.6rem 1.2rem; margin-top:0.6rem; font-size:0.9rem;">
+      <i class="fas fa-pen-fancy" style="color:#5f8094;"></i> <strong>Plantillas:</strong> Registro_Pasajero, Registro_Conductor, Comprobante_Viaje (con marcadores [NOMBRE], [MONTO_TOTAL], etc.)
+    </div>
+  </div>
+
+  <!-- CREDENCIALES DE ACCESO -->
+  <div class="section" style="margin-top:2.2rem;">
+    <div class="section-title"><i class="fas fa-unlock-alt"></i> Credenciales de acceso</div>
+    <div class="credencial-card">
+      <div class="credencial-item"><span class="label"><i class="fas fa-user-circle"></i> Usuario</span><span class="value">superadmin</span></div>
+      <div class="credencial-item"><span class="label"><i class="fas fa-lock"></i> Contraseña</span><span class="value">admin123</span></div>
+      <div class="credencial-item"><span class="label"><i class="fas fa-envelope"></i> Correo</span><span class="value">superadmin@vaiaviajes.com</span></div>
+      <div class="credencial-item"><span class="label"><i class="fas fa-user-tag"></i> Rol</span><span class="value">Super Administrador</span></div>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; gap:0.5rem 1.2rem; margin-top:1rem;">
+      <span class="chip-catalog"><i class="fas fa-user"></i> admin / admin123</span>
+      <span class="chip-catalog"><i class="fas fa-headset"></i> soporte / admin123</span>
+      <span class="chip-catalog"><i class="fas fa-calculator"></i> contabilidad / admin123</span>
+      <span class="chip-catalog"><i class="fas fa-bullhorn"></i> marketing / admin123</span>
+    </div>
+  </div>
+
+  <!-- tokens y resumen final -->
+  <div class="highlight-box">
+    <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center;">
+      <div><i class="fas fa-qrcode" style="font-size:1.4rem; color:#598197; margin-right:0.8rem;"></i> <strong>Tokens de API</strong> generados automáticamente para <strong>appPasajero, appConductor, appVaiaAdmin</strong> (primario / secundario)</div>
+      <span style="background:#dbe6ed; padding:0.25rem 1rem; border-radius:40px; font-size:0.8rem; color:#1b3f4f;"><i class="far fa-clock"></i> expiración 3h / 6h</span>
+    </div>
+  </div>
+
+  <!-- footer resumen -->
+  <div class="footer-note">
+    <div><i class="fas fa-check-circle" style="color:#598197;"></i> Configuración completada · <strong>20+</strong> tablas cargadas</div>
+    <div><i class="fas fa-users"></i> 5 usuarios administrativos · <i class="fas fa-code"></i> menús y permisos asignados</div>
+    <div><i class="fas fa-calendar-check"></i> Sistema listo para producción</div>
+  </div>
+
+  <hr>
+  <div style="display:flex; justify-content:space-between; flex-wrap:wrap; font-size:0.85rem; color:#577186; padding-top:0.5rem;">
+    <span><i class="far fa-file-alt"></i> Script: 2.- Precarga de informacion.sql</span>
+    <span><i class="far fa-copyright"></i> VAIA VIAJES · 2026</span>
+  </div>
+
+</div>
+<!-- container -->
+</body>
+</html>
