@@ -57,6 +57,15 @@ public class PasajeroController : ControllerBase
         return await SpExecutor.SingleAsync("sp_pasajero_CambiarPassword", d, "Contrasena actualizada");
     }
 
+    /// <summary>Valida el codigo de verificacion enviado por WhatsApp.</summary>
+    [HttpPost("ValidarCodigoVerificacion")]
+    public async Task<IActionResult> ValidarCodigoVerificacion([FromBody] dynamic p)
+    {
+        var d = ParameterHelper.ToDictionary(p);
+        if (d == null) return "Datos invalidos".VaiaBadRequest("EMPTY_BODY");
+        return await SpExecutor.SingleAsync("sp_pasajero_ValidarCodigoVerificacion", d, "Codigo validado");
+    }
+
     /// <summary>Actualiza el token de push (FCM) del pasajero.</summary>
     [HttpPost("ActualizarToken")]
     public async Task<IActionResult> ActualizarToken([FromBody] dynamic p)

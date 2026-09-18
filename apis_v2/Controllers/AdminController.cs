@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using VaiaViajes.Api.Helpers;
 
 [Route("api/[controller]")]
@@ -28,6 +29,42 @@ public class AdminController : ControllerBase
                 vaiaFromSp = typeof(ApiResultExtensions).GetMethod("VaiaFromSp", new[] { typeof(object), typeof(string) }) != null,
                 vaiaSingleFromSp = typeof(ApiResultExtensions).GetMethod("VaiaSingleFromSp", new[] { typeof(object), typeof(string) }) != null,
             }
+        });
+    }
+
+    /// <summary>
+    /// Diagnostico: indica que integraciones estan configuradas en el servidor.
+    /// No expone los valores de las llaves, solo si existen.
+    /// </summary>
+    [HttpGet("diagnostico")]
+    public IActionResult Diagnostico()
+    {
+        var cfg = HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>();
+        var email = HttpContext.RequestServices.GetRequiredService<VaiaViajes.Api.Services.EmailService>();
+        var wa = HttpContext.RequestServices.GetRequiredService<VaiaViajes.Api.Services.WhatsAppService>();
+        var mp = HttpContext.RequestServices.GetRequiredService<VaiaViajes.Api.Services.MercadoPagoService>();
+        var pp = HttpContext.RequestServices.GetRequiredService<VaiaViajes.Api.Services.PayPalService>();
+
+        return new OkObjectResult(new
+        {
+            success = true,
+            data = new
+            {
+                smtp = email.Configurado,
+                smtpHost = cfg["Smtp:Host"],
+                smtpFrom = cfg["Smtp:From"],
+                whatsapp = wa.Configurado,
+                whatsappPhoneId = cfg["WhatsApp:PhoneNumberId"],
+                whatsappPlantilla = cfg["WhatsApp:PlantillaAuth"],
+                mercadoPago = mp.Configurado,
+                mercadoPagoSandbox = cfg["MercadoPago:SandboxMode"],
+                paypal = pp.Configurado,
+                paypalSandbox = cfg["PayPal:UseSandbox"],
+                fcmConductor = !string.IsNullOrEmpty(cfg.GetSection("Fcm:Conductor")["ServerKey"]),
+                fcmPasajero = !string.IsNullOrEmpty(cfg.GetSection("Fcm:Pasajero")["ServerKey"]),
+                fcmLegacy = !string.IsNullOrEmpty(cfg.GetSection("Fcm")["ServerKey"])
+            },
+            message = "Diagnostico de configuracion"
         });
     }
 
